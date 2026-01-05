@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { handler } from './index';
 import type { APIGatewayProxyEvent } from 'aws-lambda';
+import { describe, expect, it } from 'vitest';
+import { handler } from './index';
 
 const createEvent = (body: unknown): APIGatewayProxyEvent => ({
   body: body ? JSON.stringify(body) : null,
@@ -14,7 +14,7 @@ const createEvent = (body: unknown): APIGatewayProxyEvent => ({
   multiValueQueryStringParameters: null,
   stageVariables: null,
   requestContext: {} as APIGatewayProxyEvent['requestContext'],
-  resource: ''
+  resource: '',
 });
 
 describe('jsonata-eval handler', () => {
@@ -40,7 +40,7 @@ describe('jsonata-eval handler', () => {
   it('should evaluate simple JSONata expression', async () => {
     const event = createEvent({
       data: { name: 'John', age: 30 },
-      function: 'name'
+      function: 'name',
     });
 
     const result = await handler(event);
@@ -52,7 +52,7 @@ describe('jsonata-eval handler', () => {
   it('should evaluate JSONata expression with calculation', async () => {
     const event = createEvent({
       data: { prices: [10, 20, 30] },
-      function: '$sum(prices)'
+      function: '$sum(prices)',
     });
 
     const result = await handler(event);
@@ -63,13 +63,13 @@ describe('jsonata-eval handler', () => {
 
   it('should evaluate JSONata expression with transformation', async () => {
     const event = createEvent({
-      data: { 
+      data: {
         users: [
           { name: 'Alice', score: 85 },
-          { name: 'Bob', score: 92 }
-        ]
+          { name: 'Bob', score: 92 },
+        ],
       },
-      function: 'users[score > 90].name'
+      function: 'users[score > 90].name',
     });
 
     const result = await handler(event);
@@ -81,7 +81,7 @@ describe('jsonata-eval handler', () => {
   it('should return 400 for invalid JSONata expression', async () => {
     const event = createEvent({
       data: { a: 1 },
-      function: '$invalid('
+      function: '$invalid(',
     });
 
     const result = await handler(event);
@@ -94,7 +94,7 @@ describe('jsonata-eval handler', () => {
   it('should handle undefined result', async () => {
     const event = createEvent({
       data: { a: 1 },
-      function: 'b'
+      function: 'b',
     });
 
     const result = await handler(event);
@@ -109,11 +109,11 @@ describe('jsonata-eval handler', () => {
         order: {
           items: [
             { product: 'A', qty: 2, price: 10 },
-            { product: 'B', qty: 1, price: 25 }
-          ]
-        }
+            { product: 'B', qty: 1, price: 25 },
+          ],
+        },
       },
-      function: '$sum(order.items.(qty * price))'
+      function: '$sum(order.items.(qty * price))',
     });
 
     const result = await handler(event);

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { jsonataEval } from './index';
 
 // Mock the AWS SDK Lambda client
@@ -33,10 +33,10 @@ describe('jsonataEval', () => {
       Payload: new TextEncoder().encode(JSON.stringify(lambdaResponse)),
     });
 
-    const result = await jsonataEval(
-      mockClient as any,
-      { function: '$.name', data: { name: 'John' } }
-    );
+    const result = await jsonataEval(mockClient as any, {
+      function: '$.name',
+      data: { name: 'John' },
+    });
 
     expect(result).toEqual({
       success: true,
@@ -87,14 +87,12 @@ describe('jsonataEval', () => {
   it('should return error when no functionName is available', async () => {
     delete process.env.JSONATA_EVAL_FUNCTION;
 
-    const result = await jsonataEval(
-      mockClient as any,
-      { function: '$.name', data: {} }
-    );
+    const result = await jsonataEval(mockClient as any, { function: '$.name', data: {} });
 
     expect(result).toEqual({
       success: false,
-      error: 'Function name not provided. Set JSONATA_EVAL_FUNCTION environment variable or pass functionName option.',
+      error:
+        'Function name not provided. Set JSONATA_EVAL_FUNCTION environment variable or pass functionName option.',
     });
   });
 
@@ -109,10 +107,7 @@ describe('jsonataEval', () => {
       Payload: new TextEncoder().encode(JSON.stringify(lambdaResponse)),
     });
 
-    const result = await jsonataEval(
-      mockClient as any,
-      { function: 'invalid(', data: {} }
-    );
+    const result = await jsonataEval(mockClient as any, { function: 'invalid(', data: {} });
 
     expect(result).toEqual({
       success: false,
@@ -126,10 +121,7 @@ describe('jsonataEval', () => {
       Payload: new TextEncoder().encode('{}'),
     });
 
-    const result = await jsonataEval(
-      mockClient as any,
-      { function: '$.name', data: {} }
-    );
+    const result = await jsonataEval(mockClient as any, { function: '$.name', data: {} });
 
     expect(result).toEqual({
       success: false,
@@ -140,10 +132,7 @@ describe('jsonataEval', () => {
   it('should return error result when no payload is returned', async () => {
     mockClient.send.mockResolvedValueOnce({});
 
-    const result = await jsonataEval(
-      mockClient as any,
-      { function: '$.name', data: {} }
-    );
+    const result = await jsonataEval(mockClient as any, { function: '$.name', data: {} });
 
     expect(result).toEqual({
       success: false,
@@ -154,10 +143,7 @@ describe('jsonataEval', () => {
   it('should return error result when client throws an error', async () => {
     mockClient.send.mockRejectedValueOnce(new Error('Network error'));
 
-    const result = await jsonataEval(
-      mockClient as any,
-      { function: '$.name', data: {} }
-    );
+    const result = await jsonataEval(mockClient as any, { function: '$.name', data: {} });
 
     expect(result).toEqual({
       success: false,
@@ -168,10 +154,7 @@ describe('jsonataEval', () => {
   it('should handle unknown errors gracefully', async () => {
     mockClient.send.mockRejectedValueOnce('string error');
 
-    const result = await jsonataEval(
-      mockClient as any,
-      { function: '$.name', data: {} }
-    );
+    const result = await jsonataEval(mockClient as any, { function: '$.name', data: {} });
 
     expect(result).toEqual({
       success: false,
@@ -186,11 +169,7 @@ describe('jsonataEval', () => {
       ),
     });
 
-    await jsonataEval(
-      mockClient as any,
-      { function: '$.test', data: {} },
-      { timeout: 5000 }
-    );
+    await jsonataEval(mockClient as any, { function: '$.test', data: {} }, { timeout: 5000 });
 
     expect(mockClient.send).toHaveBeenCalledWith(
       expect.objectContaining({

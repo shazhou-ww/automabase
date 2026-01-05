@@ -6,14 +6,12 @@ interface RequestBody {
   function: string;
 }
 
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     if (!event.body) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Request body is required' })
+        body: JSON.stringify({ error: 'Request body is required' }),
       };
     }
 
@@ -22,7 +20,7 @@ export const handler = async (
     if (body.function === undefined || body.function === null) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'function is required' })
+        body: JSON.stringify({ error: 'function is required' }),
       };
     }
 
@@ -31,14 +29,13 @@ export const handler = async (
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ data: result })
+      body: JSON.stringify({ data: result }),
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: message })
+      body: JSON.stringify({ error: message }),
     };
   }
 };
-
