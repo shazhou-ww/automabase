@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.pnpm-store/
+.bun/
+bun.lockb
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+.aws-sam/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+env.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+
+# SAM generated files
+merged-template.yaml
+.aws-sam/
+
+# Temporary files
+*.tmp
+.cache/
+
+# Turborepo
+.turbo/
+

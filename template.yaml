@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-31'
+Transform: AWS::Serverless-2016-10-31
+Description: Automabase Lambda Functions
+
+Globals:
+  Function:
+    Runtime: nodejs24.x
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        NODE_ENV: !Ref Environment
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+Resources:
+  # Function resources will be merged from functions/*/template.yaml
+  # Run 'bun run sam:merge' to generate the merged template
+
+# Outputs:
+#   ApiGatewayApi:
+#     Description: API Gateway endpoint URL
+#     Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
