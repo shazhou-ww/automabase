@@ -11,12 +11,15 @@ import { ulid } from 'ulid';
 
 // Constants
 const TABLE_NAME = process.env.EVENT_STREAM_TABLE || 'event-stream';
-const META_SK = 'META';
+const META_SK = '#META';
 const SAFETY_WINDOW_MS = 3; // Safety window to prevent ULID time precision issues
 const MAX_BATCH_SIZE = 100; // Maximum events per query
 
-// DynamoDB client
-const dynamoClient = new DynamoDBClient({});
+// DynamoDB client - use local endpoint for SAM Local
+const isLocal = process.env.AWS_SAM_LOCAL === 'true';
+const dynamoClient = new DynamoDBClient(
+  isLocal ? { endpoint: 'http://host.docker.internal:8000' } : {}
+);
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
 // Response helpers
@@ -286,31 +289,37 @@ async function backtrace(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRe
   }
 
   // Determine the starting point
-  let startKey: string;
+  let endKey: string;
   if (anchor) {
-    startKey = anchor;
+    endKey = anchor;
   } else {
     // Use current time minus safety window to get "latest" events
     const safeTimestamp = Date.now() - SAFETY_WINDOW_MS;
     // Generate a ULID prefix for this timestamp (max possible)
-    startKey = `${ulidFromTime(safeTimestamp)}ZZZZZZZZZZZZZZZZ`;
+    endKey = `${ulidFromTime(safeTimestamp)}ZZZZZZZZZZZZZZZZ`;
   }
 
   // Query events in descending order (newest first)
+  // Use sk BETWEEN '0' AND endKey to exclude #META (since '0' > '#' in ASCII)
+  // ULID always starts with '0' so this catches all event IDs
   const result = await docClient.send(
     new QueryCommand({
       TableName: TABLE_NAME,
-      KeyConditionExpression: 'pk = :pk AND sk < :sk',
+      KeyConditionExpression: 'pk = :pk AND sk BETWEEN :start AND :end',
       ExpressionAttributeValues: {
         ':pk': streamId,
-        ':sk': startKey,
+        ':start': '0', // ULID starts with '0', '#META' is excluded
+        ':end': endKey,
       },
       ScanIndexForward: false, // Descending order
-      Limit: limit + 1, // Fetch one extra to check if there's a next page
+      Limit: limit + 2, // Fetch extra to account for anchor exclusion and pagination check
     })
   );
 
-  const items = (result.Items || []).filter((item) => item.sk !== META_SK) as EventRecord[];
+  // Filter out the anchor itself (BETWEEN is inclusive, we want exclusive)
+  const items = ((result.Items || []) as EventRecord[]).filter(
+    (item) => !anchor || item.sk !== anchor
+  );
 
   // Determine if there's a next page
   const hasMore = items.length > limit;
@@ -363,37 +372,25 @@ async function replay(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResul
   }
 
   // Build query based on anchor
-  let keyConditionExpression: string;
-  let expressionAttributeValues: Record<string, unknown>;
-
-  if (anchor) {
-    // Start after the anchor
-    keyConditionExpression = 'pk = :pk AND sk > :sk';
-    expressionAttributeValues = {
-      ':pk': streamId,
-      ':sk': anchor,
-    };
-  } else {
-    // Start from the beginning (after META)
-    keyConditionExpression = 'pk = :pk AND sk > :sk';
-    expressionAttributeValues = {
-      ':pk': streamId,
-      ':sk': META_SK,
-    };
-  }
+  // Use sk > anchor (or sk > '#META' when no anchor) to get events in order
+  // Since '#' < '0' in ASCII, sk > '#META' will get all ULID-based event IDs
+  const startKey = anchor || META_SK;
 
   // Query events in ascending order (oldest first)
   const result = await docClient.send(
     new QueryCommand({
       TableName: TABLE_NAME,
-      KeyConditionExpression: keyConditionExpression,
-      ExpressionAttributeValues: expressionAttributeValues,
+      KeyConditionExpression: 'pk = :pk AND sk > :sk',
+      ExpressionAttributeValues: {
+        ':pk': streamId,
+        ':sk': startKey,
+      },
       ScanIndexForward: true, // Ascending order
       Limit: limit + 1, // Fetch one extra to check if there's a next page
     })
   );
 
-  const items = (result.Items || []).filter((item) => item.sk !== META_SK) as EventRecord[];
+  const items = (result.Items || []) as EventRecord[];
 
   // Determine if there's a next page
   const hasMore = items.length > limit;

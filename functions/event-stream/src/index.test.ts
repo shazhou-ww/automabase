@@ -105,10 +105,10 @@ describe('event-stream handler', () => {
   describe('DELETE /streams/{streamId} - deleteStream', () => {
     it('should delete stream and all events', async () => {
       mockSend
-        .mockResolvedValueOnce({ Item: { pk: 'stream1', sk: 'META' } }) // GetCommand
+        .mockResolvedValueOnce({ Item: { pk: 'stream1', sk: '#META' } }) // GetCommand
         .mockResolvedValueOnce({
           Items: [
-            { pk: 'stream1', sk: 'META' },
+            { pk: 'stream1', sk: '#META' },
             { pk: 'stream1', sk: 'event1' },
           ],
         }) // QueryCommand
@@ -148,7 +148,7 @@ describe('event-stream handler', () => {
   describe('POST /streams/{streamId}/events - pushEvent', () => {
     it('should push event and return event id', async () => {
       mockSend
-        .mockResolvedValueOnce({ Item: { pk: 'stream1', sk: 'META' } }) // GetCommand
+        .mockResolvedValueOnce({ Item: { pk: 'stream1', sk: '#META' } }) // GetCommand
         .mockResolvedValueOnce({}); // PutCommand
 
       const event = createEvent({
@@ -184,7 +184,7 @@ describe('event-stream handler', () => {
     });
 
     it('should return error if body field is missing', async () => {
-      mockSend.mockResolvedValueOnce({ Item: { pk: 'stream1', sk: 'META' } });
+      mockSend.mockResolvedValueOnce({ Item: { pk: 'stream1', sk: '#META' } });
 
       const event = createEvent({
         httpMethod: 'POST',
@@ -246,7 +246,7 @@ describe('event-stream handler', () => {
   describe('GET /streams/{streamId}/backtrace - backtrace', () => {
     it('should return events in descending order', async () => {
       mockSend
-        .mockResolvedValueOnce({ Item: { pk: 'stream1', sk: 'META' } }) // GetCommand
+        .mockResolvedValueOnce({ Item: { pk: 'stream1', sk: '#META' } }) // GetCommand
         .mockResolvedValueOnce({
           Items: [
             { pk: 'stream1', sk: 'event3', body: { n: 3 }, createdAt: '2024-01-03' },
@@ -273,7 +273,7 @@ describe('event-stream handler', () => {
 
     it('should return nextAnchor when there are more events', async () => {
       mockSend
-        .mockResolvedValueOnce({ Item: { pk: 'stream1', sk: 'META' } })
+        .mockResolvedValueOnce({ Item: { pk: 'stream1', sk: '#META' } })
         .mockResolvedValueOnce({
           Items: [
             { pk: 'stream1', sk: 'event3', body: { n: 3 }, createdAt: '2024-01-03' },
@@ -316,7 +316,7 @@ describe('event-stream handler', () => {
   describe('GET /streams/{streamId}/replay - replay', () => {
     it('should return events in ascending order', async () => {
       mockSend
-        .mockResolvedValueOnce({ Item: { pk: 'stream1', sk: 'META' } })
+        .mockResolvedValueOnce({ Item: { pk: 'stream1', sk: '#META' } })
         .mockResolvedValueOnce({
           Items: [
             { pk: 'stream1', sk: 'event1', body: { n: 1 }, createdAt: '2024-01-01' },
