@@ -17,5 +17,5 @@ JsonataEvalFunction:
         Type: Api
         Properties:
           Path: /jsonata-eval
-          Method: GET
+          Method: POST
 

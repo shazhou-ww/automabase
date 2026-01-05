@@ -1,18 +1,44 @@
-import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import jsonata from 'jsonata';
+
+interface RequestBody {
+  data: unknown;
+  function: string;
+}
 
 export const handler = async (
-  event: APIGatewayProxyEvent,
-  context: Context
+  event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  console.log('Event:', JSON.stringify(event, null, 2));
-  console.log('Context:', JSON.stringify(context, null, 2));
+  try {
+    if (!event.body) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Request body is required' })
+      };
+    }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      message: 'Hello from jsonata-eval',
-      requestId: context.awsRequestId
-    })
-  };
+    const body: RequestBody = JSON.parse(event.body);
+
+    if (body.function === undefined || body.function === null) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'function is required' })
+      };
+    }
+
+    const expression = jsonata(body.function);
+    const result = await expression.evaluate(body.data);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ data: result })
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: message })
+    };
+  }
 };
 

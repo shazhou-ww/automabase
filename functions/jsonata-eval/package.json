@@ -11,7 +11,8 @@
     "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/index.js --external:\"@aws-sdk/*\" --minify --sourcemap",
     "clean": "rimraf dist"
   },
-  "dependencies": {},
+  "dependencies": {
+    "jsonata": "^2.1.0"
+  },
   "devDependencies": {}
 }
-
