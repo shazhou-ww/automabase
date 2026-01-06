@@ -17,16 +17,15 @@ import { fileURLToPath } from 'node:url';
 const __dirname = (import.meta as { dir?: string }).dir || dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
 
-type CreateType = 'function' | 'package' | 'app:react' | 'app:elysia';
-type TargetType = 'function' | 'package' | 'app';
+type CreateType = 'function' | 'package' | 'webapp' | 'service';
 
-const validTypes = ['function', 'package', 'app:react', 'app:elysia'];
+const validTypes = ['function', 'package', 'webapp', 'service'];
 
 const type = process.argv[2] as CreateType;
 const name = process.argv[3];
 
 if (!type || !validTypes.includes(type)) {
-  console.error('Usage: bun scripts/create.ts <function|package|app:react|app:elysia> <name>');
+  console.error('Usage: bun scripts/create.ts <function|package|webapp|service> <name>');
   process.exit(1);
 }
 
@@ -36,21 +35,29 @@ if (!name) {
 }
 
 // Determine target directory and template directory
-const isAppType = type.startsWith('app:');
-const targetType: TargetType = isAppType ? 'app' : (type as TargetType);
-const templateName = isAppType ? type.replace(':', '-') : type; // app:react -> app-react
+const targetDirMap: Record<CreateType, string> = {
+  function: 'functions',
+  package: 'packages',
+  webapp: 'webapps',
+  service: 'services',
+};
 
-const targetDir = join(rootDir, `${targetType}s`, name);
-const templateDir = join(rootDir, 'templates', templateName);
+const typeLabelMap: Record<CreateType, string> = {
+  function: 'Function',
+  package: 'Package',
+  webapp: 'Webapp (React)',
+  service: 'Service (Elysia)',
+};
+
+const targetDir = join(rootDir, targetDirMap[type], name);
+const templateDir = join(rootDir, 'templates', type);
 
 if (existsSync(targetDir)) {
-  const typeLabel = targetType === 'function' ? 'Function' : targetType === 'package' ? 'Package' : 'App';
-  console.error(`${typeLabel} ${name} already exists!`);
+  console.error(`${typeLabelMap[type]} ${name} already exists!`);
   process.exit(1);
 }
 
-const appTypeLabel = type === 'app:react' ? 'React' : type === 'app:elysia' ? 'Elysia' : '';
-console.log(`Creating ${targetType}${appTypeLabel ? ` (${appTypeLabel})` : ''}: ${name}...`);
+console.log(`Creating ${typeLabelMap[type]}: ${name}...`);
 
 // Copy directory recursively (cross-platform)
 function copyDir(src: string, dest: string): void {
@@ -135,16 +142,16 @@ if (type === 'function') {
   console.log(`Next steps:`);
   console.log(`  cd packages/${name}`);
   console.log(`  bun install`);
-} else if (type === 'app:react') {
-  console.log(`React app ${name} created successfully!`);
+} else if (type === 'webapp') {
+  console.log(`Webapp (React) ${name} created successfully!`);
   console.log(`Next steps:`);
-  console.log(`  cd apps/${name}`);
+  console.log(`  cd webapps/${name}`);
   console.log(`  bun install`);
   console.log(`  bun run dev`);
-} else if (type === 'app:elysia') {
-  console.log(`Elysia app ${name} created successfully!`);
+} else if (type === 'service') {
+  console.log(`Service (Elysia) ${name} created successfully!`);
   console.log(`Next steps:`);
-  console.log(`  cd apps/${name}`);
+  console.log(`  cd services/${name}`);
   console.log(`  bun install`);
   console.log(`  bun run dev`);
 }
