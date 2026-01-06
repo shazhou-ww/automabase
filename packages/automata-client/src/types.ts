@@ -12,6 +12,9 @@ export interface ApiResponse<T> {
 // Automata metadata
 export interface AutomataMeta {
   id: string;
+  name?: string;
+  userId: string;
+  tenantId: string;
   version: string;
   state: unknown;
   initialState: unknown;
@@ -43,6 +46,31 @@ export interface CreateAutomataRequest {
   eventSchemas: Record<string, unknown>;
   initialState: unknown;
   transition: string;
+  /** Optional name for the automata */
+  name?: string;
+}
+
+// Automata list item (returned by list API)
+export interface AutomataListItem {
+  id: string;
+  name?: string;
+  version: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// List automata result
+export interface ListAutomataResult {
+  automatas: AutomataListItem[];
+  nextAnchor: string | null;
+}
+
+// List automata options
+export interface ListAutomataOptions {
+  /** Maximum number of items to return (default: 100) */
+  limit?: number;
+  /** Anchor for pagination (createdAt of last item) */
+  anchor?: string;
 }
 
 // Post event request

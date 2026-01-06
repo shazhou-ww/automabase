@@ -61,6 +61,9 @@ export type {
   StoredAutomata,
   UseAutomataOptions,
   UseAutomataResult,
+  AutomataListItem,
+  ListAutomataResult,
+  ListAutomataOptions,
 } from './types';
 
 // Client (REST API + WebSocket)

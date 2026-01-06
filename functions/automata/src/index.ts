@@ -10,12 +10,28 @@ import {
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import jsonata from 'jsonata';
 import { ulid } from 'ulid'; // Still used for automataId
+import {
+  type JwtConfig,
+  type VerifiedToken,
+  verifyJwt,
+  extractBearerToken,
+  AuthError,
+} from '@automabase/automata-auth';
 
 // Constants
 const TABLE_NAME = process.env.AUTOMATA_TABLE || 'automata';
 const META_SK = '#META';
 const MAX_BATCH_SIZE = 100; // Maximum events per query
 const VERSION_ZERO = '000000'; // Initial version (6-digit base62, ~568 billion max)
+const TENANT_USER_INDEX = 'tenant-user-index'; // GSI for listing automata by tenant+user
+
+// JWT configuration from environment variables
+const jwtConfig: JwtConfig = {
+  jwksUri: process.env.JWKS_URI || '',
+  issuer: process.env.JWT_ISSUER || '',
+  audience: process.env.JWT_AUDIENCE || '',
+  tenantIdClaim: process.env.TENANT_ID_CLAIM || 'tenant_id',
+};
 
 // Base62 charset (sortable: 0-9A-Za-z)
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -74,10 +90,106 @@ const error = (message: string): APIGatewayProxyResult => ({
   body: JSON.stringify({ success: false, error: message }),
 });
 
+// Response helpers for auth errors
+const unauthorized = (message: string): APIGatewayProxyResult => ({
+  statusCode: 401,
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ success: false, error: message }),
+});
+
+const forbidden = (message: string): APIGatewayProxyResult => ({
+  statusCode: 403,
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ success: false, error: message }),
+});
+
+/**
+ * Verify JWT from Authorization header
+ */
+async function verifyAuth(event: APIGatewayProxyEvent): Promise<VerifiedToken | APIGatewayProxyResult> {
+  const authHeader = event.headers.Authorization || event.headers.authorization;
+  const token = extractBearerToken(authHeader);
+
+  if (!token) {
+    return unauthorized('Missing or invalid Authorization header');
+  }
+
+  try {
+    return await verifyJwt(token, jwtConfig);
+  } catch (err: unknown) {
+    if (err instanceof AuthError) {
+      return unauthorized(err.message);
+    }
+    return unauthorized('Token verification failed');
+  }
+}
+
+/**
+ * Check if auth result is an error response
+ */
+function isAuthError(result: VerifiedToken | APIGatewayProxyResult): result is APIGatewayProxyResult {
+  return 'statusCode' in result;
+}
+
+/**
+ * Verify that the user owns the automata and belongs to the same tenant
+ */
+function verifyOwnership(
+  meta: AutomataMeta,
+  auth: VerifiedToken
+): APIGatewayProxyResult | null {
+  if (meta.tenantId !== auth.tenantId) {
+    return forbidden('Access denied: tenant mismatch');
+  }
+  if (meta.userId !== auth.userId) {
+    return forbidden('Access denied: not the owner');
+  }
+  return null; // No error, ownership verified
+}
+
+/**
+ * Helper to get automata and verify ownership
+ */
+async function getAutomataWithAuth(
+  automataId: string,
+  auth: VerifiedToken
+): Promise<AutomataMeta | APIGatewayProxyResult> {
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: TABLE_NAME,
+      Key: { pk: automataId, sk: META_SK },
+    })
+  );
+
+  if (!result.Item) {
+    return error('Automata not found');
+  }
+
+  const meta = result.Item as AutomataMeta;
+  const ownershipError = verifyOwnership(meta, auth);
+  if (ownershipError) {
+    return ownershipError;
+  }
+
+  return meta;
+}
+
+/**
+ * Check if result is an error response
+ */
+function isErrorResponse(result: AutomataMeta | APIGatewayProxyResult): result is APIGatewayProxyResult {
+  return 'statusCode' in result;
+}
+
 // Interfaces
 interface AutomataMeta {
   pk: string;
   sk: typeof META_SK;
+  userId: string; // Owner of the automata
+  tenantId: string; // Tenant ID
+  name?: string; // Optional name
+  gsi1pk: string; // "TENANT#tenantId#USER#userId" for tenant-user-index
+  gsi1sk: string; // createdAt for sorting
   stateSchema: unknown; // JSONSchema for state validation
   eventSchemas: Record<string, unknown>; // event type -> JSONSchema
   transition: string; // JSONata expression
@@ -113,9 +225,15 @@ interface BacktraceReplayResult {
 /**
  * Create a new automata
  * POST /automata
- * Body: { stateSchema: object, eventSchemas: object, initialState: any, transition: string }
+ * Body: { stateSchema: object, eventSchemas: object, initialState: any, transition: string, name?: string }
  */
 async function createAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Verify JWT
+  const auth = await verifyAuth(event);
+  if (isAuthError(auth)) {
+    return auth;
+  }
+
   if (!event.body) {
     return error('Request body is required');
   }
@@ -125,6 +243,7 @@ async function createAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     eventSchemas?: Record<string, unknown>;
     initialState?: unknown;
     transition?: string;
+    name?: string;
   };
   try {
     body = JSON.parse(event.body);
@@ -159,6 +278,11 @@ async function createAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayPr
   const item: AutomataMeta = {
     pk: automataId,
     sk: META_SK,
+    userId: auth.userId,
+    tenantId: auth.tenantId,
+    name: body.name,
+    gsi1pk: `TENANT#${auth.tenantId}#USER#${auth.userId}`,
+    gsi1sk: now, // createdAt for sorting
     stateSchema: body.stateSchema,
     eventSchemas: body.eventSchemas,
     transition: body.transition,
@@ -185,25 +309,28 @@ async function createAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayPr
  * GET /automata/{automataId}
  */
 async function getAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Verify JWT
+  const auth = await verifyAuth(event);
+  if (isAuthError(auth)) {
+    return auth;
+  }
+
   const automataId = event.pathParameters?.automataId;
   if (!automataId) {
     return error('automataId is required');
   }
 
-  const result = await docClient.send(
-    new GetCommand({
-      TableName: TABLE_NAME,
-      Key: { pk: automataId, sk: META_SK },
-    })
-  );
-
-  if (!result.Item) {
-    return error('Automata not found');
+  // Get automata and verify ownership
+  const meta = await getAutomataWithAuth(automataId, auth);
+  if (isErrorResponse(meta)) {
+    return meta;
   }
 
-  const meta = result.Item as AutomataMeta;
   return success({
     id: automataId,
+    name: meta.name,
+    userId: meta.userId,
+    tenantId: meta.tenantId,
     version: meta.version,
     state: meta.currentState,
     initialState: meta.initialState,
@@ -220,21 +347,21 @@ async function getAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayProxy
  * DELETE /automata/{automataId}
  */
 async function deleteAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Verify JWT
+  const auth = await verifyAuth(event);
+  if (isAuthError(auth)) {
+    return auth;
+  }
+
   const automataId = event.pathParameters?.automataId;
   if (!automataId) {
     return error('automataId is required');
   }
 
-  // Check if automata exists
-  const automataResult = await docClient.send(
-    new GetCommand({
-      TableName: TABLE_NAME,
-      Key: { pk: automataId, sk: META_SK },
-    })
-  );
-
-  if (!automataResult.Item) {
-    return error('Automata not found');
+  // Get automata and verify ownership
+  const meta = await getAutomataWithAuth(automataId, auth);
+  if (isErrorResponse(meta)) {
+    return meta;
   }
 
   // Query all items for this automata and delete them
@@ -271,6 +398,12 @@ async function deleteAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayPr
  * Body: { type: string, data: any }
  */
 async function postEvent(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Verify JWT
+  const auth = await verifyAuth(event);
+  if (isAuthError(auth)) {
+    return auth;
+  }
+
   const automataId = event.pathParameters?.automataId;
   if (!automataId) {
     return error('automataId is required');
@@ -291,19 +424,11 @@ async function postEvent(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRe
     return error('type is required');
   }
 
-  // Get automata metadata
-  const automataResult = await docClient.send(
-    new GetCommand({
-      TableName: TABLE_NAME,
-      Key: { pk: automataId, sk: META_SK },
-    })
-  );
-
-  if (!automataResult.Item) {
-    return error('Automata not found');
+  // Get automata and verify ownership
+  const meta = await getAutomataWithAuth(automataId, auth);
+  if (isErrorResponse(meta)) {
+    return meta;
   }
-
-  const meta = automataResult.Item as AutomataMeta;
 
   // Check if event type is valid
   if (!meta.eventSchemas[requestBody.type]) {
@@ -378,6 +503,12 @@ async function postEvent(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRe
  * GET /automata/{automataId}/events/{version}
  */
 async function getEvent(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Verify JWT
+  const auth = await verifyAuth(event);
+  if (isAuthError(auth)) {
+    return auth;
+  }
+
   const automataId = event.pathParameters?.automataId;
   const version = event.pathParameters?.version;
 
@@ -386,6 +517,12 @@ async function getEvent(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRes
   }
   if (!version) {
     return error('version is required');
+  }
+
+  // Verify ownership first
+  const meta = await getAutomataWithAuth(automataId, auth);
+  if (isErrorResponse(meta)) {
+    return meta;
   }
 
   const result = await docClient.send(
@@ -414,6 +551,12 @@ async function getEvent(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRes
  * GET /automata/{automataId}/backtrace?anchor={version}&limit={number}
  */
 async function backtrace(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Verify JWT
+  const auth = await verifyAuth(event);
+  if (isAuthError(auth)) {
+    return auth;
+  }
+
   const automataId = event.pathParameters?.automataId;
   if (!automataId) {
     return error('automataId is required');
@@ -430,19 +573,11 @@ async function backtrace(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRe
     return error('Invalid limit parameter');
   }
 
-  // Check if automata exists and get current version
-  const automataResult = await docClient.send(
-    new GetCommand({
-      TableName: TABLE_NAME,
-      Key: { pk: automataId, sk: META_SK },
-    })
-  );
-
-  if (!automataResult.Item) {
-    return error('Automata not found');
+  // Get automata and verify ownership
+  const meta = await getAutomataWithAuth(automataId, auth);
+  if (isErrorResponse(meta)) {
+    return meta;
   }
-
-  const meta = automataResult.Item as AutomataMeta;
 
   // Determine the starting point (use anchor or current version)
   const endKey = anchor || meta.version;
@@ -494,6 +629,12 @@ async function backtrace(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRe
  * GET /automata/{automataId}/replay?anchor={version}&limit={number}
  */
 async function replay(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Verify JWT
+  const auth = await verifyAuth(event);
+  if (isAuthError(auth)) {
+    return auth;
+  }
+
   const automataId = event.pathParameters?.automataId;
   if (!automataId) {
     return error('automataId is required');
@@ -510,16 +651,10 @@ async function replay(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResul
     return error('Invalid limit parameter');
   }
 
-  // Check if automata exists
-  const automataResult = await docClient.send(
-    new GetCommand({
-      TableName: TABLE_NAME,
-      Key: { pk: automataId, sk: META_SK },
-    })
-  );
-
-  if (!automataResult.Item) {
-    return error('Automata not found');
+  // Get automata and verify ownership
+  const meta = await getAutomataWithAuth(automataId, auth);
+  if (isErrorResponse(meta)) {
+    return meta;
   }
 
   // Start from anchor (exclusive) or from version "000001"
@@ -565,6 +700,82 @@ async function replay(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResul
 }
 
 /**
+ * List result for automata
+ */
+interface ListAutomataResult {
+  automatas: Array<{
+    id: string;
+    name?: string;
+    version: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  nextAnchor: string | null;
+}
+
+/**
+ * List all automata for the current user in the current tenant
+ * GET /automata?limit={number}&anchor={createdAt}
+ */
+async function listAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Verify JWT
+  const auth = await verifyAuth(event);
+  if (isAuthError(auth)) {
+    return auth;
+  }
+
+  const anchor = event.queryStringParameters?.anchor;
+  const limitParam = event.queryStringParameters?.limit;
+  const limit = Math.min(
+    limitParam ? Number.parseInt(limitParam, 10) : MAX_BATCH_SIZE,
+    MAX_BATCH_SIZE
+  );
+
+  if (Number.isNaN(limit) || limit < 1) {
+    return error('Invalid limit parameter');
+  }
+
+  // Build GSI key for tenant+user
+  const gsi1pk = `TENANT#${auth.tenantId}#USER#${auth.userId}`;
+
+  // Query using GSI, sorted by createdAt (gsi1sk) in descending order (newest first)
+  const result = await docClient.send(
+    new QueryCommand({
+      TableName: TABLE_NAME,
+      IndexName: TENANT_USER_INDEX,
+      KeyConditionExpression: anchor
+        ? 'gsi1pk = :pk AND gsi1sk < :anchor'
+        : 'gsi1pk = :pk',
+      ExpressionAttributeValues: anchor
+        ? { ':pk': gsi1pk, ':anchor': anchor }
+        : { ':pk': gsi1pk },
+      ScanIndexForward: false, // Descending order (newest first)
+      Limit: limit + 1, // Fetch one extra to check if there's a next page
+    })
+  );
+
+  const items = (result.Items || []) as AutomataMeta[];
+
+  // Determine if there's a next page
+  const hasMore = items.length > limit;
+  const automatasToReturn = hasMore ? items.slice(0, limit) : items;
+  const nextAnchor = hasMore ? automatasToReturn[automatasToReturn.length - 1].gsi1sk : null;
+
+  const data: ListAutomataResult = {
+    automatas: automatasToReturn.map((item) => ({
+      id: item.pk,
+      name: item.name,
+      version: item.version,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    })),
+    nextAnchor,
+  };
+
+  return success(data);
+}
+
+/**
  * Main handler - routes requests to appropriate handlers
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -573,6 +784,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const path = event.resource;
 
     // Route based on method and path
+    if (method === 'GET' && path === '/automata') {
+      return await listAutomata(event);
+    }
+
     if (method === 'POST' && path === '/automata') {
       return await createAutomata(event);
     }

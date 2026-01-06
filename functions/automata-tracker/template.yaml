@@ -32,6 +32,10 @@ AutomataTrackerFunction:
         AUTOMATA_TABLE: !Ref AutomataTable
         CONNECTIONS_TABLE: !Ref AutomataConnectionsTable
         WEBSOCKET_ENDPOINT: !Sub "https://${AutomataTrackerWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+        JWKS_URI: ${Env:JWKS_URI,}
+        JWT_ISSUER: ${Env:JWT_ISSUER,}
+        JWT_AUDIENCE: ${Env:JWT_AUDIENCE,}
+        TENANT_ID_CLAIM: ${Env:TENANT_ID_CLAIM,tenant_id}
     Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref AutomataTable

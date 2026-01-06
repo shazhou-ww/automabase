@@ -64,6 +64,7 @@
       "name": "@automabase/function-automata",
       "version": "1.0.0",
       "dependencies": {
+        "@automabase/automata-auth": "workspace:*",
         "jsonata": "^2.1.0",
         "ulid": "^2.3.0",
       },
@@ -76,6 +77,9 @@
     "functions/automata-tracker": {
       "name": "@automabase/function-automata-tracker",
       "version": "1.0.0",
+      "dependencies": {
+        "@automabase/automata-auth": "workspace:*",
+      },
       "devDependencies": {
         "@aws-sdk/client-apigatewaymanagementapi": "^3.700.0",
         "@aws-sdk/client-dynamodb": "^3.700.0",
@@ -88,6 +92,18 @@
       "version": "1.0.0",
       "dependencies": {
         "jsonata": "^2.1.0",
+      },
+    },
+    "packages/automata-auth": {
+      "name": "@automabase/automata-auth",
+      "version": "1.0.0",
+      "dependencies": {
+        "jose": "^5.2.0",
+      },
+      "devDependencies": {
+        "@types/node": "^20.11.0",
+        "typescript": "^5.3.3",
+        "vitest": "^1.2.0",
       },
     },
     "packages/automata-client": {
@@ -127,6 +143,8 @@
     "@ampproject/remapping": ["@ampproject/remapping@2.3.0", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw=="],
 
     "@automabase/app-sample-counter": ["@automabase/app-sample-counter@workspace:apps/sample-counter"],
+
+    "@automabase/automata-auth": ["@automabase/automata-auth@workspace:packages/automata-auth"],
 
     "@automabase/automata-client": ["@automabase/automata-client@workspace:packages/automata-client"],
 
@@ -677,6 +695,8 @@
     "istanbul-lib-source-maps": ["istanbul-lib-source-maps@5.0.6", "", { "dependencies": { "@jridgewell/trace-mapping": "^0.3.23", "debug": "^4.1.1", "istanbul-lib-coverage": "^3.0.0" } }, "sha512-yg2d+Em4KizZC5niWhQaIomgf5WlL4vOOjZ5xGCmF8SnPE/mDWWXgvRExdcpCgh9lLRRa1/fSYp2ymmbJ1pI+A=="],
 
     "istanbul-reports": ["istanbul-reports@3.2.0", "", { "dependencies": { "html-escaper": "^2.0.0", "istanbul-lib-report": "^3.0.0" } }, "sha512-HGYWWS/ehqTV3xN10i23tkPkpH46MLCIMFNCaaKNavAXTF1RkqxawEPtnjnGZ6XKSInBKkiOA5BKS+aZiY3AvA=="],
+
+    "jose": ["jose@5.10.0", "", {}, "sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg=="],
 
     "js-tokens": ["js-tokens@9.0.1", "", {}, "sha512-mxa9E9ITFOt0ban3j6L5MpjwegGz6lBQmM1IJkWeBZGcMxto50+eWdjC/52xDbS2vy0k7vIMK0Fe2wfL9OQSpQ=="],
 

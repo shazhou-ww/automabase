@@ -16,12 +16,27 @@ import type {
   APIGatewayProxyWebsocketEventV2,
   DynamoDBStreamEvent,
 } from 'aws-lambda';
+import {
+  type JwtConfig,
+  type VerifiedToken,
+  verifyJwt,
+  AuthError,
+} from '@automabase/automata-auth';
 
 // Constants
 const AUTOMATA_TABLE = process.env.AUTOMATA_TABLE || 'automata';
 const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE || 'automata-connections';
 const WEBSOCKET_ENDPOINT = process.env.WEBSOCKET_ENDPOINT || '';
 const META_SK = '#META';
+const CONNECTION_AUTH_SK = '#AUTH'; // SK for connection auth info
+
+// JWT configuration from environment variables
+const jwtConfig: JwtConfig = {
+  jwksUri: process.env.JWKS_URI || '',
+  issuer: process.env.JWT_ISSUER || '',
+  audience: process.env.JWT_AUDIENCE || '',
+  tenantIdClaim: process.env.TENANT_ID_CLAIM || 'tenant_id',
+};
 
 // DynamoDB client
 const isLocal = process.env.AWS_SAM_LOCAL === 'true';
@@ -37,6 +52,27 @@ interface ConnectionRecord {
   pk: string; // automataId
   sk: string; // connectionId
   subscribedAt: string;
+}
+
+// Connection auth record structure
+// pk: connectionId, sk: #AUTH
+// Stores the authenticated user info for the connection
+interface ConnectionAuthRecord {
+  pk: string; // connectionId
+  sk: typeof CONNECTION_AUTH_SK;
+  userId: string;
+  tenantId: string;
+  connectedAt: string;
+}
+
+// Automata metadata (for ownership check)
+interface AutomataMeta {
+  pk: string;
+  userId: string;
+  tenantId: string;
+  currentState: unknown;
+  version: string;
+  updatedAt: string;
 }
 
 // Message types sent to clients
@@ -107,6 +143,7 @@ async function sendToConnection(
 
 /**
  * Handle $connect route
+ * Expects JWT token in query string: ?token=xxx
  */
 async function handleConnect(
   event: APIGatewayProxyWebsocketEventV2
@@ -114,7 +151,44 @@ async function handleConnect(
   const connectionId = event.requestContext.connectionId;
   console.log(`New connection: ${connectionId}`);
 
-  // We don't store the connection until they subscribe to an automata
+  // Get token from query string (available in $connect event via requestContext)
+  // Note: For WebSocket $connect, query params are in requestContext via the request
+  const queryParams = (event as unknown as { queryStringParameters?: Record<string, string> }).queryStringParameters;
+  const token = queryParams?.token;
+  if (!token) {
+    console.log(`Connection ${connectionId} rejected: missing token`);
+    return { statusCode: 401, body: 'Missing token' };
+  }
+
+  // Verify JWT
+  let auth: VerifiedToken;
+  try {
+    auth = await verifyJwt(token, jwtConfig);
+  } catch (err: unknown) {
+    if (err instanceof AuthError) {
+      console.log(`Connection ${connectionId} rejected: ${err.message}`);
+      return { statusCode: 401, body: err.message };
+    }
+    console.log(`Connection ${connectionId} rejected: token verification failed`);
+    return { statusCode: 401, body: 'Token verification failed' };
+  }
+
+  // Store connection auth info
+  const now = new Date().toISOString();
+  await docClient.send(
+    new PutCommand({
+      TableName: CONNECTIONS_TABLE,
+      Item: {
+        pk: connectionId,
+        sk: CONNECTION_AUTH_SK,
+        userId: auth.userId,
+        tenantId: auth.tenantId,
+        connectedAt: now,
+      } as ConnectionAuthRecord,
+    })
+  );
+
+  console.log(`Connection ${connectionId} authenticated: userId=${auth.userId}, tenantId=${auth.tenantId}`);
   return { statusCode: 200, body: 'Connected' };
 }
 
@@ -149,11 +223,32 @@ async function handleDisconnect(
         })
       );
     }
+
+    // Also delete the auth record for this connection
+    await docClient.send(
+      new DeleteCommand({
+        TableName: CONNECTIONS_TABLE,
+        Key: { pk: connectionId, sk: CONNECTION_AUTH_SK },
+      })
+    );
   } catch (err) {
     console.error('Error cleaning up subscriptions:', err);
   }
 
   return { statusCode: 200, body: 'Disconnected' };
+}
+
+/**
+ * Get connection auth info
+ */
+async function getConnectionAuth(connectionId: string): Promise<ConnectionAuthRecord | null> {
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: CONNECTIONS_TABLE,
+      Key: { pk: connectionId, sk: CONNECTION_AUTH_SK },
+    })
+  );
+  return (result.Item as ConnectionAuthRecord) || null;
 }
 
 /**
@@ -165,6 +260,16 @@ async function handleSubscribe(
   automataId: string
 ): Promise<APIGatewayProxyResultV2> {
   const connectionId = event.requestContext.connectionId;
+
+  // Get connection auth info
+  const auth = await getConnectionAuth(connectionId);
+  if (!auth) {
+    await sendToConnection(connectionId, {
+      type: 'error',
+      message: 'Connection not authenticated',
+    });
+    return { statusCode: 401, body: 'Not authenticated' };
+  }
 
   // Validate automata exists
   const automataResult = await docClient.send(
@@ -182,7 +287,23 @@ async function handleSubscribe(
     return { statusCode: 400, body: 'Automata not found' };
   }
 
-  const meta = automataResult.Item;
+  const meta = automataResult.Item as AutomataMeta;
+
+  // Verify ownership: user must be owner and tenant must match
+  if (meta.tenantId !== auth.tenantId) {
+    await sendToConnection(connectionId, {
+      type: 'error',
+      message: 'Access denied: tenant mismatch',
+    });
+    return { statusCode: 403, body: 'Access denied' };
+  }
+  if (meta.userId !== auth.userId) {
+    await sendToConnection(connectionId, {
+      type: 'error',
+      message: 'Access denied: not the owner',
+    });
+    return { statusCode: 403, body: 'Access denied' };
+  }
 
   // Store subscription
   const now = new Date().toISOString();

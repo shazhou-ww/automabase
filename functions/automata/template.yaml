@@ -13,11 +13,20 @@ AutomataFunction:
       Variables:
         NODE_ENV: ${Env:NODE_ENV,prod}
         AUTOMATA_TABLE: !Ref AutomataTable
+        JWKS_URI: ${Env:JWKS_URI,}
+        JWT_ISSUER: ${Env:JWT_ISSUER,}
+        JWT_AUDIENCE: ${Env:JWT_AUDIENCE,}
+        TENANT_ID_CLAIM: ${Env:TENANT_ID_CLAIM,tenant_id}
     Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref AutomataTable
     Events:
       # Automata operations
+      ListAutomata:
+        Type: Api
+        Properties:
+          Path: /automata
+          Method: GET
       CreateAutomata:
         Type: Api
         Properties:
@@ -66,10 +75,23 @@ AutomataTable:
         AttributeType: S
       - AttributeName: sk
         AttributeType: S
+      - AttributeName: gsi1pk
+        AttributeType: S
+      - AttributeName: gsi1sk
+        AttributeType: S
     KeySchema:
       - AttributeName: pk
         KeyType: HASH
       - AttributeName: sk
         KeyType: RANGE
+    GlobalSecondaryIndexes:
+      - IndexName: tenant-user-index
+        KeySchema:
+          - AttributeName: gsi1pk
+            KeyType: HASH
+          - AttributeName: gsi1sk
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
     StreamSpecification:
       StreamViewType: NEW_IMAGE

@@ -15,6 +15,8 @@ import type {
   WebSocketMessage,
   SubscribedMessage,
   StateUpdateMessage,
+  ListAutomataResult,
+  ListAutomataOptions,
 } from './types';
 
 export interface AutomataClientConfig {
@@ -26,6 +28,8 @@ export interface AutomataClientConfig {
   fetch?: typeof fetch;
   /** Optional headers to include in all requests */
   headers?: Record<string, string>;
+  /** Function to get JWT token for authentication (called before each request) */
+  getToken?: () => string | Promise<string>;
   /** Auto-reconnect WebSocket on disconnect (default: true) */
   autoReconnect?: boolean;
   /** Reconnect interval in ms (default: 3000) */
@@ -52,6 +56,7 @@ export class AutomataClient {
   private baseUrl: string;
   private fetchFn: typeof fetch;
   private headers: Record<string, string>;
+  private getTokenFn?: () => string | Promise<string>;
 
   // WebSocket tracking
   private wsUrl?: string;
@@ -74,6 +79,7 @@ export class AutomataClient {
       'Content-Type': 'application/json',
       ...config.headers,
     };
+    this.getTokenFn = config.getToken;
     this.wsUrl = config.wsUrl;
     this.autoReconnect = config.autoReconnect ?? true;
     this.reconnectInterval = config.reconnectInterval ?? 3000;
@@ -82,14 +88,30 @@ export class AutomataClient {
 
   // ============ REST API Methods ============
 
+  /**
+   * Get headers with Authorization token if getToken is configured
+   */
+  private async getRequestHeaders(): Promise<Record<string, string>> {
+    if (!this.getTokenFn) {
+      return this.headers;
+    }
+
+    const token = await this.getTokenFn();
+    return {
+      ...this.headers,
+      Authorization: `Bearer ${token}`,
+    };
+  }
+
   private async request<T>(
     method: string,
     path: string,
     body?: unknown
   ): Promise<T> {
+    const headers = await this.getRequestHeaders();
     const response = await this.fetchFn(`${this.baseUrl}${path}`, {
       method,
-      headers: this.headers,
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     });
 
@@ -181,6 +203,20 @@ export class AutomataClient {
     return this.request<EventListResult>('GET', path);
   }
 
+  /**
+   * List all automata for the current user
+   */
+  async list(options?: ListAutomataOptions): Promise<ListAutomataResult> {
+    const params = new URLSearchParams();
+    if (options?.anchor) params.set('anchor', options.anchor);
+    if (options?.limit) params.set('limit', String(options.limit));
+
+    const query = params.toString();
+    const path = `/automata${query ? `?${query}` : ''}`;
+
+    return this.request<ListAutomataResult>('GET', path);
+  }
+
   // ============ WebSocket Tracking Methods ============
 
   /**
@@ -206,19 +242,19 @@ export class AutomataClient {
 
   /**
    * Connect to WebSocket server for real-time tracking
+   * If getToken is configured, token will be appended to WebSocket URL as query parameter
    */
-  connect(): Promise<void> {
+  async connect(): Promise<void> {
     if (!this.wsUrl) {
-      return Promise.reject(new Error('WebSocket URL not configured'));
+      throw new Error('WebSocket URL not configured');
     }
 
-    return new Promise((resolve, reject) => {
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        resolve();
-        return;
-      }
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      return;
+    }
 
-      if (this.isConnecting) {
+    if (this.isConnecting) {
+      return new Promise((resolve, reject) => {
         const checkConnection = () => {
           if (this.ws?.readyState === WebSocket.OPEN) {
             resolve();
@@ -229,14 +265,24 @@ export class AutomataClient {
           }
         };
         checkConnection();
-        return;
-      }
+      });
+    }
 
-      this.isConnecting = true;
-      this.shouldReconnect = true;
+    this.isConnecting = true;
+    this.shouldReconnect = true;
 
+    // Build WebSocket URL with token if getToken is configured
+    let wsUrlWithToken = this.wsUrl;
+    if (this.getTokenFn) {
+      const token = await this.getTokenFn();
+      const url = new URL(this.wsUrl);
+      url.searchParams.set('token', token);
+      wsUrlWithToken = url.toString();
+    }
+
+    return new Promise((resolve, reject) => {
       try {
-        this.ws = new WebSocket(this.wsUrl!);
+        this.ws = new WebSocket(wsUrlWithToken);
       } catch (err) {
         this.isConnecting = false;
         reject(err);
