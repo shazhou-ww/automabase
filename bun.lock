@@ -43,6 +43,23 @@
         "vitest": "^1.6.1",
       },
     },
+    "apps/sample-counter": {
+      "name": "@automabase/app-sample-counter",
+      "version": "1.0.0",
+      "dependencies": {
+        "@automabase/automata-client": "workspace:*",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+      },
+      "devDependencies": {
+        "@types/react": "^18.2.43",
+        "@types/react-dom": "^18.2.17",
+        "@vitejs/plugin-react": "^4.2.1",
+        "typescript": "^5.3.3",
+        "vite": "^5.0.8",
+        "vitest": "^1.2.0",
+      },
+    },
     "functions/automata": {
       "name": "@automabase/function-automata",
       "version": "1.0.0",
@@ -120,6 +137,8 @@
   },
   "packages": {
     "@ampproject/remapping": ["@ampproject/remapping@2.3.0", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw=="],
+
+    "@automabase/app-sample-counter": ["@automabase/app-sample-counter@workspace:apps/sample-counter"],
 
     "@automabase/automata-client": ["@automabase/automata-client@workspace:packages/automata-client"],
 

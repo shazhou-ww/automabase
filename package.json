@@ -6,6 +6,7 @@
   "workspaces": [
     "functions/*",
     "packages/*",
+    "apps/*",
     "webapps/*",
     "services/*"
   ],

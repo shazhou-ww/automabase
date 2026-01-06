@@ -324,7 +324,8 @@ async function postEvent(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRe
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Transition error:', err);
+    const message = err instanceof Error ? err.message : String(err);
     return error(`Transition error: ${message}`);
   }
 
