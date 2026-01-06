@@ -1,0 +1,149 @@
+# SAM Template for automata-tracker function
+# WebSocket API for real-time automata state tracking via DynamoDB Streams
+
+# WebSocket API Gateway
+AutomataTrackerWebSocketApi:
+  Type: AWS::ApiGatewayV2::Api
+  Properties:
+    Name: automata-tracker-websocket
+    ProtocolType: WEBSOCKET
+    RouteSelectionExpression: "$request.body.action"
+
+# WebSocket Stages
+AutomataTrackerWebSocketStage:
+  Type: AWS::ApiGatewayV2::Stage
+  Properties:
+    ApiId: !Ref AutomataTrackerWebSocketApi
+    StageName: prod
+    AutoDeploy: true
+
+# Lambda function for WebSocket handlers and Stream processing
+AutomataTrackerFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    CodeUri: functions/automata-tracker/dist
+    Handler: index.handler
+    Runtime: nodejs20.x
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        NODE_ENV: ${Env:NODE_ENV,prod}
+        AUTOMATA_TABLE: !Ref AutomataTable
+        CONNECTIONS_TABLE: !Ref AutomataConnectionsTable
+        WEBSOCKET_ENDPOINT: !Sub "https://${AutomataTrackerWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+    Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref AutomataTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref AutomataConnectionsTable
+      - Statement:
+          - Effect: Allow
+            Action:
+              - execute-api:ManageConnections
+            Resource:
+              - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AutomataTrackerWebSocketApi}/*"
+
+# WebSocket Routes
+AutomataTrackerConnectRoute:
+  Type: AWS::ApiGatewayV2::Route
+  Properties:
+    ApiId: !Ref AutomataTrackerWebSocketApi
+    RouteKey: "$connect"
+    AuthorizationType: NONE
+    Target: !Sub "integrations/${AutomataTrackerConnectIntegration}"
+
+AutomataTrackerDisconnectRoute:
+  Type: AWS::ApiGatewayV2::Route
+  Properties:
+    ApiId: !Ref AutomataTrackerWebSocketApi
+    RouteKey: "$disconnect"
+    Target: !Sub "integrations/${AutomataTrackerDisconnectIntegration}"
+
+AutomataTrackerDefaultRoute:
+  Type: AWS::ApiGatewayV2::Route
+  Properties:
+    ApiId: !Ref AutomataTrackerWebSocketApi
+    RouteKey: "$default"
+    Target: !Sub "integrations/${AutomataTrackerDefaultIntegration}"
+
+# WebSocket Integrations
+AutomataTrackerConnectIntegration:
+  Type: AWS::ApiGatewayV2::Integration
+  Properties:
+    ApiId: !Ref AutomataTrackerWebSocketApi
+    IntegrationType: AWS_PROXY
+    IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AutomataTrackerFunction.Arn}/invocations"
+
+AutomataTrackerDisconnectIntegration:
+  Type: AWS::ApiGatewayV2::Integration
+  Properties:
+    ApiId: !Ref AutomataTrackerWebSocketApi
+    IntegrationType: AWS_PROXY
+    IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AutomataTrackerFunction.Arn}/invocations"
+
+AutomataTrackerDefaultIntegration:
+  Type: AWS::ApiGatewayV2::Integration
+  Properties:
+    ApiId: !Ref AutomataTrackerWebSocketApi
+    IntegrationType: AWS_PROXY
+    IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AutomataTrackerFunction.Arn}/invocations"
+
+# Lambda Permissions for WebSocket API
+AutomataTrackerConnectPermission:
+  Type: AWS::Lambda::Permission
+  Properties:
+    Action: lambda:InvokeFunction
+    FunctionName: !Ref AutomataTrackerFunction
+    Principal: apigateway.amazonaws.com
+    SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AutomataTrackerWebSocketApi}/*/$connect"
+
+AutomataTrackerDisconnectPermission:
+  Type: AWS::Lambda::Permission
+  Properties:
+    Action: lambda:InvokeFunction
+    FunctionName: !Ref AutomataTrackerFunction
+    Principal: apigateway.amazonaws.com
+    SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AutomataTrackerWebSocketApi}/*/$disconnect"
+
+AutomataTrackerDefaultPermission:
+  Type: AWS::Lambda::Permission
+  Properties:
+    Action: lambda:InvokeFunction
+    FunctionName: !Ref AutomataTrackerFunction
+    Principal: apigateway.amazonaws.com
+    SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AutomataTrackerWebSocketApi}/*/$default"
+
+# DynamoDB Stream Event Source (triggered when automata events are created)
+AutomataTrackerStreamMapping:
+  Type: AWS::Lambda::EventSourceMapping
+  Properties:
+    EventSourceArn: !GetAtt AutomataTable.StreamArn
+    FunctionName: !Ref AutomataTrackerFunction
+    StartingPosition: LATEST
+    BatchSize: 10
+    MaximumBatchingWindowInSeconds: 0
+
+# Connections table for WebSocket connection management
+AutomataConnectionsTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: !Sub ${AWS::StackName}-automata-connections
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: pk
+        AttributeType: S
+      - AttributeName: sk
+        AttributeType: S
+    KeySchema:
+      - AttributeName: pk
+        KeyType: HASH
+      - AttributeName: sk
+        KeyType: RANGE
+    GlobalSecondaryIndexes:
+      - IndexName: connectionId-index
+        KeySchema:
+          - AttributeName: sk
+            KeyType: HASH
+        Projection:
+          ProjectionType: KEYS_ONLY

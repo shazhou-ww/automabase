@@ -71,3 +71,5 @@ AutomataTable:
         KeyType: HASH
       - AttributeName: sk
         KeyType: RANGE
+    StreamSpecification:
+      StreamViewType: NEW_IMAGE
