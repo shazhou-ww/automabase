@@ -1,5 +1,5 @@
 {
-  "name": "@myorg/app-{{name}}",
+  "name": "@automabase/app-{{name}}",
   "version": "1.0.0",
   "description": "Frontend app: {{name}}",
   "type": "module",

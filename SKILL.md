@@ -59,7 +59,7 @@ automabase/
 在 Lambda 函数中使用共享包：
 
 ```typescript
-import { something } from '@myorg/<package-name>';
+import { something } from '@automabase/<package-name>';
 ```
 
 在 `package.json` 中声明：
@@ -67,7 +67,7 @@ import { something } from '@myorg/<package-name>';
 ```json
 {
   "dependencies": {
-    "@myorg/<package-name>": "*"
+    "@automabase/<package-name>": "*"
   }
 }
 ```
@@ -289,7 +289,7 @@ bun add -d <package-name>
 ```json
 {
   "dependencies": {
-    "@myorg/<package-name>": "*"
+    "@automabase/<package-name>": "*"
   }
 }
 ```
@@ -297,7 +297,7 @@ bun add -d <package-name>
 1. 在代码中导入：
 
 ```typescript
-import { something } from '@myorg/<package-name>';
+import { something } from '@automabase/<package-name>';
 ```
 
 1. 运行 `bun install` 安装依赖
@@ -391,7 +391,7 @@ git commit -m "feat: add new feature" -m "Detailed description here"
 
 1. 包的 `tsconfig.json` 设置了 `composite: true`
 2. 根目录运行过 `bun run typecheck` 生成类型定义
-3. 包名引用正确：`@myorg/<name>`
+3. 包名引用正确：`@automabase/<name>`
 4. 已运行 `bun install` 安装所有依赖
 
 **解决：**

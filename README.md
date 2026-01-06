@@ -11,7 +11,7 @@ Automabase - Fullstack Monorepo with Bun
 automabase/
 ├── functions/          # Lambda 函数包（使用 esbuild 预构建）
 ├── packages/           # 共享包（直接使用 TypeScript 源码，不做构建）
-├── apps/              # 前端应用（使用 Vite 构建）
+├── apps/              # 应用（前端 React/Vite 或后端 Elysia）
 ├── templates/         # 模板包（用于创建新的 functions/packages/apps）
 ├── scripts/           # 创建和工具脚本
 └── template.yaml      # SAM CLI 模板
@@ -51,8 +51,7 @@ bun run init  # 如果 bun create 没有自动运行 init
 bun install
 ```
 
-**注意**:
-
+**注意**: 
 - 从 npm 使用时，`init.ts` 脚本会在安装后自动运行（通过 `bun-create.postinstall`）
 - 从 GitHub 使用时，可能需要手动运行 `bun run init`
 - `init.ts` 脚本会将所有模板占位符替换为实际项目名称
@@ -88,16 +87,27 @@ bun run create:package <package-name>
 1. 从 `templates/package` 克隆模板
 2. 替换模板中的占位符
 
-### 创建新的前端应用
+### 创建新的前端应用（React）
 
 ```bash
-bun run create:app <app-name>
+bun run create:app:react <app-name>
 ```
 
 这会：
 
-1. 从 `templates/app` 克隆模板
+1. 从 `templates/app-react` 克隆模板
 2. 设置 Vite + React 项目
+
+### 创建新的后端应用（Elysia）
+
+```bash
+bun run create:app:elysia <app-name>
+```
+
+这会：
+
+1. 从 `templates/app-elysia` 克隆模板
+2. 设置 Elysia 后端服务
 
 ## 开发
 
@@ -110,13 +120,13 @@ cp env.json.example env.json
 # 编辑 env.json 填入你的环境变量
 ```
 
-1. 构建所有函数（使用 esbuild 预构建）：
+2. 构建所有函数（使用 esbuild 预构建）：
 
 ```bash
 bun run build:functions
 ```
 
-1. 使用 SAM CLI 本地启动 API：
+3. 使用 SAM CLI 本地启动 API：
 
 ```bash
 bun run sam:local
@@ -125,13 +135,13 @@ bun run sam:local
 > **注意**: `sam:local` 使用 `--env-vars env.json` 传递环境变量给 Lambda 容器。
 > 请确保 `env.json` 中配置了正确的函数名和环境变量。
 
-1. 测试特定函数：
+4. 测试特定函数：
 
 ```bash
 bun run sam:invoke <FunctionName>
 ```
 
-1. 或者直接用 bun 运行 TypeScript 进行开发：
+5. 或者直接用 bun 运行 TypeScript 进行开发：
 
 ```bash
 bun run functions/<function-name>/src/index.ts
@@ -251,16 +261,15 @@ sam deploy --guided
 共享包，不需要构建：
 
 - 直接从 `src/index.ts` 导出
-- 通过 workspace 名称引用（如 `@myorg/package-name`）
+- 通过 workspace 名称引用（如 `@automabase/package-name`）
 - 使用 TypeScript 的 path mapping 引用
 
 ### apps/
 
-前端应用：
+应用（前端或后端）：
 
-- 使用 Vite 构建
-- 独立的开发和构建流程
-- 可以部署到任何静态托管服务
+- **React 前端应用**: 使用 Vite 构建，可以部署到任何静态托管服务
+- **Elysia 后端应用**: 使用 Bun 运行，可以部署到支持 Bun 的平台（如 Railway、Fly.io）
 
 ### templates/
 
@@ -268,7 +277,8 @@ sam deploy --guided
 
 - `function/` - Lambda 函数模板
 - `package/` - 共享包模板
-- `app/` - 前端应用模板
+- `app-react/` - React 前端应用模板
+- `app-elysia/` - Elysia 后端应用模板
 
 ## 最佳实践
 
@@ -303,7 +313,7 @@ sam deploy --guided
 使用 workspace 名称引用，例如：
 
 ```typescript
-import { something } from '@myorg/shared-utils';
+import { something } from '@automabase/shared-utils';
 ```
 
 ### 如何调试 Lambda 函数？
@@ -326,7 +336,7 @@ sam local invoke <FunctionName> --debug-port 5858
 4. `init.ts` 脚本会替换所有占位符：
    - `automabase` → 项目名称（kebab-case）
    - `Automabase` → PascalCase 版本
-   - `@myorg` → 组织/命名空间名称
+   - `@automabase` → 组织/命名空间名称
    - `Automabase - Fullstack Monorepo with Bun` → 项目描述
 
 ## 贡献
@@ -342,3 +352,4 @@ sam local invoke <FunctionName> --debug-port 5858
 ## 许可证
 
 [添加许可证信息]
+
