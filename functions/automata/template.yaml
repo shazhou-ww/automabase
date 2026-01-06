@@ -1,0 +1,73 @@
+# SAM Template for automata function
+# This file will be merged into the root template.yaml during local testing
+# Note: Run 'bun run build:functions' before 'bun run sam:local'
+
+AutomataFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    CodeUri: functions/automata/dist
+    Handler: index.handler
+    Runtime: nodejs24.x
+    Timeout: 30
+    Environment:
+      Variables:
+        NODE_ENV: ${Env:NODE_ENV,prod}
+        AUTOMATA_TABLE: !Ref AutomataTable
+    Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref AutomataTable
+    Events:
+      # Automata operations
+      CreateAutomata:
+        Type: Api
+        Properties:
+          Path: /automata
+          Method: POST
+      GetAutomata:
+        Type: Api
+        Properties:
+          Path: /automata/{automataId}
+          Method: GET
+      DeleteAutomata:
+        Type: Api
+        Properties:
+          Path: /automata/{automataId}
+          Method: DELETE
+      # Event operations
+      PostEvent:
+        Type: Api
+        Properties:
+          Path: /automata/{automataId}/events
+          Method: POST
+      GetEvent:
+        Type: Api
+        Properties:
+          Path: /automata/{automataId}/events/{version}
+          Method: GET
+      # Query operations
+      Backtrace:
+        Type: Api
+        Properties:
+          Path: /automata/{automataId}/backtrace
+          Method: GET
+      Replay:
+        Type: Api
+        Properties:
+          Path: /automata/{automataId}/replay
+          Method: GET
+
+AutomataTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: !Sub ${AWS::StackName}-automata
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: pk
+        AttributeType: S
+      - AttributeName: sk
+        AttributeType: S
+    KeySchema:
+      - AttributeName: pk
+        KeyType: HASH
+      - AttributeName: sk
+        KeyType: RANGE
