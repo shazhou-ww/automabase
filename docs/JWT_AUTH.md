@@ -17,7 +17,7 @@ Automata API 使用 JWT (JSON Web Token) 进行多租户认证。每个租户使
 
 ### 核心概念
 
-- **租户 (Tenant)**: 独立的组织或客户，拥有自己的认证服务
+- **租户 (Tenant)**: 独立的组织或客户，拥有自己的认证服务，使用 ULID 作为唯一标识符
 - **用户 (User)**: 属于特定租户的用户，通过租户的认证服务获取 token
 - **JWKS (JSON Web Key Set)**: 公钥集合，用于验证 JWT 签名
 - **Automata**: 归属于特定租户和用户的有限状态机实例
@@ -96,7 +96,7 @@ AutomataTable:
 
 | pk (tenantId) | sk | 字段 |
 |--------------|-----|------|
-| `tenant1` | `#CONFIG` | `jwksUri`, `issuer`, `audience`, `createdAt` |
+| `01ARZ3NDEKTSV4RRFFQ69G5FAV` | `#CONFIG` | `jwksUri`, `issuer`, `audience`, `createdAt` |
 
 ## JWT 格式规范
 
@@ -108,16 +108,11 @@ AutomataTable:
 | `aud` | string | API 标识符（Audience） | `https://api.automabase.com` |
 | `sub` | string | 用户唯一标识符（Subject） | `user123` |
 | `exp` | number | Token 过期时间（Unix 时间戳） | `1735689600` |
-| `tenant_id` | string | 租户 ID（自定义 claim） | `tenant1` |
+| `tenant_id` | string | 租户 ID（ULID 格式，自定义 claim） | `01ARZ3NDEKTSV4RRFFQ69G5FAV` |
 
-### 可选的 Claims
-
-| Claim | 类型 | 说明 | 示例 |
-|-------|------|------|------|
-| `iat` | number | Token 签发时间（Unix 时间戳） | `1735603200` |
-| `nbf` | number | Token 生效时间（Not Before） | `1735603200` |
-| `scope` | string[] | 权限范围数组 | `["automata:read", "automata:write"]` |
-| `email` | string | 用户邮箱 | `user@example.com` |
+**注意**: 
+- `tenant_id` 必须使用 ULID 格式（26 个字符，如 `01ARZ3NDEKTSV4RRFFQ69G5FAV`）
+- 当前版本不支持其他可选 claims（如 `iat`, `nbf`, `scope`, `email` 等）
 
 ### 签名算法
 
@@ -133,20 +128,21 @@ AutomataTable:
   "header": {
     "alg": "RS256",
     "typ": "JWT",
-    "kid": "tenant1-key-1"
+    "kid": "tenant-key-1"
   },
   "payload": {
     "iss": "https://tenant1.auth.example.com/",
     "aud": "https://api.automabase.com",
     "sub": "user123",
-    "tenant_id": "tenant1",
-    "exp": 1735689600,
-    "iat": 1735603200,
-    "scope": ["automata:read", "automata:write"],
-    "email": "user@example.com"
+    "tenant_id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+    "exp": 1735689600
   }
 }
 ```
+
+**说明**:
+- `tenant_id` 使用 ULID 格式（26 个字符）
+- 只包含必需的 claims，不包含可选字段
 
 ### JWKS 格式
 
@@ -159,7 +155,7 @@ AutomataTable:
       "kty": "RSA",
       "use": "sig",
       "alg": "RS256",
-      "kid": "tenant1-key-1",
+      "kid": "tenant-key-1",
       "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmb...",
       "e": "AQAB"
     }
@@ -191,12 +187,14 @@ POST /tenants
 Content-Type: application/json
 
 {
-  "tenantId": "tenant1",
+  "tenantId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
   "jwksUri": "https://tenant1.auth.example.com/.well-known/jwks.json",
   "issuer": "https://tenant1.auth.example.com/",
   "audience": "https://api.automabase.com"
 }
 ```
+
+**注意**: `tenantId` 必须使用 ULID 格式。
 
 ### 3. 验证租户配置
 
@@ -213,7 +211,7 @@ Content-Type: application/json
 
 ```typescript
 {
-  pk: "tenant1",
+  pk: "01ARZ3NDEKTSV4RRFFQ69G5FAV",  // ULID 格式的 tenantId
   sk: "#CONFIG",
   jwksUri: "https://tenant1.auth.example.com/.well-known/jwks.json",
   issuer: "https://tenant1.auth.example.com/",
@@ -310,7 +308,7 @@ bun run test:jwks:server
 ### 步骤 3: 生成测试 JWT Token
 
 ```bash
-# 生成默认 token (userId: test-user-1, tenantId: test-tenant-1)
+# 生成默认 token (userId: test-user-1, tenantId: ULID)
 bun run test:jwt:token
 
 # 生成自定义 token
@@ -320,7 +318,8 @@ bun run test:jwt:token <userId> <tenantId> <issuer> <audience>
 示例：
 
 ```bash
-bun run test:jwt:token user123 tenant1 http://localhost:3002 https://api.automabase.com
+# tenantId 使用 ULID 格式
+bun run test:jwt:token user123 01ARZ3NDEKTSV4RRFFQ69G5FAV http://localhost:3002 https://api.automabase.com
 ```
 
 输出：
@@ -411,9 +410,10 @@ JWKS_PID=$!
 # 等待服务器启动
 sleep 2
 
-# 3. 生成测试 token
+# 3. 生成测试 token（使用 ULID 作为 tenantId）
 echo "Generating test token..."
-TOKEN=$(bun run test:jwt:token test-user-1 test-tenant-1 | tail -n 1)
+TENANT_ID="01ARZ3NDEKTSV4RRFFQ69G5FAV"  # 使用 ULID
+TOKEN=$(bun run test:jwt:token test-user-1 $TENANT_ID | tail -n 1)
 
 echo ""
 echo "✓ Test token generated:"
@@ -511,14 +511,14 @@ A: 确保：
 
 ### Q: 如何测试不同租户？
 
-A: 生成不同租户的 token：
+A: 生成不同租户的 token（使用 ULID 作为 tenantId）：
 
 ```bash
-# 租户 1
-bun run test:jwt:token user1 tenant1 http://localhost:3002 https://api.automabase.com
+# 租户 1 (ULID: 01ARZ3NDEKTSV4RRFFQ69G5FAV)
+bun run test:jwt:token user1 01ARZ3NDEKTSV4RRFFQ69G5FAV http://localhost:3002 https://api.automabase.com
 
-# 租户 2
-bun run test:jwt:token user2 tenant2 http://localhost:3002 https://api.automabase.com
+# 租户 2 (ULID: 01ARZ3NDEKTSV4RRFFQ69G5FAW)
+bun run test:jwt:token user2 01ARZ3NDEKTSV4RRFFQ69G5FAW http://localhost:3002 https://api.automabase.com
 ```
 
 ### Q: 生产环境如何配置？
