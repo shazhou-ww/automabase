@@ -30,6 +30,10 @@ automabase/
 - **代码检查和格式化**: `Biome`（lint + format）
 - **部署**: AWS SAM CLI
 
+## 文档
+
+- [JWT 认证与多租户架构](./docs/JWT_AUTH.md) - JWT 认证、多租户设计、本地测试指南
+
 ## 快速开始
 
 ### 使用 Bun Create 创建新项目
