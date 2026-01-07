@@ -122,6 +122,7 @@
       "name": "@automabase/automata-client",
       "version": "1.0.0",
       "dependencies": {
+        "@automabase/automata-auth": "workspace:*",
         "idb": "^8.0.0",
       },
       "devDependencies": {
@@ -137,6 +138,18 @@
       "optionalPeers": [
         "react",
       ],
+    },
+    "packages/automata-server": {
+      "name": "@automabase/automata-server",
+      "version": "1.0.0",
+      "dependencies": {
+        "@automabase/automata-auth": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/node": "^20.11.0",
+        "typescript": "^5.3.3",
+        "vitest": "^1.2.0",
+      },
     },
     "packages/jsonata-eval-client": {
       "name": "@automabase/jsonata-eval-client",
@@ -159,6 +172,8 @@
     "@automabase/automata-auth": ["@automabase/automata-auth@workspace:packages/automata-auth"],
 
     "@automabase/automata-client": ["@automabase/automata-client@workspace:packages/automata-client"],
+
+    "@automabase/automata-server": ["@automabase/automata-server@workspace:packages/automata-server"],
 
     "@automabase/function-automata": ["@automabase/function-automata@workspace:functions/automata"],
 

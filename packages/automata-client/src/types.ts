@@ -40,14 +40,26 @@ export interface EventListResult {
   nextAnchor: string | null;
 }
 
-// Create automata request
+/**
+ * Create automata request
+ * 
+ * Authorization Requirements:
+ * - Valid JWT token (tenant & user authorization)
+ * - Descriptor signature from tenant (prevents unauthorized automata creation)
+ */
 export interface CreateAutomataRequest {
+  /** JSONSchema for state validation */
   stateSchema: unknown;
+  /** Event type -> JSONSchema mapping */
   eventSchemas: Record<string, unknown>;
+  /** Initial state value */
   initialState: unknown;
+  /** JSONata expression for state transitions */
   transition: string;
-  /** Optional name for the automata */
-  name?: string;
+  /** Name for the automata (required) */
+  name: string;
+  /** JWT signature of the automata descriptor from tenant (required) */
+  descriptorSignature: string;
 }
 
 // Automata list item (returned by list API)

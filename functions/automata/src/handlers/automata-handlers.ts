@@ -3,25 +3,39 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import jsonata from 'jsonata';
 import { ulid } from 'ulid';
 import { verifyAuth, isAuthError, getAutomataWithAuth, isErrorResponse } from '../middleware/auth-middleware';
+import { verifyDescriptorSignature, computeDescriptorHash, type DescriptorSignatureResult } from '@automabase/automata-auth';
 import {
   docClient,
   TABLE_NAME,
   META_SK,
   VERSION_ZERO,
   TENANT_USER_INDEX,
-  MAX_BATCH_SIZE
+  MAX_BATCH_SIZE,
+  getTenantConfig
 } from '../utils/database';
 import { versionIncrement, versionDecrement } from '../utils/version-utils';
 import { success, error } from '../utils/response-helpers';
-import type { AutomataMeta, EventRecord, BacktraceReplayResult } from '../types/automata-types';
+import type { AutomataMeta, EventRecord, BacktraceReplayResult, AutomataDescriptor } from '../types/automata-types';
 
 /**
  * Create a new automata
  * POST /automata
- * Body: { stateSchema: object, eventSchemas: object, initialState: any, transition: string, name?: string }
+ * 
+ * Authorization Requirements:
+ * 1. Valid JWT token (tenant & user authorization)
+ * 2. Descriptor signature from tenant (prevents unauthorized automata creation)
+ * 
+ * Body: {
+ *   stateSchema: object,
+ *   eventSchemas: object,
+ *   initialState: any,
+ *   transition: string,
+ *   name: string,
+ *   descriptorSignature: string  // JWT signature of descriptor from tenant
+ * }
  */
 export async function createAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  // Verify JWT
+  // Verify JWT - validates tenant & user authorization
   const auth = await verifyAuth(event);
   if (isAuthError(auth)) {
     return auth;
@@ -37,6 +51,7 @@ export async function createAutomata(event: APIGatewayProxyEvent): Promise<APIGa
     initialState?: unknown;
     transition?: string;
     name?: string;
+    descriptorSignature?: string;
   };
   try {
     body = JSON.parse(event.body);
@@ -56,6 +71,12 @@ export async function createAutomata(event: APIGatewayProxyEvent): Promise<APIGa
   if (!body.transition) {
     return error('transition is required');
   }
+  if (!body.name) {
+    return error('name is required');
+  }
+  if (!body.descriptorSignature) {
+    return error('descriptorSignature is required');
+  }
 
   // Validate transition expression
   try {
@@ -64,6 +85,37 @@ export async function createAutomata(event: APIGatewayProxyEvent): Promise<APIGa
     const message = err instanceof Error ? err.message : 'Unknown error';
     return error(`Invalid transition expression: ${message}`);
   }
+
+  // Create descriptor object for signature verification
+  const descriptor: AutomataDescriptor = {
+    stateSchema: body.stateSchema,
+    eventSchemas: body.eventSchemas,
+    transition: body.transition,
+    initialState: body.initialState,
+    name: body.name,
+  };
+
+  // Verify descriptor signature
+  const signatureResult: DescriptorSignatureResult = await verifyDescriptorSignature(
+    body.descriptorSignature,
+    descriptor,
+    getTenantConfig
+  );
+
+  if (!signatureResult.isValid) {
+    return error(`Invalid descriptor signature: ${signatureResult.error}`);
+  }
+
+  // Verify that the signature is from the same tenant as the JWT token
+  if (signatureResult.payload?.iss !== auth.tenantId) {
+    return error('Descriptor signature tenant mismatch: signature must be from the same tenant as the JWT token');
+  }
+
+  // Compute descriptor hash for storage
+  const descriptorHash = computeDescriptorHash(descriptor);
+
+  // Extract expiration time from verified signature payload
+  const signatureExpiresAt = new Date((signatureResult.payload?.exp || 0) * 1000).toISOString();
 
   const automataId = ulid();
   const now = new Date().toISOString();
@@ -84,6 +136,9 @@ export async function createAutomata(event: APIGatewayProxyEvent): Promise<APIGa
     version: VERSION_ZERO,
     createdAt: now,
     updatedAt: now,
+    descriptorSignature: body.descriptorSignature,
+    descriptorHash,
+    signatureExpiresAt,
   };
 
   await docClient.send(
@@ -100,9 +155,11 @@ export async function createAutomata(event: APIGatewayProxyEvent): Promise<APIGa
 /**
  * Get an automata's current state
  * GET /automata/{automataId}
+ * 
+ * Authorization: Validates tenant & user authorization (user must be the owner)
  */
 export async function getAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  // Verify JWT
+  // Verify JWT - validates tenant & user authorization
   const auth = await verifyAuth(event);
   if (isAuthError(auth)) {
     return auth;
@@ -113,7 +170,7 @@ export async function getAutomata(event: APIGatewayProxyEvent): Promise<APIGatew
     return error('automataId is required');
   }
 
-  // Get automata and verify ownership
+  // Get automata and verify tenant & user authorization
   const meta = await getAutomataWithAuth(automataId, auth);
   if (isErrorResponse(meta)) {
     return meta;
@@ -136,9 +193,11 @@ export async function getAutomata(event: APIGatewayProxyEvent): Promise<APIGatew
 /**
  * Delete an automata
  * DELETE /automata/{automataId}
+ * 
+ * Authorization: Validates tenant & user authorization (user must be the owner)
  */
 export async function deleteAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  // Verify JWT
+  // Verify JWT - validates tenant & user authorization
   const auth = await verifyAuth(event);
   if (isAuthError(auth)) {
     return auth;
@@ -149,7 +208,7 @@ export async function deleteAutomata(event: APIGatewayProxyEvent): Promise<APIGa
     return error('automataId is required');
   }
 
-  // Get automata and verify ownership
+  // Get automata and verify tenant & user authorization
   const meta = await getAutomataWithAuth(automataId, auth);
   if (isErrorResponse(meta)) {
     return meta;
@@ -197,10 +256,12 @@ export async function deleteAutomata(event: APIGatewayProxyEvent): Promise<APIGa
 /**
  * Post an event to an automata
  * POST /automata/{automataId}/events
+ * 
+ * Authorization: Validates tenant & user authorization (user must be the owner)
  * Body: { type: string, data: any }
  */
 export async function postEvent(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  // Verify JWT
+  // Verify JWT - validates tenant & user authorization
   const auth = await verifyAuth(event);
   if (isAuthError(auth)) {
     return auth;
@@ -226,7 +287,7 @@ export async function postEvent(event: APIGatewayProxyEvent): Promise<APIGateway
     return error('type is required');
   }
 
-  // Get automata and verify ownership
+  // Get automata and verify tenant & user authorization
   const meta = await getAutomataWithAuth(automataId, auth);
   if (isErrorResponse(meta)) {
     return meta;
@@ -297,9 +358,11 @@ export async function postEvent(event: APIGatewayProxyEvent): Promise<APIGateway
 /**
  * Get a specific event by version
  * GET /automata/{automataId}/events/{version}
+ * 
+ * Authorization: Validates tenant & user authorization (user must be the owner)
  */
 export async function getEvent(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  // Verify JWT
+  // Verify JWT - validates tenant & user authorization
   const auth = await verifyAuth(event);
   if (isAuthError(auth)) {
     return auth;
@@ -314,7 +377,7 @@ export async function getEvent(event: APIGatewayProxyEvent): Promise<APIGatewayP
     return error('version is required');
   }
 
-  // Get automata and verify ownership
+  // Get automata and verify tenant & user authorization
   const meta = await getAutomataWithAuth(automataId, auth);
   if (isErrorResponse(meta)) {
     return meta;
@@ -346,9 +409,11 @@ export async function getEvent(event: APIGatewayProxyEvent): Promise<APIGatewayP
 /**
  * Backtrace events from current state to a target version
  * GET /automata/{automataId}/backtrace?from={version}&limit={number}
+ * 
+ * Authorization: Validates tenant & user authorization (user must be the owner)
  */
 export async function backtrace(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  // Verify JWT
+  // Verify JWT - validates tenant & user authorization
   const auth = await verifyAuth(event);
   if (isAuthError(auth)) {
     return auth;
@@ -366,7 +431,7 @@ export async function backtrace(event: APIGatewayProxyEvent): Promise<APIGateway
     MAX_BATCH_SIZE
   );
 
-  // Get automata and verify ownership
+  // Get automata and verify tenant & user authorization
   const meta = await getAutomataWithAuth(automataId, auth);
   if (isErrorResponse(meta)) {
     return meta;
@@ -427,9 +492,11 @@ export async function backtrace(event: APIGatewayProxyEvent): Promise<APIGateway
 /**
  * Replay events from initial state to a target version
  * GET /automata/{automataId}/replay?to={version}&limit={number}
+ * 
+ * Authorization: Validates tenant & user authorization (user must be the owner)
  */
 export async function replay(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  // Verify JWT
+  // Verify JWT - validates tenant & user authorization
   const auth = await verifyAuth(event);
   if (isAuthError(auth)) {
     return auth;
@@ -447,7 +514,7 @@ export async function replay(event: APIGatewayProxyEvent): Promise<APIGatewayPro
     MAX_BATCH_SIZE
   );
 
-  // Get automata and verify ownership
+  // Get automata and verify tenant & user authorization
   const meta = await getAutomataWithAuth(automataId, auth);
   if (isErrorResponse(meta)) {
     return meta;
@@ -507,9 +574,12 @@ export async function replay(event: APIGatewayProxyEvent): Promise<APIGatewayPro
 /**
  * List automata owned by the authenticated user
  * GET /automata?limit={number}&anchor={lastCreatedAt}
+ * 
+ * Authorization: Validates tenant & user authorization
+ * Returns only automata owned by the authenticated user in the same tenant
  */
 export async function listAutomata(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  // Verify JWT
+  // Verify JWT - validates tenant & user authorization
   const auth = await verifyAuth(event);
   if (isAuthError(auth)) {
     return auth;

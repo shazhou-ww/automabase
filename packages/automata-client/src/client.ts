@@ -18,6 +18,7 @@ import type {
   ListAutomataResult,
   ListAutomataOptions,
 } from './types';
+import { createDescriptorSignature } from '@automabase/automata-auth';
 
 export interface AutomataClientConfig {
   /** Base URL for the REST API (e.g., https://api.example.com) */
@@ -89,6 +90,88 @@ export class AutomataClient {
   // ============ REST API Methods ============
 
   /**
+   * Create a descriptor signature for automata creation
+   * 
+   * This method creates a JWT signature for the automata descriptor.
+   * The signature must be created by the tenant's authentication service
+   * to prevent unauthorized automata creation.
+   * 
+   * @param descriptor - The automata descriptor to sign (without signature)
+   * @param tenantId - Tenant ID that will sign the descriptor
+   * @param privateKey - Private key for signing (should come from tenant auth service)
+   * @param expiresInSeconds - Signature expiration time in seconds (default: 3600)
+   * @returns JWT signature string
+   * 
+   * @example
+   * ```typescript
+   * const signature = client.createDescriptorSignature(
+   *   {
+   *     name: 'MyAutomata',
+   *     stateSchema: {...},
+   *     eventSchemas: {...},
+   *     initialState: {...},
+   *     transition: '...'
+   *   },
+   *   tenantId,
+   *   privateKey
+   * );
+   * ```
+   */
+  createDescriptorSignature(
+    descriptor: Omit<CreateAutomataRequest, 'descriptorSignature'>,
+    tenantId: string,
+    privateKey: string,
+    expiresInSeconds: number = 3600
+  ): string {
+    return createDescriptorSignature(descriptor, tenantId, privateKey, expiresInSeconds);
+  }
+
+  /**
+   * Create a new automata with descriptor signature
+   * 
+   * This is a convenience method that creates the descriptor signature
+   * and then creates the automata in one call.
+   * 
+   * Authorization Requirements:
+   * 1. Valid JWT token (set via getToken in config)
+   * 2. Descriptor signature from tenant (created automatically by this method)
+   * 
+   * @param descriptor - Automata descriptor (without signature)
+   * @param tenantId - Tenant ID that will sign the descriptor
+   * @param privateKey - Private key for signing (should come from tenant auth service)
+   * @param expiresInSeconds - Signature expiration time in seconds (default: 3600)
+   * @returns Promise resolving to created automata ID
+   * 
+   * @example
+   * ```typescript
+   * const id = await client.createWithSignature(
+   *   {
+   *     name: 'MyAutomata',
+   *     stateSchema: {...},
+   *     eventSchemas: {...},
+   *     initialState: {...},
+   *     transition: '...'
+   *   },
+   *   tenantId,
+   *   privateKey
+   * );
+   * ```
+   */
+  async createWithSignature(
+    descriptor: Omit<CreateAutomataRequest, 'descriptorSignature'>,
+    tenantId: string,
+    privateKey: string,
+    expiresInSeconds: number = 3600
+  ): Promise<{ id: string }> {
+    const signature = this.createDescriptorSignature(descriptor, tenantId, privateKey, expiresInSeconds);
+    const request: CreateAutomataRequest = {
+      ...descriptor,
+      descriptorSignature: signature,
+    };
+    return this.create(request);
+  }
+
+  /**
    * Get headers with Authorization token if getToken is configured
    */
   private async getRequestHeaders(): Promise<Record<string, string>> {
@@ -126,6 +209,33 @@ export class AutomataClient {
 
   /**
    * Create a new automata
+   * 
+   * Authorization Requirements:
+   * 1. Valid JWT token (set via getToken in config)
+   * 2. Descriptor signature from tenant (required in request.descriptorSignature)
+   * 
+   * @param request - Automata descriptor including signature
+   * @returns Promise resolving to created automata ID
+   * 
+   * @example
+   * ```typescript
+   * // Using createWithSignature helper (recommended)
+   * const id = await client.createWithSignature(
+   *   {
+   *     name: 'MyAutomata',
+   *     stateSchema: {...},
+   *     eventSchemas: {...},
+   *     initialState: {...},
+   *     transition: '...'
+   *   },
+   *   tenantId,
+   *   privateKey
+   * );
+   * 
+   * // Or manually create signature first
+   * const signature = client.createDescriptorSignature(descriptor, tenantId, privateKey);
+   * const id = await client.create({ ...descriptor, descriptorSignature: signature });
+   * ```
    */
   async create(request: CreateAutomataRequest): Promise<{ id: string }> {
     return this.request<{ id: string }>('POST', '/automata', request);

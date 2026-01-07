@@ -36,3 +36,14 @@ export {
   validateTenantRegistration,
   validateJwksEndpoint,
 } from './validators/tenant-validators';
+
+// Re-export descriptor signature functions and types
+export {
+  verifyDescriptorSignature,
+  computeDescriptorHash,
+  signDescriptor,
+  createDescriptorSignature, // @deprecated - use signDescriptor() for production
+  type AutomataDescriptor,
+  type DescriptorSignaturePayload,
+  type DescriptorSignatureResult,
+} from './utils/descriptor-signature';

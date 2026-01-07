@@ -36,7 +36,13 @@ export function isAuthError(result: VerifiedToken | APIGatewayProxyResult): resu
 }
 
 /**
- * Verify that the user owns the automata and belongs to the same tenant
+ * Verify tenant & user authorization for automata access
+ * - Validates that the automata belongs to the same tenant
+ * - Validates that the user is the owner of the automata
+ * 
+ * @param meta - Automata metadata to verify
+ * @param auth - Verified JWT token with tenant and user information
+ * @returns Error response if authorization fails, null if authorized
  */
 export function verifyOwnership(
   meta: AutomataMeta,
@@ -48,11 +54,19 @@ export function verifyOwnership(
   if (meta.userId !== auth.userId) {
     return forbidden('Access denied: not the owner');
   }
-  return null; // No error, ownership verified
+  return null; // No error, authorization verified
 }
 
 /**
- * Helper to get automata and verify ownership
+ * Get automata by ID and verify tenant & user authorization
+ * This helper ensures all read/write operations verify:
+ * 1. JWT token is valid (tenant config verified)
+ * 2. Tenant ID matches
+ * 3. User ID matches (user is the owner)
+ * 
+ * @param automataId - ID of the automata to retrieve
+ * @param auth - Verified JWT token with tenant and user information
+ * @returns Automata metadata if authorized, error response otherwise
  */
 export async function getAutomataWithAuth(
   automataId: string,

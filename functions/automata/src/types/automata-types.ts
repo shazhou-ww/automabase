@@ -19,6 +19,20 @@ export interface AutomataMeta {
   version: string; // Current version (base62, e.g., "000000")
   createdAt: string;
   updatedAt: string;
+  descriptorSignature: string; // JWT signature of the automata descriptor
+  descriptorHash: string; // SHA-256 hash of the descriptor for integrity
+  signatureExpiresAt: string; // ISO date when the descriptor signature expires
+}
+
+/**
+ * Automata descriptor that gets signed by tenant
+ */
+export interface AutomataDescriptor {
+  stateSchema: unknown;
+  eventSchemas: Record<string, unknown>;
+  transition: string;
+  initialState: unknown;
+  name: string;
 }
 
 /**
