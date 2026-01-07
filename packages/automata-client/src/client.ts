@@ -289,21 +289,25 @@ export class AutomataClient {
         return;
       }
 
-      this.ws.onopen = () => {
+      this.ws.onopen = async () => {
         this.isConnecting = false;
         this.reconnectAttempts = 0;
         this.trackerCallbacks.onConnected?.();
 
         // Re-subscribe to all existing subscriptions
+        const subscribePromises: Promise<void>[] = [];
         for (const automataId of this.subscriptions.keys()) {
-          this.sendSubscribe(automataId);
+          subscribePromises.push(this.sendSubscribe(automataId));
         }
 
         // Subscribe to pending subscriptions
         for (const automataId of this.pendingSubscriptions) {
-          this.sendSubscribe(automataId);
+          subscribePromises.push(this.sendSubscribe(automataId));
         }
         this.pendingSubscriptions.clear();
+
+        // Wait for all subscriptions to be sent
+        await Promise.all(subscribePromises);
 
         resolve();
       };
@@ -369,7 +373,8 @@ export class AutomataClient {
       this.subscriptions.set(automataId, subscription);
 
       if (this.connected) {
-        this.sendSubscribe(automataId);
+        // Send subscribe asynchronously (don't wait)
+        this.sendSubscribe(automataId).catch(console.error);
       } else {
         this.pendingSubscriptions.add(automataId);
         // Auto-connect if not connected
@@ -428,12 +433,24 @@ export class AutomataClient {
     };
   }
 
-  private sendSubscribe(automataId: string): void {
+  private async sendSubscribe(automataId: string): Promise<void> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+    // Get token for each subscribe (stateless auth)
+    let token: string | undefined;
+    if (this.getTokenFn) {
+      try {
+        token = await this.getTokenFn();
+      } catch (err) {
+        console.error('Failed to get token for subscribe:', err);
+        return;
+      }
+    }
 
     this.ws.send(JSON.stringify({
       action: 'subscribe',
       automataId,
+      token,
     }));
   }
 

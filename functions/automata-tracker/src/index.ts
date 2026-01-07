@@ -28,7 +28,6 @@ const AUTOMATA_TABLE = process.env.AUTOMATA_TABLE || 'automata';
 const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE || 'automata-connections';
 const WEBSOCKET_ENDPOINT = process.env.WEBSOCKET_ENDPOINT || '';
 const META_SK = '#META';
-const CONNECTION_AUTH_SK = '#AUTH'; // SK for connection auth info
 
 // JWT configuration from environment variables
 const jwtConfig: JwtConfig = {
@@ -52,17 +51,6 @@ interface ConnectionRecord {
   pk: string; // automataId
   sk: string; // connectionId
   subscribedAt: string;
-}
-
-// Connection auth record structure
-// pk: connectionId, sk: #AUTH
-// Stores the authenticated user info for the connection
-interface ConnectionAuthRecord {
-  pk: string; // connectionId
-  sk: typeof CONNECTION_AUTH_SK;
-  userId: string;
-  tenantId: string;
-  connectedAt: string;
 }
 
 // Automata metadata (for ownership check)
@@ -144,6 +132,8 @@ async function sendToConnection(
 /**
  * Handle $connect route
  * Expects JWT token in query string: ?token=xxx
+ * Only validates the token format/signature, does not store auth info.
+ * Auth is verified again on each subscribe action.
  */
 async function handleConnect(
   event: APIGatewayProxyWebsocketEventV2
@@ -152,7 +142,6 @@ async function handleConnect(
   console.log(`New connection: ${connectionId}`);
 
   // Get token from query string (available in $connect event via requestContext)
-  // Note: For WebSocket $connect, query params are in requestContext via the request
   const queryParams = (event as unknown as { queryStringParameters?: Record<string, string> }).queryStringParameters;
   const token = queryParams?.token;
   if (!token) {
@@ -160,10 +149,9 @@ async function handleConnect(
     return { statusCode: 401, body: 'Missing token' };
   }
 
-  // Verify JWT
-  let auth: VerifiedToken;
+  // Verify JWT format and signature (stateless - no storage)
   try {
-    auth = await verifyJwt(token, jwtConfig);
+    await verifyJwt(token, jwtConfig);
   } catch (err: unknown) {
     if (err instanceof AuthError) {
       console.log(`Connection ${connectionId} rejected: ${err.message}`);
@@ -173,27 +161,13 @@ async function handleConnect(
     return { statusCode: 401, body: 'Token verification failed' };
   }
 
-  // Store connection auth info
-  const now = new Date().toISOString();
-  await docClient.send(
-    new PutCommand({
-      TableName: CONNECTIONS_TABLE,
-      Item: {
-        pk: connectionId,
-        sk: CONNECTION_AUTH_SK,
-        userId: auth.userId,
-        tenantId: auth.tenantId,
-        connectedAt: now,
-      } as ConnectionAuthRecord,
-    })
-  );
-
-  console.log(`Connection ${connectionId} authenticated: userId=${auth.userId}, tenantId=${auth.tenantId}`);
+  console.log(`Connection ${connectionId} authenticated`);
   return { statusCode: 200, body: 'Connected' };
 }
 
 /**
  * Handle $disconnect route
+ * Only cleans up subscription records, no auth records to clean.
  */
 async function handleDisconnect(
   event: APIGatewayProxyWebsocketEventV2
@@ -223,14 +197,6 @@ async function handleDisconnect(
         })
       );
     }
-
-    // Also delete the auth record for this connection
-    await docClient.send(
-      new DeleteCommand({
-        TableName: CONNECTIONS_TABLE,
-        Key: { pk: connectionId, sk: CONNECTION_AUTH_SK },
-      })
-    );
   } catch (err) {
     console.error('Error cleaning up subscriptions:', err);
   }
@@ -239,36 +205,28 @@ async function handleDisconnect(
 }
 
 /**
- * Get connection auth info
- */
-async function getConnectionAuth(connectionId: string): Promise<ConnectionAuthRecord | null> {
-  const result = await docClient.send(
-    new GetCommand({
-      TableName: CONNECTIONS_TABLE,
-      Key: { pk: connectionId, sk: CONNECTION_AUTH_SK },
-    })
-  );
-  return (result.Item as ConnectionAuthRecord) || null;
-}
-
-/**
  * Handle subscribe action
- * Message format: { action: "subscribe", automataId: "xxx" }
+ * Message format: { action: "subscribe", automataId: "xxx", token: "xxx" }
+ * Token is required for each subscribe to verify auth in real-time.
  */
 async function handleSubscribe(
   event: APIGatewayProxyWebsocketEventV2,
-  automataId: string
+  automataId: string,
+  token: string
 ): Promise<APIGatewayProxyResultV2> {
   const connectionId = event.requestContext.connectionId;
 
-  // Get connection auth info
-  const auth = await getConnectionAuth(connectionId);
-  if (!auth) {
+  // Verify JWT in real-time (stateless auth)
+  let auth: VerifiedToken;
+  try {
+    auth = await verifyJwt(token, jwtConfig);
+  } catch (err: unknown) {
+    const message = err instanceof AuthError ? err.message : 'Invalid or expired token';
     await sendToConnection(connectionId, {
       type: 'error',
-      message: 'Connection not authenticated',
+      message,
     });
-    return { statusCode: 401, body: 'Not authenticated' };
+    return { statusCode: 401, body: message };
   }
 
   // Validate automata exists
@@ -290,22 +248,15 @@ async function handleSubscribe(
   const meta = automataResult.Item as AutomataMeta;
 
   // Verify ownership: user must be owner and tenant must match
-  if (meta.tenantId !== auth.tenantId) {
+  if (meta.tenantId !== auth.tenantId || meta.userId !== auth.userId) {
     await sendToConnection(connectionId, {
       type: 'error',
-      message: 'Access denied: tenant mismatch',
-    });
-    return { statusCode: 403, body: 'Access denied' };
-  }
-  if (meta.userId !== auth.userId) {
-    await sendToConnection(connectionId, {
-      type: 'error',
-      message: 'Access denied: not the owner',
+      message: 'Access denied',
     });
     return { statusCode: 403, body: 'Access denied' };
   }
 
-  // Store subscription
+  // Store subscription (only subscription, no auth info)
   const now = new Date().toISOString();
   await docClient.send(
     new PutCommand({
@@ -368,7 +319,7 @@ async function handleDefault(
     return { statusCode: 400, body: 'Empty message' };
   }
 
-  let message: { action?: string; automataId?: string };
+  let message: { action?: string; automataId?: string; token?: string };
   try {
     message = JSON.parse(event.body);
   } catch {
@@ -379,7 +330,7 @@ async function handleDefault(
     return { statusCode: 400, body: 'Invalid JSON' };
   }
 
-  const { action, automataId } = message;
+  const { action, automataId, token } = message;
 
   if (!action) {
     await sendToConnection(connectionId, {
@@ -399,8 +350,16 @@ async function handleDefault(
 
   switch (action) {
     case 'subscribe':
-      return handleSubscribe(event, automataId);
+      if (!token) {
+        await sendToConnection(connectionId, {
+          type: 'error',
+          message: 'Missing token for subscribe',
+        });
+        return { statusCode: 400, body: 'Missing token' };
+      }
+      return handleSubscribe(event, automataId, token);
     case 'unsubscribe':
+      // No token required for unsubscribe (safe operation)
       return handleUnsubscribe(event, automataId);
     default:
       await sendToConnection(connectionId, {
