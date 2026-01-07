@@ -16,5 +16,5 @@ peer = true
 
 # Registry configuration (if needed)
 # [install.scopes]
-# "@myorg" = "https://registry.npmjs.org"
+# "@automabase" = "https://registry.npmjs.org"
 

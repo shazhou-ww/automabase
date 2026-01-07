@@ -17,13 +17,15 @@ import { fileURLToPath } from 'node:url';
 const __dirname = (import.meta as { dir?: string }).dir || dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
 
-type CreateType = 'function' | 'package' | 'app';
+type CreateType = 'function' | 'package' | 'webapp' | 'service';
+
+const validTypes = ['function', 'package', 'webapp', 'service'];
 
 const type = process.argv[2] as CreateType;
 const name = process.argv[3];
 
-if (!type || !['function', 'package', 'app'].includes(type)) {
-  console.error('Usage: bun scripts/create.ts <function|package|app> <name>');
+if (!type || !validTypes.includes(type)) {
+  console.error('Usage: bun scripts/create.ts <function|package|webapp|service> <name>');
   process.exit(1);
 }
 
@@ -32,17 +34,30 @@ if (!name) {
   process.exit(1);
 }
 
-const targetDir = join(rootDir, `${type}s`, name);
+// Determine target directory and template directory
+const targetDirMap: Record<CreateType, string> = {
+  function: 'functions',
+  package: 'packages',
+  webapp: 'webapps',
+  service: 'services',
+};
+
+const typeLabelMap: Record<CreateType, string> = {
+  function: 'Function',
+  package: 'Package',
+  webapp: 'Webapp (React)',
+  service: 'Service (Elysia)',
+};
+
+const targetDir = join(rootDir, targetDirMap[type], name);
 const templateDir = join(rootDir, 'templates', type);
 
 if (existsSync(targetDir)) {
-  console.error(
-    `${type === 'function' ? 'Function' : type === 'package' ? 'Package' : 'App'} ${name} already exists!`
-  );
+  console.error(`${typeLabelMap[type]} ${name} already exists!`);
   process.exit(1);
 }
 
-console.log(`Creating ${type}: ${name}...`);
+console.log(`Creating ${typeLabelMap[type]}: ${name}...`);
 
 // Copy directory recursively (cross-platform)
 function copyDir(src: string, dest: string): void {
@@ -82,22 +97,8 @@ function pascalCase(str: string): string {
     .join('');
 }
 
-// Read org name from package.json (should be set by init.ts)
-let orgName = '@myorg';
-try {
-  const pkgJson = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf8'));
-  // Try to extract org name from any existing package name
-  // This is a fallback, ideally init.ts should set it
-  if (pkgJson.name && pkgJson.name.startsWith('@')) {
-    orgName = pkgJson.name.split('/')[0];
-  }
-} catch {
-  // Use default
-}
-
 const replacements: Record<string, string> = {
   '{{name}}': name,
-  '@myorg': orgName,
 };
 
 if (type === 'function') {
@@ -141,10 +142,16 @@ if (type === 'function') {
   console.log(`Next steps:`);
   console.log(`  cd packages/${name}`);
   console.log(`  bun install`);
-} else if (type === 'app') {
-  console.log(`App ${name} created successfully!`);
+} else if (type === 'webapp') {
+  console.log(`Webapp (React) ${name} created successfully!`);
   console.log(`Next steps:`);
-  console.log(`  cd apps/${name}`);
+  console.log(`  cd webapps/${name}`);
+  console.log(`  bun install`);
+  console.log(`  bun run dev`);
+} else if (type === 'service') {
+  console.log(`Service (Elysia) ${name} created successfully!`);
+  console.log(`Next steps:`);
+  console.log(`  cd services/${name}`);
   console.log(`  bun install`);
   console.log(`  bun run dev`);
 }

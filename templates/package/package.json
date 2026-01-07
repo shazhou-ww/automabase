@@ -1,5 +1,5 @@
 {
-  "name": "@myorg/{{name}}",
+  "name": "@automabase/{{name}}",
   "version": "1.0.0",
   "description": "Shared package: {{name}}",
   "main": "src/index.ts",

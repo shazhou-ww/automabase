@@ -1,5 +1,5 @@
 {
-  "name": "@myorg/function-{{name}}",
+  "name": "@automabase/function-{{name}}",
   "version": "1.0.0",
   "description": "Lambda function: {{name}}",
   "main": "src/index.ts",

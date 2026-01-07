@@ -1,0 +1,23 @@
+{
+  "name": "@automabase/function-automata-tracker",
+  "version": "1.0.0",
+  "description": "Lambda function: automata-tracker - WebSocket API for real-time automata state tracking",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src",
+    "lint:fix": "biome check --write src",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/index.js --external:\"@aws-sdk/*\" --minify --sourcemap",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@automabase/automata-auth": "workspace:*"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-apigatewaymanagementapi": "^3.700.0",
+    "@aws-sdk/client-dynamodb": "^3.700.0",
+    "@aws-sdk/lib-dynamodb": "^3.700.0",
+    "@types/aws-lambda": "^8.10.145"
+  }
+}

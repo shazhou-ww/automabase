@@ -10,8 +10,6 @@ Globals:
     Environment:
       Variables:
         NODE_ENV: !Ref Environment
-        # Lambda function references for cross-function invocation
-        JSONATA_EVAL_FUNCTION: !Ref JsonataEvalFunction
 
 Parameters:
   Environment:

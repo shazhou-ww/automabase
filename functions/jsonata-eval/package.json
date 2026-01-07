@@ -1,5 +1,5 @@
 {
-  "name": "@myorg/function-jsonata-eval",
+  "name": "@automabase/function-jsonata-eval",
   "version": "1.0.0",
   "description": "Lambda function: jsonata-eval",
   "main": "src/index.ts",

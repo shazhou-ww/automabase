@@ -1,0 +1,172 @@
+/**
+ * Automata Client Types
+ */
+
+// API Response wrapper
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+// Automata metadata
+export interface AutomataMeta {
+  id: string;
+  name?: string;
+  userId: string;
+  tenantId: string;
+  version: string;
+  state: unknown;
+  initialState: unknown;
+  stateSchema: unknown;
+  eventSchemas: Record<string, unknown>;
+  transition: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Event record
+export interface AutomataEvent {
+  version: string;
+  type: string;
+  data: unknown;
+  nextState: unknown;
+  createdAt: string;
+}
+
+// Backtrace/Replay result
+export interface EventListResult {
+  events: AutomataEvent[];
+  nextAnchor: string | null;
+}
+
+/**
+ * Create automata request
+ * 
+ * Authorization Requirements:
+ * - Valid JWT token (tenant & user authorization)
+ * - Descriptor signature from tenant (prevents unauthorized automata creation)
+ */
+export interface CreateAutomataRequest {
+  /** JSONSchema for state validation */
+  stateSchema: unknown;
+  /** Event type -> JSONSchema mapping */
+  eventSchemas: Record<string, unknown>;
+  /** Initial state value */
+  initialState: unknown;
+  /** JSONata expression for state transitions */
+  transition: string;
+  /** Name for the automata (required) */
+  name: string;
+  /** JWT signature of the automata descriptor from tenant (required) */
+  descriptorSignature: string;
+}
+
+// Automata list item (returned by list API)
+export interface AutomataListItem {
+  id: string;
+  name?: string;
+  version: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// List automata result
+export interface ListAutomataResult {
+  automatas: AutomataListItem[];
+  nextAnchor: string | null;
+}
+
+// List automata options
+export interface ListAutomataOptions {
+  /** Maximum number of items to return (default: 100) */
+  limit?: number;
+  /** Anchor for pagination (createdAt of last item) */
+  anchor?: string;
+}
+
+// Post event request
+export interface PostEventRequest {
+  type: string;
+  data?: unknown;
+}
+
+// Post event response
+export interface PostEventResponse {
+  version: string;
+  state: unknown;
+}
+
+// WebSocket message types
+export interface SubscribedMessage {
+  type: 'subscribed';
+  automataId: string;
+  state: unknown;
+  version: string;
+  timestamp: string;
+}
+
+export interface StateUpdateMessage {
+  type: 'state';
+  automataId: string;
+  event: {
+    type: string;
+    data: unknown;
+  };
+  state: unknown;
+  version: string;
+  timestamp: string;
+}
+
+export interface ErrorMessage {
+  type: 'error';
+  message: string;
+}
+
+export type WebSocketMessage = SubscribedMessage | StateUpdateMessage | ErrorMessage;
+
+// Tracker event callbacks
+export interface TrackerCallbacks {
+  onConnected?: () => void;
+  onDisconnected?: () => void;
+  onSubscribed?: (automataId: string, state: unknown, version: string) => void;
+  onStateUpdate?: (automataId: string, event: { type: string; data: unknown }, state: unknown, version: string, timestamp: string) => void;
+  onError?: (message: string) => void;
+}
+
+// Local storage record
+export interface StoredAutomata {
+  id: string;
+  version: string;
+  state: unknown;
+  meta?: AutomataMeta;
+  syncedAt: string;
+}
+
+// useAutomata hook options
+export interface UseAutomataOptions {
+  /** Auto-subscribe to real-time updates */
+  subscribe?: boolean;
+  /** Use local IndexedDB cache */
+  useLocalCache?: boolean;
+  /** Callback when state changes */
+  onStateChange?: (state: unknown, version: string) => void;
+}
+
+// useAutomata hook return type
+export interface UseAutomataResult<TState = unknown> {
+  /** Current state */
+  state: TState | null;
+  /** Current version */
+  version: string | null;
+  /** Loading state */
+  loading: boolean;
+  /** Error message */
+  error: string | null;
+  /** Connection status */
+  connected: boolean;
+  /** Send an event */
+  send: (type: string, data?: unknown) => Promise<PostEventResponse | null>;
+  /** Refresh from server */
+  refresh: () => Promise<void>;
+}
