@@ -1,0 +1,45 @@
+# SAM Template for automata-admin function
+# Tenant management and platform administration API
+# Note: Run 'bun run build:functions' before 'bun run sam:local'
+
+AutomataAdminFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    CodeUri: functions/automata-admin/dist
+    Handler: index.handler
+    Runtime: nodejs24.x
+    Timeout: 30
+    Environment:
+      Variables:
+        NODE_ENV: ${Env:NODE_ENV,prod}
+        TENANT_CONFIG_TABLE: !Ref TenantConfigTable
+    Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref TenantConfigTable
+    Events:
+      # Tenant operations
+      RegisterTenant:
+        Type: Api
+        Properties:
+          Path: /tenants
+          Method: POST
+      ListTenants:
+        Type: Api
+        Properties:
+          Path: /tenants
+          Method: GET
+      GetTenant:
+        Type: Api
+        Properties:
+          Path: /tenants/{tenantId}
+          Method: GET
+      UpdateTenant:
+        Type: Api
+        Properties:
+          Path: /tenants/{tenantId}
+          Method: PUT
+      DeleteTenant:
+        Type: Api
+        Properties:
+          Path: /tenants/{tenantId}
+          Method: DELETE

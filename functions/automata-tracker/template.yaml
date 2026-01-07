@@ -31,16 +31,16 @@ AutomataTrackerFunction:
         NODE_ENV: ${Env:NODE_ENV,prod}
         AUTOMATA_TABLE: !Ref AutomataTable
         CONNECTIONS_TABLE: !Ref AutomataConnectionsTable
+        TENANT_CONFIG_TABLE: !Ref TenantConfigTable
         WEBSOCKET_ENDPOINT: !Sub "https://${AutomataTrackerWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
-        JWKS_URI: ${Env:JWKS_URI,}
-        JWT_ISSUER: ${Env:JWT_ISSUER,}
-        JWT_AUDIENCE: ${Env:JWT_AUDIENCE,}
         TENANT_ID_CLAIM: ${Env:TENANT_ID_CLAIM,tenant_id}
     Policies:
       - DynamoDBReadPolicy:
           TableName: !Ref AutomataTable
       - DynamoDBCrudPolicy:
           TableName: !Ref AutomataConnectionsTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref TenantConfigTable
       - Statement:
           - Effect: Allow
             Action:

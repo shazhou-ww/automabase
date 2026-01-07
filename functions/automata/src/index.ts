@@ -11,27 +11,28 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import jsonata from 'jsonata';
 import { ulid } from 'ulid'; // Still used for automataId
 import {
-  type JwtConfig,
+  type TenantConfig,
   type VerifiedToken,
-  verifyJwt,
+  verifyJwtWithTenantConfig,
   extractBearerToken,
   AuthError,
 } from '@automabase/automata-auth';
 
 // Constants
 const TABLE_NAME = process.env.AUTOMATA_TABLE || 'automata';
+const TENANT_CONFIG_TABLE = process.env.TENANT_CONFIG_TABLE || 'tenant-config';
 const META_SK = '#META';
+const CONFIG_SK = '#CONFIG';
 const MAX_BATCH_SIZE = 100; // Maximum events per query
 const VERSION_ZERO = '000000'; // Initial version (6-digit base62, ~568 billion max)
 const TENANT_USER_INDEX = 'tenant-user-index'; // GSI for listing automata by tenant+user
 
-// JWT configuration from environment variables
-const jwtConfig: JwtConfig = {
-  jwksUri: process.env.JWKS_URI || '',
-  issuer: process.env.JWT_ISSUER || '',
-  audience: process.env.JWT_AUDIENCE || '',
-  tenantIdClaim: process.env.TENANT_ID_CLAIM || 'tenant_id',
-};
+// Tenant ID claim name from environment
+const TENANT_ID_CLAIM = process.env.TENANT_ID_CLAIM || 'tenant_id';
+
+// Tenant config cache (in-memory, per Lambda instance)
+const tenantConfigCache = new Map<string, { config: TenantConfig; expiresAt: number }>();
+const TENANT_CONFIG_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Base62 charset (sortable: 0-9A-Za-z)
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -104,7 +105,47 @@ const forbidden = (message: string): APIGatewayProxyResult => ({
 });
 
 /**
- * Verify JWT from Authorization header
+ * Get tenant configuration from DynamoDB with caching
+ */
+async function getTenantConfig(tenantId: string): Promise<TenantConfig | null> {
+  // Check cache first
+  const cached = tenantConfigCache.get(tenantId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.config;
+  }
+
+  // Fetch from DynamoDB
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: TENANT_CONFIG_TABLE,
+      Key: { pk: tenantId, sk: CONFIG_SK },
+    })
+  );
+
+  if (!result.Item) {
+    return null;
+  }
+
+  const config: TenantConfig = {
+    tenantId: result.Item.pk,
+    jwksUri: result.Item.jwksUri,
+    issuer: result.Item.issuer,
+    audience: result.Item.audience,
+    createdAt: result.Item.createdAt,
+    updatedAt: result.Item.updatedAt,
+  };
+
+  // Cache the result
+  tenantConfigCache.set(tenantId, {
+    config,
+    expiresAt: Date.now() + TENANT_CONFIG_CACHE_DURATION,
+  });
+
+  return config;
+}
+
+/**
+ * Verify JWT from Authorization header using dynamic tenant config
  */
 async function verifyAuth(event: APIGatewayProxyEvent): Promise<VerifiedToken | APIGatewayProxyResult> {
   const authHeader = event.headers.Authorization || event.headers.authorization;
@@ -115,7 +156,7 @@ async function verifyAuth(event: APIGatewayProxyEvent): Promise<VerifiedToken | 
   }
 
   try {
-    return await verifyJwt(token, jwtConfig);
+    return await verifyJwtWithTenantConfig(token, getTenantConfig, TENANT_ID_CLAIM);
   } catch (err: unknown) {
     if (err instanceof AuthError) {
       return unauthorized(err.message);
@@ -783,7 +824,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const method = event.httpMethod;
     const path = event.resource;
 
-    // Route based on method and path
+    // Automata routes (JWT auth required)
     if (method === 'GET' && path === '/automata') {
       return await listAutomata(event);
     }

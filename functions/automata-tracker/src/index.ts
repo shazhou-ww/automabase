@@ -17,25 +17,26 @@ import type {
   DynamoDBStreamEvent,
 } from 'aws-lambda';
 import {
-  type JwtConfig,
+  type TenantConfig,
   type VerifiedToken,
-  verifyJwt,
+  verifyJwtWithTenantConfig,
   AuthError,
 } from '@automabase/automata-auth';
 
 // Constants
 const AUTOMATA_TABLE = process.env.AUTOMATA_TABLE || 'automata';
 const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE || 'automata-connections';
+const TENANT_CONFIG_TABLE = process.env.TENANT_CONFIG_TABLE || 'tenant-config';
 const WEBSOCKET_ENDPOINT = process.env.WEBSOCKET_ENDPOINT || '';
 const META_SK = '#META';
+const CONFIG_SK = '#CONFIG';
 
-// JWT configuration from environment variables
-const jwtConfig: JwtConfig = {
-  jwksUri: process.env.JWKS_URI || '',
-  issuer: process.env.JWT_ISSUER || '',
-  audience: process.env.JWT_AUDIENCE || '',
-  tenantIdClaim: process.env.TENANT_ID_CLAIM || 'tenant_id',
-};
+// Tenant ID claim name from environment
+const TENANT_ID_CLAIM = process.env.TENANT_ID_CLAIM || 'tenant_id';
+
+// Tenant config cache (in-memory, per Lambda instance)
+const tenantConfigCache = new Map<string, { config: TenantConfig; expiresAt: number }>();
+const TENANT_CONFIG_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // DynamoDB client
 const isLocal = process.env.AWS_SAM_LOCAL === 'true';
@@ -43,6 +44,46 @@ const dynamoClient = new DynamoDBClient(
   isLocal ? { endpoint: 'http://host.docker.internal:8000' } : {}
 );
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
+
+/**
+ * Get tenant configuration from DynamoDB with caching
+ */
+async function getTenantConfig(tenantId: string): Promise<TenantConfig | null> {
+  // Check cache first
+  const cached = tenantConfigCache.get(tenantId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.config;
+  }
+
+  // Fetch from DynamoDB
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: TENANT_CONFIG_TABLE,
+      Key: { pk: tenantId, sk: CONFIG_SK },
+    })
+  );
+
+  if (!result.Item) {
+    return null;
+  }
+
+  const config: TenantConfig = {
+    tenantId: result.Item.pk,
+    jwksUri: result.Item.jwksUri,
+    issuer: result.Item.issuer,
+    audience: result.Item.audience,
+    createdAt: result.Item.createdAt,
+    updatedAt: result.Item.updatedAt,
+  };
+
+  // Cache the result
+  tenantConfigCache.set(tenantId, {
+    config,
+    expiresAt: Date.now() + TENANT_CONFIG_CACHE_DURATION,
+  });
+
+  return config;
+}
 
 // Connection record structure
 // pk: automataId, sk: connectionId
@@ -149,9 +190,9 @@ async function handleConnect(
     return { statusCode: 401, body: 'Missing token' };
   }
 
-  // Verify JWT format and signature (stateless - no storage)
+  // Verify JWT format and signature using dynamic tenant config
   try {
-    await verifyJwt(token, jwtConfig);
+    await verifyJwtWithTenantConfig(token, getTenantConfig, TENANT_ID_CLAIM);
   } catch (err: unknown) {
     if (err instanceof AuthError) {
       console.log(`Connection ${connectionId} rejected: ${err.message}`);
@@ -216,10 +257,10 @@ async function handleSubscribe(
 ): Promise<APIGatewayProxyResultV2> {
   const connectionId = event.requestContext.connectionId;
 
-  // Verify JWT in real-time (stateless auth)
+  // Verify JWT in real-time using dynamic tenant config
   let auth: VerifiedToken;
   try {
-    auth = await verifyJwt(token, jwtConfig);
+    auth = await verifyJwtWithTenantConfig(token, getTenantConfig, TENANT_ID_CLAIM);
   } catch (err: unknown) {
     const message = err instanceof AuthError ? err.message : 'Invalid or expired token';
     await sendToConnection(connectionId, {

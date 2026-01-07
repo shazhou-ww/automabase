@@ -13,13 +13,13 @@ AutomataFunction:
       Variables:
         NODE_ENV: ${Env:NODE_ENV,prod}
         AUTOMATA_TABLE: !Ref AutomataTable
-        JWKS_URI: ${Env:JWKS_URI,}
-        JWT_ISSUER: ${Env:JWT_ISSUER,}
-        JWT_AUDIENCE: ${Env:JWT_AUDIENCE,}
+        TENANT_CONFIG_TABLE: !Ref TenantConfigTable
         TENANT_ID_CLAIM: ${Env:TENANT_ID_CLAIM,tenant_id}
     Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref AutomataTable
+      - DynamoDBReadPolicy:
+          TableName: !Ref TenantConfigTable
     Events:
       # Automata operations
       ListAutomata:
@@ -95,3 +95,20 @@ AutomataTable:
           ProjectionType: ALL
     StreamSpecification:
       StreamViewType: NEW_IMAGE
+
+# Tenant configuration table for multi-tenant JWT authentication
+TenantConfigTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: !Sub ${AWS::StackName}-tenant-config
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: pk
+        AttributeType: S
+      - AttributeName: sk
+        AttributeType: S
+    KeySchema:
+      - AttributeName: pk
+        KeyType: HASH
+      - AttributeName: sk
+        KeyType: RANGE
