@@ -15,6 +15,7 @@
   "dependencies": {
     "@automabase/automata-core": "workspace:*",
     "@automabase/platform-auth": "workspace:*",
+    "@automabase/tenant-admin": "workspace:*",
     "@aws-sdk/lib-dynamodb": "^3.800.0"
   },
   "devDependencies": {

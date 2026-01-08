@@ -3,19 +3,15 @@
  * CRUD operations for tenant management
  */
 
-import type { CreateTenantRequest, TenantStatus } from '@automabase/automata-core';
+import type { CreateTenantRequest } from '@automabase/automata-core';
+import { getTenant } from '@automabase/automata-core';
 import {
   createTenant,
   generateTenantId,
-  getDocClient,
-  getTenant,
-  META_SK,
-  TABLE_NAME,
-  tenantKeys,
   updateTenant,
-} from '@automabase/automata-core';
+  updateTenantStatus,
+} from '@automabase/tenant-admin';
 import type { PlatformAuthContext } from '@automabase/platform-auth';
-import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
   badRequest,
@@ -272,9 +268,11 @@ export async function handleSuspendTenant(
     }
 
     // Update status to suspended
-    // Note: We need to add a method to update status in automata-core
-    // For now, we'll use a workaround through updateTenant if it supports status
     const result = await updateTenantStatus(tenantId, 'suspended');
+
+    if (!result) {
+      return notFound(`Tenant ${tenantId} not found`);
+    }
 
     return ok({
       tenantId,
@@ -322,6 +320,10 @@ export async function handleResumeTenant(
 
     const result = await updateTenantStatus(tenantId, 'active');
 
+    if (!result) {
+      return notFound(`Tenant ${tenantId} not found`);
+    }
+
     return ok({
       tenantId,
       status: 'active',
@@ -364,6 +366,10 @@ export async function handleDeleteTenant(
 
     const result = await updateTenantStatus(tenantId, 'deleted');
 
+    if (!result) {
+      return notFound(`Tenant ${tenantId} not found`);
+    }
+
     return ok({
       tenantId,
       status: 'deleted',
@@ -373,34 +379,4 @@ export async function handleDeleteTenant(
     console.error('Error deleting tenant:', error);
     return internalError('Failed to delete tenant');
   }
-}
-
-/**
- * Helper function to update tenant status
- */
-async function updateTenantStatus(
-  tenantId: string,
-  status: TenantStatus
-): Promise<{ updatedAt: string }> {
-  const docClient = getDocClient();
-  const keys = tenantKeys(tenantId);
-  const now = new Date().toISOString();
-
-  await docClient.send(
-    new UpdateCommand({
-      TableName: TABLE_NAME,
-      Key: { pk: keys.pk, sk: META_SK },
-      UpdateExpression: 'SET #status = :status, updatedAt = :now',
-      ExpressionAttributeNames: {
-        '#status': 'status',
-      },
-      ExpressionAttributeValues: {
-        ':status': status,
-        ':now': now,
-      },
-      ConditionExpression: 'attribute_exists(pk)',
-    })
-  );
-
-  return { updatedAt: now };
 }

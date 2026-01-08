@@ -94,6 +94,7 @@
       "dependencies": {
         "@automabase/automata-core": "workspace:*",
         "@automabase/platform-auth": "workspace:*",
+        "@automabase/tenant-admin": "workspace:*",
         "@aws-sdk/lib-dynamodb": "^3.800.0",
       },
       "devDependencies": {
@@ -192,6 +193,21 @@
         "vitest": "^1.2.0",
       },
     },
+    "packages/tenant-admin": {
+      "name": "@automabase/tenant-admin",
+      "version": "1.0.0",
+      "dependencies": {
+        "@automabase/automata-core": "workspace:*",
+        "@aws-sdk/client-dynamodb": "^3.723.0",
+        "@aws-sdk/lib-dynamodb": "^3.723.0",
+        "ulid": "^2.3.0",
+      },
+      "devDependencies": {
+        "@types/node": "^20.11.0",
+        "typescript": "^5.3.3",
+        "vitest": "^1.2.0",
+      },
+    },
   },
   "packages": {
     "@ampproject/remapping": ["@ampproject/remapping@2.3.0", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw=="],
@@ -213,6 +229,8 @@
     "@automabase/function-tenant-api": ["@automabase/function-tenant-api@workspace:functions/tenant-api"],
 
     "@automabase/platform-auth": ["@automabase/platform-auth@workspace:packages/platform-auth"],
+
+    "@automabase/tenant-admin": ["@automabase/tenant-admin@workspace:packages/tenant-admin"],
 
     "@automabase/tenant-admin-api": ["@automabase/tenant-admin-api@workspace:functions/tenant-admin-api"],
 
