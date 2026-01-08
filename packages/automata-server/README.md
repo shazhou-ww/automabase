@@ -4,7 +4,8 @@ Server-side SDK for automata descriptor signing and server utilities.
 
 ## Overview
 
-This SDK is designed to be used by tenant authentication services to sign automata descriptors before they are sent to clients. The signature ensures that only tenant-authorized automata can be created.
+This SDK is designed to be used by tenant authentication services to sign automata descriptors before they are
+sent to clients. The signature ensures that only tenant-authorized automata can be created.
 
 ## Installation
 
@@ -140,6 +141,7 @@ new AutomataServerSDK(config: AutomataServerSDKConfig)
 ```
 
 **Parameters:**
+
 - `config.tenantId` (string, required): Tenant ID that will sign the descriptors
 - `config.privateKey` (string, required): Private RSA key in PEM format or JWK format
 - `config.defaultExpirationSeconds` (number, optional): Default expiration time in seconds (default: 3600 = 1 hour)
@@ -151,6 +153,7 @@ new AutomataServerSDK(config: AutomataServerSDKConfig)
 Sign an automata descriptor.
 
 **Parameters:**
+
 - `descriptor` (AutomataDescriptor, required): The automata descriptor to sign
 - `expiresInSeconds` (number, optional): Signature expiration time in seconds (uses default if not provided)
 
@@ -161,6 +164,7 @@ Sign an automata descriptor.
 Compute SHA-256 hash of an automata descriptor.
 
 **Parameters:**
+
 - `descriptor` (AutomataDescriptor, required): The automata descriptor to hash
 
 **Returns:** string - SHA-256 hash string

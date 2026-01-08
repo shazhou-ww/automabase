@@ -13,7 +13,8 @@
 
 ## 概述
 
-Automata API 使用 JWT (JSON Web Token) 进行多租户认证。每个租户使用自己的私钥签发 JWT token，API 通过租户提供的 JWKS (JSON Web Key Set) endpoint 获取公钥来验证 token。
+Automata API 使用 JWT (JSON Web Token) 进行多租户认证。每个租户使用自己的私钥签发 JWT token，
+API 通过租户提供的 JWKS (JSON Web Key Set) endpoint 获取公钥来验证 token。
 
 ### 核心概念
 
@@ -110,7 +111,8 @@ AutomataTable:
 | `exp` | number | Token 过期时间（Unix 时间戳） | `1735689600` |
 | `tenant_id` | string | 租户 ID（ULID 格式，自定义 claim） | `01ARZ3NDEKTSV4RRFFQ69G5FAV` |
 
-**注意**: 
+**注意**:
+
 - `tenant_id` 必须使用 ULID 格式（26 个字符，如 `01ARZ3NDEKTSV4RRFFQ69G5FAV`）
 - 当前版本不支持其他可选 claims（如 `iat`, `nbf`, `scope`, `email` 等）
 
@@ -141,6 +143,7 @@ AutomataTable:
 ```
 
 **说明**:
+
 - `tenant_id` 使用 ULID 格式（26 个字符）
 - 只包含必需的 claims，不包含可选字段
 
@@ -164,6 +167,7 @@ AutomataTable:
 ```
 
 **JWKS endpoint 要求**:
+
 - URL: `{issuer}/.well-known/jwks.json`（推荐）
 - 或自定义路径，但必须在租户注册时提供完整 URL
 - 必须支持 HTTPS（生产环境）
@@ -292,6 +296,7 @@ bun run test:jwt:keys
 ```
 
 这会生成：
+
 - `.test-keys/private-key.json` - 私钥（用于签名）
 - `.test-keys/public-key.json` - 公钥
 - `.test-keys/jwks.json` - JWKS 格式的公钥

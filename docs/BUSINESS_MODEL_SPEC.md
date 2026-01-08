@@ -277,6 +277,7 @@ automata:01AN4Z07BY79KA1307SR9X4MV3:readwrite
 ### 4.2 请求签名机制
 
 所有请求需要：
+
 1. **JWT Token**：在 `Authorization: Bearer {token}` header 中
 2. **Request ID**：在 `X-Request-Id` header 中，ULID 格式
 3. **Timestamp**：在 `X-Request-Timestamp` header 中，ISO8601 格式
@@ -497,6 +498,7 @@ GET /realms?limit={n}&cursor={cursor}
 **权限**: 至少拥有一个 `realm:*:read` 权限
 
 **响应**:
+
 ```json
 {
   "realms": [
@@ -538,6 +540,7 @@ Content-Type: application/json
 **权限**: `realm:{realmId}:readwrite`
 
 **响应**:
+
 ```json
 {
   "automataId": "01AN4Z07BY79KA1307SR9X4MV3",
@@ -554,6 +557,7 @@ GET /realms/{realmId}/automatas?limit={n}&cursor={cursor}
 **权限**: `realm:{realmId}:read`
 
 **响应**:
+
 ```json
 {
   "automatas": [
@@ -579,6 +583,7 @@ GET /automatas/{automataId}/state
 **权限**: `realm:{realmId}:read` 或 `automata:{automataId}:read`
 
 **响应**:
+
 ```json
 {
   "automataId": "01AN4Z07BY79KA1307SR9X4MV3",
@@ -598,6 +603,7 @@ GET /automatas/{automataId}/descriptor
 **权限**: `realm:{realmId}:read` 或 `automata:{automataId}:read`
 
 **响应**:
+
 ```json
 {
   "automataId": "01AN4Z07BY79KA1307SR9X4MV3",
@@ -624,6 +630,7 @@ Content-Type: application/json
 **权限**: `realm:{realmId}:readwrite` 或 `automata:{automataId}:readwrite`
 
 **响应**:
+
 ```json
 {
   "automataId": "01AN4Z07BY79KA1307SR9X4MV3",
@@ -651,6 +658,7 @@ Content-Type: application/json
 **权限**: `realm:{realmId}:readwrite` 或 `automata:{automataId}:readwrite`
 
 **响应**:
+
 ```json
 {
   "eventId": "event:01AN4Z07BY79KA1307SR9X4MV3:00001b",
@@ -670,6 +678,7 @@ GET /automatas/{automataId}/events?direction={forward|backward}&anchor={version}
 ```
 
 **参数**:
+
 | 参数 | 说明 |
 |------|------|
 | `direction` | `forward`（从旧到新）或 `backward`（从新到旧） |
@@ -679,6 +688,7 @@ GET /automatas/{automataId}/events?direction={forward|backward}&anchor={version}
 **权限**: `realm:{realmId}:read` 或 `automata:{automataId}:read`
 
 **响应**:
+
 ```json
 {
   "events": [
@@ -704,6 +714,7 @@ GET /automatas/{automataId}/events/{baseVersion}
 **权限**: `realm:{realmId}:read` 或 `automata:{automataId}:read`
 
 **响应**:
+
 ```json
 {
   "eventId": "event:01AN4Z07BY79KA1307SR9X4MV3:00001a",
@@ -802,6 +813,7 @@ wss://api.automabase.com/v1/ws?token={jwt}
 **用途**：按 eventType 过滤查询某 Automata 的事件
 
 **查询示例**：
+
 - 按类型查询：`begins_with(lsi1sk, 'EVTYPE#INCREMENT#')`
 - 按类型 + 版本范围：`lsi1sk BETWEEN 'EVTYPE#INCREMENT#000010' AND 'EVTYPE#INCREMENT#000020'`
 

@@ -148,7 +148,7 @@ curl -X POST https://xxx.execute-api.region.amazonaws.com/Prod/v1/realms/{realmI
 cp env.json.example env.json
 ```
 
-2. `env.json` 示例配置：
+1. `env.json` 示例配置：
 
 ```json
 {
@@ -172,7 +172,8 @@ cp env.json.example env.json
 }
 ```
 
-注意：本地开发时，`TenantAdminApiFunction` 会从环境变量 `ADMIN_API_KEY_SECRET` 获取密钥名称，但实际验证会调用 AWS Secrets Manager。在本地测试时，可以在代码中临时跳过验证，或使用 AWS CLI 配置的凭证访问真实的 Secrets Manager。
+注意：本地开发时，`TenantAdminApiFunction` 会从环境变量 `ADMIN_API_KEY_SECRET` 获取密钥名称，
+但实际验证会调用 AWS Secrets Manager。在本地测试时，可以配置 `LOCAL_ADMIN_API_KEY` 环境变量来跳过 Secrets Manager。
 
 ### 启动本地 DynamoDB
 
