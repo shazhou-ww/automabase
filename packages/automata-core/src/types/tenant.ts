@@ -55,7 +55,7 @@ export interface CreateTenantRequest {
 }
 
 /**
- * Tenant update request (PATCH /tenant)
+ * Tenant update request (PATCH /tenant or /admin/tenants/{id})
  */
 export interface UpdateTenantRequest {
   /** Tenant name */
@@ -64,6 +64,8 @@ export interface UpdateTenantRequest {
   contactName?: string;
   /** Contact email */
   contactEmail?: string;
+  /** JWKS endpoint URL (admin only) */
+  jwksUri?: string;
 }
 
 /**

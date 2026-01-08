@@ -5,8 +5,9 @@
 
 /**
  * Resource types that can be authorized
+ * Note: 'tenant' permission is no longer used - tenant management is handled by admin API
  */
-export type ResourceType = 'tenant' | 'realm' | 'automata';
+export type ResourceType = 'realm' | 'automata';
 
 /**
  * Access levels
@@ -32,7 +33,6 @@ export interface Permission {
  * Examples:
  *   realm:01F8MECHZX3TBDSZ7XRADM79XV:read
  *   automata:01AN4Z07BY79KA1307SR9X4MV3:readwrite
- *   tenant:01F8MECHZX3TBDSZ7XRADM79XV:read
  */
 
 /**
@@ -47,8 +47,8 @@ export function parsePermission(permStr: string): Permission | null {
 
   const [resourceType, resourceId, accessLevel] = parts;
 
-  // Validate resource type
-  if (!['tenant', 'realm', 'automata'].includes(resourceType)) {
+  // Validate resource type (tenant is no longer supported)
+  if (!['realm', 'automata'].includes(resourceType)) {
     return null;
   }
 
@@ -138,20 +138,6 @@ export class PermissionChecker {
       }
     }
     return false;
-  }
-
-  /**
-   * Check if the user has read access to a tenant
-   */
-  canReadTenant(tenantId: string): boolean {
-    return this.hasAccess('tenant', tenantId, 'read');
-  }
-
-  /**
-   * Check if the user has readwrite access to a tenant
-   */
-  canWriteTenant(tenantId: string): boolean {
-    return this.hasAccess('tenant', tenantId, 'readwrite');
   }
 
   /**

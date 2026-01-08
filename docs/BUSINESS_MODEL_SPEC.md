@@ -183,7 +183,16 @@ Realm 是逻辑概念，不作为独立实体存储：
 
 ## 三、权限模型
 
-### 3.1 权限字格式
+### 3.1 双层权限体系
+
+Automabase 采用双层权限体系，将平台管理与租户业务完全分离：
+
+| 层级 | 用途 | 认证方式 | 操作范围 |
+|------|------|----------|----------|
+| **平台层** | 管理 Tenant 生命周期 | Admin API Key (Secrets Manager) | 创建/暂停/恢复/删除 Tenant |
+| **租户层** | 操作业务资源 | Tenant JWT + 请求签名 | Realm/Automata/Event 操作 |
+
+### 3.2 权限字格式（租户层）
 
 ```
 {resource-type}:{resource-id}:{access-level}
@@ -191,11 +200,13 @@ Realm 是逻辑概念，不作为独立实体存储：
 
 | 组成部分 | 说明 | 示例 |
 |---------|------|------|
-| `resource-type` | 资源类型 | `tenant` / `realm` / `automata` |
-| `resource-id` | 资源 ULID | `01F8MECHZX3TBDSZ7XRADM79XV` |
+| `resource-type` | 资源类型 | `realm` / `automata` |
+| `resource-id` | 资源 ULID 或 `*` (通配符) | `01F8MECHZX3TBDSZ7XRADM79XV` |
 | `access-level` | 访问级别 | `read` / `write` / `readwrite` |
 
-### 3.2 访问级别
+> **注意**：`tenant` 权限字已废弃。Tenant 管理通过 Admin API Key 认证的 tenant-admin-api 进行。
+
+### 3.3 访问级别
 
 | 级别 | 说明 |
 |------|------|
@@ -203,28 +214,28 @@ Realm 是逻辑概念，不作为独立实体存储：
 | `write` | 只写访问（预留，MVP 阶段不实现） |
 | `readwrite` | 读写访问 |
 
-### 3.3 权限示例
+### 3.4 权限示例
 
 ```
 realm:01F8MECHZX3TBDSZ7XRADM79XV:read
+realm:*:readwrite
 automata:01AN4Z07BY79KA1307SR9X4MV3:readwrite
-tenant:01F8MECHZX3TBDSZ7XRADM79XV:read
 ```
 
-### 3.4 权限蕴含规则
+### 3.5 权限蕴含规则
 
 | 规则 | 说明 |
 |------|------|
 | Realm → Automata | Realm 权限蕴含该 Realm 下所有 Automata 的对应权限 |
-| Tenant ≠ Realm | Tenant 权限仅限于 Tenant 实体属性，不蕴含 Realm/Automata 权限 |
 | readwrite → read | `readwrite` 权限蕴含 `read` 权限 |
+| 通配符 | `realm:*:read` 表示对所有 Realm 的读权限 |
 
-### 3.5 操作权限映射
+### 3.6 操作权限映射
 
 | 操作 | 所需权限 |
 |------|---------|
-| 读取 Tenant 属性 | `tenant:{id}:read` 或 `tenant:{id}:readwrite` |
-| 更新 Tenant 属性 | `tenant:{id}:readwrite` |
+| 读取 Tenant 属性 | 任何有效 JWT（公开只读） |
+| 管理 Tenant | Admin API Key（通过 tenant-admin-api） |
 | 创建 Automata | `realm:{id}:readwrite` |
 | 查询 Automata 状态 | `realm:{id}:read` 或 `automata:{id}:read` |
 | 发送 Event | `realm:{id}:readwrite` 或 `automata:{id}:readwrite` |
@@ -314,7 +325,9 @@ tenant:01F8MECHZX3TBDSZ7XRADM79XV:read
 - **Tenant ID**: 从 JWT `iss` claim 提取，无需在请求中传递
 - **Subject ID**: 从 JWT `sub` claim 提取
 
-### 5.2 Tenant API
+### 5.2 Tenant API（租户层 - 只读）
+
+任何持有有效 Tenant JWT 的用户都可以读取自己 Tenant 的公开信息。
 
 #### 读取 Tenant
 
@@ -326,9 +339,10 @@ X-Request-Timestamp: {iso8601}
 X-Request-Signature: {signature}
 ```
 
-**权限**: `tenant:{id}:read`
+**权限**: 任何有效 JWT（公开只读）
 
 **响应**:
+
 ```json
 {
   "tenantId": "01F8MECHZX3TBDSZ7XRADM79XV",
@@ -342,29 +356,131 @@ X-Request-Signature: {signature}
 }
 ```
 
-#### 更新 Tenant
+> **注意**：Tenant 的更新、暂停、删除等管理操作通过 Tenant Admin API 进行。
+
+---
+
+### 5.2.1 Tenant Admin API（平台层）
+
+Tenant 生命周期管理 API，需要 Admin API Key 认证。
+
+#### 认证方式
 
 ```http
-PATCH /tenant
-Authorization: Bearer {token}
+X-Admin-Key: {keyId}:{secret}
+```
+
+或
+
+```http
+Authorization: AdminKey {keyId}:{secret}
+```
+
+Admin API Key 存储在 AWS Secrets Manager 中，secret 名称为 `automabase/admin-api-key`。
+
+#### 创建 Tenant
+
+```http
+POST /admin/tenants
+X-Admin-Key: {keyId}:{secret}
 Content-Type: application/json
-X-Request-Id: {ulid}
-X-Request-Timestamp: {iso8601}
-X-Request-Signature: {signature}
 
 {
-  "name": "New Company Name",
-  "contactEmail": "new@example.com"
+  "name": "My Company",
+  "jwksUri": "https://auth.example.com/.well-known/jwks.json",
+  "ownerSubjectId": "sha256:abc123..."
 }
 ```
 
-**权限**: `tenant:{id}:readwrite`
+**响应** (201 Created):
 
-**响应**:
 ```json
 {
-  "updatedFields": ["name", "contactEmail"],
+  "tenantId": "01F8MECHZX3TBDSZ7XRADM79XV",
+  "name": "My Company",
+  "jwksUri": "https://auth.example.com/.well-known/jwks.json",
+  "ownerSubjectId": "sha256:abc123...",
+  "status": "active",
+  "createdAt": "2024-01-01T00:00:00Z"
+}
+```
+
+#### 列出 Tenants
+
+```http
+GET /admin/tenants?limit={n}&cursor={cursor}
+X-Admin-Key: {keyId}:{secret}
+```
+
+#### 获取 Tenant 详情
+
+```http
+GET /admin/tenants/{tenantId}
+X-Admin-Key: {keyId}:{secret}
+```
+
+#### 更新 Tenant
+
+```http
+PATCH /admin/tenants/{tenantId}
+X-Admin-Key: {keyId}:{secret}
+Content-Type: application/json
+
+{
+  "name": "New Company Name",
+  "contactEmail": "new@example.com",
+  "jwksUri": "https://new-auth.example.com/.well-known/jwks.json"
+}
+```
+
+**响应**:
+
+```json
+{
+  "tenantId": "01F8MECHZX3TBDSZ7XRADM79XV",
+  "updatedFields": ["name", "contactEmail", "jwksUri"],
   "updatedAt": "2024-01-20T10:00:00Z"
+}
+```
+
+#### 暂停 Tenant
+
+```http
+POST /admin/tenants/{tenantId}/suspend
+X-Admin-Key: {keyId}:{secret}
+```
+
+**响应**:
+
+```json
+{
+  "tenantId": "01F8MECHZX3TBDSZ7XRADM79XV",
+  "status": "suspended",
+  "updatedAt": "2024-01-20T10:00:00Z"
+}
+```
+
+#### 恢复 Tenant
+
+```http
+POST /admin/tenants/{tenantId}/resume
+X-Admin-Key: {keyId}:{secret}
+```
+
+#### 删除 Tenant
+
+```http
+DELETE /admin/tenants/{tenantId}
+X-Admin-Key: {keyId}:{secret}
+```
+
+**响应**:
+
+```json
+{
+  "tenantId": "01F8MECHZX3TBDSZ7XRADM79XV",
+  "status": "deleted",
+  "deletedAt": "2024-01-20T10:00:00Z"
 }
 ```
 
@@ -719,13 +835,12 @@ wss://api.automabase.com/v1/ws?token={jwt}
 
 - [x] 完成业务模型设计评审
 - [x] 将现有 functions 改名为 `-exp` 后缀
-  - [x] `automata` → `automata-exp`
-  - [x] `automata-admin` → `automata-admin-exp`
-  - [x] `automata-tracker` → `automata-tracker-exp`
+- [x] 移除 `-exp` 后缀的实验性函数包
 - [x] 创建新的 functions 骨架
   - [x] `automata-api`
   - [x] `automata-ws`
   - [x] `tenant-api`
+  - [x] `tenant-admin-api`
 
 ### Phase 1: 核心功能 (MVP)
 
@@ -736,12 +851,25 @@ wss://api.automabase.com/v1/ws?token={jwt}
 
 - [x] **认证授权**
   - [x] 实现 JWT 验证（支持动态 JWKS）
-  - [x] 实现权限字解析和验证
+  - [x] 实现权限字解析和验证（移除 tenant 权限字）
   - [x] 实现 Tenant 配置管理
 
+- [x] **平台认证** (`@automabase/platform-auth`)
+  - [x] 实现 Admin API Key 认证
+  - [x] 集成 AWS Secrets Manager
+  - [x] 实现认证中间件
+
+- [x] **Tenant Admin API** (`tenant-admin-api`)
+  - [x] POST /admin/tenants (创建)
+  - [x] GET /admin/tenants (列表)
+  - [x] GET /admin/tenants/{id} (详情)
+  - [x] PATCH /admin/tenants/{id} (更新)
+  - [x] POST /admin/tenants/{id}/suspend (暂停)
+  - [x] POST /admin/tenants/{id}/resume (恢复)
+  - [x] DELETE /admin/tenants/{id} (删除)
+
 - [x] **Tenant API** (`tenant-api`)
-  - [x] GET /tenant
-  - [x] PATCH /tenant
+  - [x] GET /tenant (只读公开)
 
 - [x] **Automata API** (`automata-api`)
   - [x] POST /realms/{realmId}/automatas

@@ -154,6 +154,13 @@ export async function updateTenant(
     updatedFields.push('contactEmail');
   }
 
+  if (updates.jwksUri !== undefined) {
+    updateExpressions.push('#jwksUri = :jwksUri');
+    expressionAttributeNames['#jwksUri'] = 'jwksUri';
+    expressionAttributeValues[':jwksUri'] = updates.jwksUri;
+    updatedFields.push('jwksUri');
+  }
+
   if (updatedFields.length === 0) {
     // No fields to update
     return { updatedFields: [], updatedAt: now };

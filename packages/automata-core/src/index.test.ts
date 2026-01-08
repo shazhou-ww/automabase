@@ -96,6 +96,7 @@ describe('Permission Utilities', () => {
         resourceType: 'realm',
         resourceId: '01F8MECHZX3TBDSZ7XRADM79XV',
         accessLevel: 'read',
+        isWildcard: false,
       });
     });
 
@@ -119,14 +120,6 @@ describe('Permission Utilities', () => {
   });
 
   describe('PermissionChecker', () => {
-    it('should check tenant permissions', () => {
-      const checker = new PermissionChecker([
-        'tenant:01F8MECHZX3TBDSZ7XRADM79XV:read',
-      ]);
-      expect(checker.canReadTenant('01F8MECHZX3TBDSZ7XRADM79XV')).toBe(true);
-      expect(checker.canWriteTenant('01F8MECHZX3TBDSZ7XRADM79XV')).toBe(false);
-    });
-
     it('should check realm permissions', () => {
       const checker = new PermissionChecker([
         'realm:01F8MECHZX3TBDSZ7XRADM79XV:readwrite',

@@ -26,8 +26,3 @@ TenantApiFunction:
         Properties:
           Path: /tenant
           Method: GET
-      UpdateTenant:
-        Type: Api
-        Properties:
-          Path: /tenant
-          Method: PATCH

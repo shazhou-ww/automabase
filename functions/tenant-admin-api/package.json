@@ -1,0 +1,29 @@
+{
+  "name": "@automabase/tenant-admin-api",
+  "version": "1.0.0",
+  "description": "Tenant administration API for Automabase platform management",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --outfile=dist/index.mjs --format=esm --external:\"@aws-sdk/*\"",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src",
+    "lint:fix": "biome check --write src",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@automabase/automata-core": "workspace:*",
+    "@automabase/platform-auth": "workspace:*",
+    "@aws-sdk/lib-dynamodb": "^3.800.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.159",
+    "@types/node": "^20.11.0",
+    "esbuild": "^0.27.2",
+    "rimraf": "^6.1.2",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}
+

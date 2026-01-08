@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Tenant Admin API - Platform management for Automabase
+
+Resources:
+  TenantAdminApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'automabase-tenant-admin-api-${Environment}'
+      Handler: index.handler
+      CodeUri: ./dist
+      Description: Tenant administration API for platform management
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Sub 'automabase-${Environment}'
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:automabase/admin-api-key*'
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub 'automabase-${Environment}'
+          ADMIN_API_KEY_SECRET: automabase/admin-api-key
+      Events:
+        CreateTenant:
+          Type: Api
+          Properties:
+            Path: /admin/tenants
+            Method: POST
+        ListTenants:
+          Type: Api
+          Properties:
+            Path: /admin/tenants
+            Method: GET
+        GetTenant:
+          Type: Api
+          Properties:
+            Path: /admin/tenants/{tenantId}
+            Method: GET
+        UpdateTenant:
+          Type: Api
+          Properties:
+            Path: /admin/tenants/{tenantId}
+            Method: PATCH
+        SuspendTenant:
+          Type: Api
+          Properties:
+            Path: /admin/tenants/{tenantId}/suspend
+            Method: POST
+        ResumeTenant:
+          Type: Api
+          Properties:
+            Path: /admin/tenants/{tenantId}/resume
+            Method: POST
+        DeleteTenant:
+          Type: Api
+          Properties:
+            Path: /admin/tenants/{tenantId}
+            Method: DELETE
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: 'es2022'
+        Sourcemap: false
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/index.ts
+        External:
+          - '@aws-sdk/*'
+
+Outputs:
+  TenantAdminApiEndpoint:
+    Description: Tenant Admin API Endpoint
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/admin'
+

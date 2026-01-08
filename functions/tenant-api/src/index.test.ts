@@ -34,18 +34,17 @@ const createMockEvent = (overrides: Partial<APIGatewayProxyEvent> = {}): APIGate
 });
 
 describe('tenant-api handler', () => {
-  it('should return 501 for GET /tenant', async () => {
+  it('should return 401 for GET /tenant without authorization', async () => {
     const event = createMockEvent({ httpMethod: 'GET' });
     const context = createMockContext();
 
     const result = await handler(event, context);
 
-    expect(result.statusCode).toBe(501);
-    const body = JSON.parse(result.body);
-    expect(body.message).toContain('GET /tenant');
+    // Without authorization header, should return 401
+    expect(result.statusCode).toBe(401);
   });
 
-  it('should return 501 for PATCH /tenant', async () => {
+  it('should return 405 for PATCH /tenant (moved to admin API)', async () => {
     const event = createMockEvent({
       httpMethod: 'PATCH',
       body: JSON.stringify({ name: 'New Name' }),
@@ -54,9 +53,8 @@ describe('tenant-api handler', () => {
 
     const result = await handler(event, context);
 
-    expect(result.statusCode).toBe(501);
-    const body = JSON.parse(result.body);
-    expect(body.message).toContain('PATCH /tenant');
+    // PATCH is no longer supported - use admin API instead
+    expect(result.statusCode).toBe(405);
   });
 
   it('should return 405 for unsupported methods', async () => {
@@ -66,5 +64,15 @@ describe('tenant-api handler', () => {
     const result = await handler(event, context);
 
     expect(result.statusCode).toBe(405);
+  });
+
+  it('should return 200 for OPTIONS (CORS preflight)', async () => {
+    const event = createMockEvent({ httpMethod: 'OPTIONS' });
+    const context = createMockContext();
+
+    const result = await handler(event, context);
+
+    expect(result.statusCode).toBe(200);
+    expect(result.headers?.['Access-Control-Allow-Origin']).toBe('*');
   });
 });
