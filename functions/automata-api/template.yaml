@@ -1,0 +1,68 @@
+# SAM Template for automata-api function
+# This file will be merged into the root template.yaml during local testing
+# Note: Run 'bun run build:functions' before 'bun run sam:local'
+
+AutomataApiFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    CodeUri: functions/automata-api/dist
+    Handler: index.handler
+    Runtime: nodejs24.x
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        NODE_ENV: !Ref Environment
+        AUTOMABASE_TABLE: !Ref AutomabaseTable
+    Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref AutomabaseTable
+    Events:
+      # Realm routes
+      CreateAutomata:
+        Type: Api
+        Properties:
+          Path: /realms/{realmId}/automatas
+          Method: POST
+      ListRealms:
+        Type: Api
+        Properties:
+          Path: /realms
+          Method: GET
+      ListAutomatasInRealm:
+        Type: Api
+        Properties:
+          Path: /realms/{realmId}/automatas
+          Method: GET
+      # Automata routes
+      GetAutomataState:
+        Type: Api
+        Properties:
+          Path: /automatas/{automataId}/state
+          Method: GET
+      GetAutomataDescriptor:
+        Type: Api
+        Properties:
+          Path: /automatas/{automataId}/descriptor
+          Method: GET
+      UpdateAutomata:
+        Type: Api
+        Properties:
+          Path: /automatas/{automataId}
+          Method: PATCH
+      # Event routes
+      SendEvent:
+        Type: Api
+        Properties:
+          Path: /automatas/{automataId}/events
+          Method: POST
+      ListEvents:
+        Type: Api
+        Properties:
+          Path: /automatas/{automataId}/events
+          Method: GET
+      GetEvent:
+        Type: Api
+        Properties:
+          Path: /automatas/{automataId}/events/{version}
+          Method: GET
