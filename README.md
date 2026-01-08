@@ -148,7 +148,7 @@ curl -X POST https://xxx.execute-api.region.amazonaws.com/Prod/v1/realms/{realmI
 cp env.json.example env.json
 ```
 
-2. 编辑 `env.json` 配置 DynamoDB Local 端点：
+2. `env.json` 示例配置：
 
 ```json
 {
@@ -158,15 +158,43 @@ cp env.json.example env.json
   "TenantAdminApiFunction": {
     "TABLE_NAME": "automabase-dev",
     "ADMIN_API_KEY_SECRET": "automabase/admin-api-key"
+  },
+  "TenantApiFunction": {
+    "AUTOMABASE_TABLE": "automabase-dev",
+    "REQUEST_ID_TABLE": "automabase-request-ids-dev",
+    "JWT_AUDIENCE": "automabase:api:dev"
+  },
+  "AutomataApiFunction": {
+    "AUTOMABASE_TABLE": "automabase-dev",
+    "REQUEST_ID_TABLE": "automabase-request-ids-dev",
+    "JWT_AUDIENCE": "automabase:api:dev"
   }
 }
 ```
+
+注意：本地开发时，`TenantAdminApiFunction` 会从环境变量 `ADMIN_API_KEY_SECRET` 获取密钥名称，但实际验证会调用 AWS Secrets Manager。在本地测试时，可以在代码中临时跳过验证，或使用 AWS CLI 配置的凭证访问真实的 Secrets Manager。
 
 ### 启动本地 DynamoDB
 
 ```bash
 # 使用 Docker 启动 DynamoDB Local
-docker run -d -p 8000:8000 amazon/dynamodb-local
+docker run -d -p 8000:8000 --name dynamodb-local amazon/dynamodb-local
+
+# 创建开发用表
+aws dynamodb create-table \
+  --table-name automabase-dev \
+  --attribute-definitions \
+    AttributeName=pk,AttributeType=S \
+    AttributeName=sk,AttributeType=S \
+    AttributeName=gsi1pk,AttributeType=S \
+    AttributeName=gsi1sk,AttributeType=S \
+  --key-schema \
+    AttributeName=pk,KeyType=HASH \
+    AttributeName=sk,KeyType=RANGE \
+  --global-secondary-indexes \
+    '[{"IndexName":"gsi1","KeySchema":[{"AttributeName":"gsi1pk","KeyType":"HASH"},{"AttributeName":"gsi1sk","KeyType":"RANGE"}],"Projection":{"ProjectionType":"ALL"}}]' \
+  --billing-mode PAY_PER_REQUEST \
+  --endpoint-url http://localhost:8000
 ```
 
 ### 启动本地 API
