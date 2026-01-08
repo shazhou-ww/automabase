@@ -9,7 +9,8 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 const isLocal = process.env.AWS_SAM_LOCAL === 'true' || process.env.LOCALSTACK === 'true';
 
 // Local endpoint configuration
-const localEndpoint = process.env.DYNAMODB_ENDPOINT || 'http://localhost:8000';
+// Use DYNAMODB_ENDPOINT env var, or default to host.docker.internal for SAM Local
+const localEndpoint = process.env.DYNAMODB_ENDPOINT || 'http://host.docker.internal:8000';
 
 /**
  * Create DynamoDB client with appropriate configuration

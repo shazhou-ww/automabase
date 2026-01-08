@@ -156,7 +156,7 @@ cp env.json.example env.json
     "NODE_ENV": "development"
   },
   "TenantAdminApiFunction": {
-    "TABLE_NAME": "automabase-dev",
+    "AUTOMABASE_TABLE": "automabase-dev",
     "ADMIN_API_KEY_SECRET": "automabase/admin-api-key"
   },
   "TenantApiFunction": {

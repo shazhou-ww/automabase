@@ -70,6 +70,31 @@ function secureCompare(a: string, b: string): boolean {
 }
 
 /**
+ * Get stored secret from environment variable (for local development)
+ * Format: LOCAL_ADMIN_API_KEY=keyId:secret
+ */
+function getLocalAdminApiKey(): AdminApiKeySecret | null {
+  const localKey = process.env.LOCAL_ADMIN_API_KEY;
+  if (!localKey) {
+    return null;
+  }
+
+  const colonIndex = localKey.indexOf(':');
+  if (colonIndex === -1) {
+    return null;
+  }
+
+  const keyId = localKey.slice(0, colonIndex);
+  const secret = localKey.slice(colonIndex + 1);
+
+  if (!keyId || !secret) {
+    return null;
+  }
+
+  return { keyId, secret };
+}
+
+/**
  * Verify an API key against the stored secret
  *
  * @param authHeader The X-Admin-Key or Authorization header value
@@ -105,7 +130,32 @@ export async function verifyApiKey(
     };
   }
 
-  // Fetch the stored secret
+  // Try local environment variable first (for development)
+  const localSecret = getLocalAdminApiKey();
+  if (localSecret) {
+    const keyIdMatch = secureCompare(parsed.keyId, localSecret.keyId);
+    const secretMatch = secureCompare(parsed.secret, localSecret.secret);
+
+    if (keyIdMatch && secretMatch) {
+      const context: PlatformAuthContext = {
+        type: 'api-key',
+        keyId: parsed.keyId,
+        authenticatedAt: new Date().toISOString(),
+      };
+      return { success: true, context };
+    }
+
+    // If local key is set but doesn't match, still return invalid
+    return {
+      success: false,
+      error: {
+        code: 'INVALID_API_KEY',
+        message: 'Invalid API key',
+      },
+    };
+  }
+
+  // Fetch the stored secret from Secrets Manager
   let storedSecret: AdminApiKeySecret;
   try {
     storedSecret = await getAdminApiKey(secretName, region, cacheTtlSeconds);

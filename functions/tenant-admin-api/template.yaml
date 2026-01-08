@@ -15,8 +15,12 @@ TenantAdminApiFunction:
     Environment:
       Variables:
         NODE_ENV: !Ref Environment
-        TABLE_NAME: !Ref AutomabaseTable
+        AUTOMABASE_TABLE: !Ref AutomabaseTable
         ADMIN_API_KEY_SECRET: automabase/admin-api-key
+        LOCAL_ADMIN_API_KEY: ""
+        AWS_SAM_LOCAL: "true"
+        DYNAMODB_ENDPOINT: "http://host.docker.internal:8000"
+        AWS_REGION: "us-east-1"
     Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref AutomabaseTable
