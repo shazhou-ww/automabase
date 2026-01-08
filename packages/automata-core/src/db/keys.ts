@@ -3,7 +3,7 @@
  * Based on BUSINESS_MODEL_SPEC.md Section 6
  */
 
-import { PREFIX, META_SK } from './constants';
+import { META_SK, PREFIX } from './constants';
 
 /**
  * Build primary key for Tenant entity

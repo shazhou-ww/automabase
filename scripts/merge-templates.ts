@@ -69,15 +69,16 @@ if (functionResources.length === 0) {
   baseTemplate = baseTemplate.replace(placeholderPattern, '\n');
 
   // Find where to insert resources (after "Resources:" line and any comment)
-  const resourcesPattern = /(Resources:\s*\n)(\s*# Functions will be added here by create-function script\s*\n)?/;
+  const resourcesPattern =
+    /(Resources:\s*\n)(\s*# Functions will be added here by create-function script\s*\n)?/;
   const resourcesMatch = baseTemplate.match(resourcesPattern);
 
-  if (resourcesMatch) {
-    const insertPoint = resourcesMatch.index! + resourcesMatch[0].length;
+  if (resourcesMatch && resourcesMatch.index !== undefined) {
+    const insertPoint = resourcesMatch.index + resourcesMatch[0].length;
     const before = baseTemplate.slice(0, insertPoint);
     const after = baseTemplate.slice(insertPoint);
 
-    baseTemplate = before + functionResources.join('\n\n') + '\n' + after;
+    baseTemplate = `${before + functionResources.join('\n\n')}\n${after}`;
   } else if (baseTemplate.includes('Resources:')) {
     // Resources exists but doesn't match our pattern, insert after it
     baseTemplate = baseTemplate.replace(
@@ -106,4 +107,3 @@ if (functionResources.length === 0) {
 // Write merged template
 writeFileSync(outputFile, baseTemplate, 'utf8');
 console.log(`Output: ${outputFile}`);
-

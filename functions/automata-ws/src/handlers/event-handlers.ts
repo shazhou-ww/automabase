@@ -3,17 +3,16 @@
  * Phase 3: Send events via WebSocket
  */
 
-import type { APIGatewayProxyWebsocketEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
 import {
-  getAutomata,
-  createEventWithStateUpdate,
   createEventId,
-  PermissionChecker,
+  createEventWithStateUpdate,
+  executeTransition,
+  getAutomata,
+  type PermissionChecker,
 } from '@automabase/automata-core';
+import type { APIGatewayProxyResultV2, APIGatewayProxyWebsocketEventV2 } from 'aws-lambda';
 import { verifyToken } from '../utils/auth';
 import { getConnection, sendToConnection } from '../utils/connections';
-// Note: executeTransition is imported from automata-api utils
-// We'll need to create a shared utility or import it differently
 
 /**
  * Send event message format
@@ -174,7 +173,11 @@ export async function handleSendEvent(
     );
 
     if (!result.success) {
-      await sendError(connectionId, 'Version conflict - automata was modified concurrently', 'CONFLICT');
+      await sendError(
+        connectionId,
+        'Version conflict - automata was modified concurrently',
+        'CONFLICT'
+      );
       return { statusCode: 409, body: 'Version conflict' };
     }
 
@@ -216,4 +219,3 @@ async function sendError(connectionId: string, message: string, code?: string): 
     console.error('Error sending error message:', error);
   }
 }
-

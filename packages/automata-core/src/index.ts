@@ -9,11 +9,10 @@
  * - Base62 versioning utilities
  */
 
-// Re-export all types
-export * from './types';
-
 // Re-export database operations
 export * from './db';
+// Re-export all types
+export * from './types';
 
 // Re-export utilities
 export * from './utils';

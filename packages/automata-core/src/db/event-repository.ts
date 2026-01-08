@@ -2,25 +2,25 @@
  * Event Repository - DynamoDB operations for Event entity
  */
 
+import { TransactionCanceledException } from '@aws-sdk/client-dynamodb';
 import {
-  PutCommand,
   GetCommand,
-  QueryCommand,
-  TransactWriteCommand,
-  type PutCommandInput,
   type GetCommandInput,
+  PutCommand,
+  type PutCommandInput,
+  QueryCommand,
   type QueryCommandInput,
+  TransactWriteCommand,
   type TransactWriteCommandInput,
 } from '@aws-sdk/lib-dynamodb';
-import { TransactionCanceledException } from '@aws-sdk/client-dynamodb';
 
 import type { AutomataEvent, EventListItem, EventQueryDirection } from '../types/event';
 import { createEventId } from '../types/event';
-import { getDocClient } from './client';
-import { TABLE_NAME, LSI, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from './constants';
-import { automataPK, eventSK, eventTypeSK, eventKeys, automataKeys } from './keys';
 import { versionIncrement } from '../utils/base62';
-import { shouldCreateSnapshot, createSnapshot } from './snapshot-repository';
+import { getDocClient } from './client';
+import { DEFAULT_PAGE_SIZE, LSI, MAX_PAGE_SIZE, TABLE_NAME } from './constants';
+import { automataKeys, automataPK, eventKeys, eventSK, eventTypeSK } from './keys';
+import { createSnapshot, shouldCreateSnapshot } from './snapshot-repository';
 
 /**
  * DynamoDB item structure for Event
@@ -178,7 +178,7 @@ export async function createEventWithStateUpdate(
 
   try {
     await docClient.send(new TransactWriteCommand(params));
-    
+
     // Create snapshot if needed (every 62 versions)
     // Do this after transaction succeeds to avoid blocking
     if (shouldCreateSnapshot(newVersion)) {
@@ -186,10 +186,13 @@ export async function createEventWithStateUpdate(
         await createSnapshot(automataId, newVersion, newState);
       } catch (snapshotError) {
         // Log but don't fail the event creation if snapshot fails
-        console.error(`Failed to create snapshot for ${automataId} at version ${newVersion}:`, snapshotError);
+        console.error(
+          `Failed to create snapshot for ${automataId} at version ${newVersion}:`,
+          snapshotError
+        );
       }
     }
-    
+
     return { success: true, newVersion };
   } catch (error) {
     if (error instanceof TransactionCanceledException) {
@@ -229,13 +232,16 @@ export async function listEvents(
 
   // Add anchor condition if provided
   if (options?.anchor) {
+    const anchorValue = eventSK(options.anchor);
     if (direction === 'forward') {
       params.KeyConditionExpression = 'pk = :pk AND sk > :anchor';
-      params.ExpressionAttributeValues![':anchor'] = eventSK(options.anchor);
     } else {
       params.KeyConditionExpression = 'pk = :pk AND sk < :anchor';
-      params.ExpressionAttributeValues![':anchor'] = eventSK(options.anchor);
     }
+    params.ExpressionAttributeValues = {
+      ...params.ExpressionAttributeValues,
+      ':anchor': anchorValue,
+    };
   }
 
   const result = await docClient.send(new QueryCommand(params));

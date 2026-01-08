@@ -3,7 +3,7 @@
  */
 
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import type { PlatformAuthContext, PlatformAuthConfig } from '../types/platform-types';
+import type { PlatformAuthConfig, PlatformAuthContext } from '../types/platform-types';
 import { verifyApiKey } from './api-key-verifier';
 
 /**
@@ -34,7 +34,7 @@ export function extractApiKeyHeader(event: APIGatewayProxyEvent): string | undef
   }
 
   // Check Authorization header with AdminKey scheme
-  const authHeader = normalizedHeaders['authorization'];
+  const authHeader = normalizedHeaders.authorization;
   if (authHeader?.startsWith('AdminKey ')) {
     return authHeader;
   }
@@ -131,10 +131,7 @@ export async function authenticateRequest(
  */
 export function createPlatformAuthMiddleware(config: Partial<PlatformAuthConfig> = {}) {
   return function withPlatformAuth<T extends APIGatewayProxyResult>(
-    handler: (
-      event: APIGatewayProxyEvent,
-      context: PlatformAuthContext
-    ) => Promise<T>
+    handler: (event: APIGatewayProxyEvent, context: PlatformAuthContext) => Promise<T>
   ) {
     return async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
       const authResult = await authenticateRequest(event, config);
@@ -147,4 +144,3 @@ export function createPlatformAuthMiddleware(config: Partial<PlatformAuthConfig>
     };
   };
 }
-

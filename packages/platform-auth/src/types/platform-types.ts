@@ -79,4 +79,3 @@ export interface PlatformAuthProvider {
    */
   invalidateCache(): void;
 }
-

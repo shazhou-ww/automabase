@@ -134,4 +134,3 @@ export function internalError(message: string, requestId?: string): APIGatewayPr
     }),
   };
 }
-

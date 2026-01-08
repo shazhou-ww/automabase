@@ -5,20 +5,19 @@
 
 import type {
   ApiResponse,
+  AutomataEvent,
   AutomataMeta,
   CreateAutomataRequest,
   EventListResult,
+  ListAutomataOptions,
+  ListAutomataResult,
   PostEventRequest,
   PostEventResponse,
-  AutomataEvent,
+  StateUpdateMessage,
+  SubscribedMessage,
   TrackerCallbacks,
   WebSocketMessage,
-  SubscribedMessage,
-  StateUpdateMessage,
-  ListAutomataResult,
-  ListAutomataOptions,
 } from './types';
-import { createDescriptorSignature } from '@automabase/automata-auth';
 
 export interface AutomataClientConfig {
   /** Base URL for the REST API (e.g., https://api.example.com) */
@@ -64,7 +63,7 @@ export class AutomataClient {
   private ws: WebSocket | null = null;
   private subscriptions = new Map<string, Subscription>();
   private pendingSubscriptions = new Set<string>();
-  private trackerCallbacks: TrackerCallbacks = {};
+  private _trackerCallbacks: TrackerCallbacks = {};
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private isConnecting = false;
@@ -90,88 +89,6 @@ export class AutomataClient {
   // ============ REST API Methods ============
 
   /**
-   * Create a descriptor signature for automata creation
-   * 
-   * This method creates a JWT signature for the automata descriptor.
-   * The signature must be created by the tenant's authentication service
-   * to prevent unauthorized automata creation.
-   * 
-   * @param descriptor - The automata descriptor to sign (without signature)
-   * @param tenantId - Tenant ID that will sign the descriptor
-   * @param privateKey - Private key for signing (should come from tenant auth service)
-   * @param expiresInSeconds - Signature expiration time in seconds (default: 3600)
-   * @returns JWT signature string
-   * 
-   * @example
-   * ```typescript
-   * const signature = client.createDescriptorSignature(
-   *   {
-   *     name: 'MyAutomata',
-   *     stateSchema: {...},
-   *     eventSchemas: {...},
-   *     initialState: {...},
-   *     transition: '...'
-   *   },
-   *   tenantId,
-   *   privateKey
-   * );
-   * ```
-   */
-  createDescriptorSignature(
-    descriptor: Omit<CreateAutomataRequest, 'descriptorSignature'>,
-    tenantId: string,
-    privateKey: string,
-    expiresInSeconds: number = 3600
-  ): string {
-    return createDescriptorSignature(descriptor, tenantId, privateKey, expiresInSeconds);
-  }
-
-  /**
-   * Create a new automata with descriptor signature
-   * 
-   * This is a convenience method that creates the descriptor signature
-   * and then creates the automata in one call.
-   * 
-   * Authorization Requirements:
-   * 1. Valid JWT token (set via getToken in config)
-   * 2. Descriptor signature from tenant (created automatically by this method)
-   * 
-   * @param descriptor - Automata descriptor (without signature)
-   * @param tenantId - Tenant ID that will sign the descriptor
-   * @param privateKey - Private key for signing (should come from tenant auth service)
-   * @param expiresInSeconds - Signature expiration time in seconds (default: 3600)
-   * @returns Promise resolving to created automata ID
-   * 
-   * @example
-   * ```typescript
-   * const id = await client.createWithSignature(
-   *   {
-   *     name: 'MyAutomata',
-   *     stateSchema: {...},
-   *     eventSchemas: {...},
-   *     initialState: {...},
-   *     transition: '...'
-   *   },
-   *   tenantId,
-   *   privateKey
-   * );
-   * ```
-   */
-  async createWithSignature(
-    descriptor: Omit<CreateAutomataRequest, 'descriptorSignature'>,
-    tenantId: string,
-    privateKey: string,
-    expiresInSeconds: number = 3600
-  ): Promise<{ id: string }> {
-    const signature = this.createDescriptorSignature(descriptor, tenantId, privateKey, expiresInSeconds);
-    const request: CreateAutomataRequest = {
-      ...descriptor,
-      descriptorSignature: signature,
-    };
-    return this.create(request);
-  }
-
-  /**
    * Get headers with Authorization token if getToken is configured
    */
   private async getRequestHeaders(): Promise<Record<string, string>> {
@@ -186,11 +103,7 @@ export class AutomataClient {
     };
   }
 
-  private async request<T>(
-    method: string,
-    path: string,
-    body?: unknown
-  ): Promise<T> {
+  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const headers = await this.getRequestHeaders();
     const response = await this.fetchFn(`${this.baseUrl}${path}`, {
       method,
@@ -209,32 +122,33 @@ export class AutomataClient {
 
   /**
    * Create a new automata
-   * 
+   *
    * Authorization Requirements:
    * 1. Valid JWT token (set via getToken in config)
    * 2. Descriptor signature from tenant (required in request.descriptorSignature)
-   * 
+   *
+   * Note: Use @automabase/automata-server on server-side to sign descriptors.
+   *
    * @param request - Automata descriptor including signature
    * @returns Promise resolving to created automata ID
-   * 
+   *
    * @example
    * ```typescript
-   * // Using createWithSignature helper (recommended)
-   * const id = await client.createWithSignature(
-   *   {
-   *     name: 'MyAutomata',
-   *     stateSchema: {...},
-   *     eventSchemas: {...},
-   *     initialState: {...},
-   *     transition: '...'
-   *   },
-   *   tenantId,
-   *   privateKey
-   * );
-   * 
-   * // Or manually create signature first
-   * const signature = client.createDescriptorSignature(descriptor, tenantId, privateKey);
-   * const id = await client.create({ ...descriptor, descriptorSignature: signature });
+   * // First, get descriptor signature from your tenant auth server
+   * // (using @automabase/automata-server on server-side)
+   * const descriptor = {
+   *   name: 'MyAutomata',
+   *   stateSchema: {...},
+   *   eventSchemas: {...},
+   *   initialState: {...},
+   *   transition: '...'
+   * };
+   *
+   * // Then create automata with signature from server
+   * const id = await client.create({
+   *   ...descriptor,
+   *   descriptorSignature: signatureFromServer
+   * });
    * ```
    */
   async create(request: CreateAutomataRequest): Promise<{ id: string }> {
@@ -258,10 +172,7 @@ export class AutomataClient {
   /**
    * Post an event to an automata (trigger state transition)
    */
-  async postEvent(
-    automataId: string,
-    event: PostEventRequest
-  ): Promise<PostEventResponse> {
+  async postEvent(automataId: string, event: PostEventRequest): Promise<PostEventResponse> {
     return this.request<PostEventResponse>(
       'POST',
       `/automata/${encodeURIComponent(automataId)}/events`,
@@ -344,10 +255,17 @@ export class AutomataClient {
   }
 
   /**
+   * Get current tracker callbacks
+   */
+  get trackerCallbacks(): TrackerCallbacks {
+    return this._trackerCallbacks;
+  }
+
+  /**
    * Set global tracker callbacks
    */
   setTrackerCallbacks(callbacks: TrackerCallbacks): void {
-    this.trackerCallbacks = callbacks;
+    this._trackerCallbacks = callbacks;
   }
 
   /**
@@ -402,7 +320,7 @@ export class AutomataClient {
       this.ws.onopen = async () => {
         this.isConnecting = false;
         this.reconnectAttempts = 0;
-        this.trackerCallbacks.onConnected?.();
+        this._trackerCallbacks.onConnected?.();
 
         // Re-subscribe to all existing subscriptions
         const subscribePromises: Promise<void>[] = [];
@@ -424,7 +342,7 @@ export class AutomataClient {
 
       this.ws.onclose = () => {
         this.isConnecting = false;
-        this.trackerCallbacks.onDisconnected?.();
+        this._trackerCallbacks.onDisconnected?.();
 
         if (this.shouldReconnect && this.autoReconnect) {
           this.scheduleReconnect();
@@ -465,10 +383,7 @@ export class AutomataClient {
   /**
    * Subscribe to an automata's state changes (real-time)
    */
-  subscribe(
-    automataId: string,
-    callback: SubscriptionCallback
-  ): () => void {
+  subscribe(automataId: string, callback: SubscriptionCallback): () => void {
     if (!this.wsUrl) {
       console.warn('WebSocket URL not configured, subscription will not work');
     }
@@ -534,12 +449,12 @@ export class AutomataClient {
    */
   getSubscribedState(automataId: string): { state: unknown; version: string } | null {
     const subscription = this.subscriptions.get(automataId);
-    if (!subscription || subscription.currentState === undefined) {
+    if (!subscription || subscription.currentState === undefined || !subscription.currentVersion) {
       return null;
     }
     return {
       state: subscription.currentState,
-      version: subscription.currentVersion!,
+      version: subscription.currentVersion,
     };
   }
 
@@ -557,20 +472,24 @@ export class AutomataClient {
       }
     }
 
-    this.ws.send(JSON.stringify({
-      action: 'subscribe',
-      automataId,
-      token,
-    }));
+    this.ws.send(
+      JSON.stringify({
+        action: 'subscribe',
+        automataId,
+        token,
+      })
+    );
   }
 
   private sendUnsubscribe(automataId: string): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
-    this.ws.send(JSON.stringify({
-      action: 'unsubscribe',
-      automataId,
-    }));
+    this.ws.send(
+      JSON.stringify({
+        action: 'unsubscribe',
+        automataId,
+      })
+    );
   }
 
   private handleMessage(data: string): void {
@@ -590,7 +509,7 @@ export class AutomataClient {
         this.handleStateUpdate(message);
         break;
       case 'error':
-        this.trackerCallbacks.onError?.(message.message);
+        this._trackerCallbacks.onError?.(message.message);
         break;
     }
   }
@@ -602,11 +521,7 @@ export class AutomataClient {
     subscription.currentState = message.state;
     subscription.currentVersion = message.version;
 
-    this.trackerCallbacks.onSubscribed?.(
-      message.automataId,
-      message.state,
-      message.version
-    );
+    this._trackerCallbacks.onSubscribed?.(message.automataId, message.state, message.version);
 
     for (const callback of subscription.callbacks) {
       callback(message.state, message.version);
@@ -620,7 +535,7 @@ export class AutomataClient {
     subscription.currentState = message.state;
     subscription.currentVersion = message.version;
 
-    this.trackerCallbacks.onStateUpdate?.(
+    this._trackerCallbacks.onStateUpdate?.(
       message.automataId,
       message.event,
       message.state,

@@ -4,9 +4,9 @@ import type {
   DynamoDBStreamEvent,
 } from 'aws-lambda';
 import { handleConnect, handleDisconnect } from './handlers/connection-handlers';
-import { handleSubscribe, handleUnsubscribe } from './handlers/subscription-handlers';
-import { handleStreamEvent } from './handlers/stream-handlers';
 import { handleSendEvent } from './handlers/event-handlers';
+import { handleStreamEvent } from './handlers/stream-handlers';
+import { handleSubscribe, handleUnsubscribe } from './handlers/subscription-handlers';
 
 /**
  * Automata WebSocket Lambda Handler
@@ -20,7 +20,7 @@ import { handleSendEvent } from './handlers/event-handlers';
  */
 export const handler = async (
   event: APIGatewayProxyWebsocketEventV2 | DynamoDBStreamEvent
-): Promise<APIGatewayProxyResultV2 | void> => {
+): Promise<APIGatewayProxyResultV2 | undefined> => {
   console.log('Event:', JSON.stringify(event, null, 2));
 
   // Check if this is a DynamoDB Stream event

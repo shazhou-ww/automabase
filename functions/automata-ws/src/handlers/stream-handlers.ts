@@ -3,9 +3,9 @@
  * Based on BUSINESS_MODEL_SPEC.md Section 5.6
  */
 
-import type { DynamoDBStreamEvent, DynamoDBRecord } from 'aws-lambda';
-import { unmarshall } from '@aws-sdk/util-dynamodb';
 import type { AttributeValue } from '@aws-sdk/client-dynamodb';
+import { unmarshall } from '@aws-sdk/util-dynamodb';
+import type { DynamoDBRecord, DynamoDBStreamEvent } from 'aws-lambda';
 import { getSubscribersForAutomata, sendToConnection } from '../utils/connections';
 
 /**
@@ -101,7 +101,9 @@ async function processRecord(record: DynamoDBRecord): Promise<void> {
 
   // Log results
   const successful = results.filter((r) => r.status === 'fulfilled' && r.value).length;
-  const failed = results.filter((r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value)).length;
+  const failed = results.filter(
+    (r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value)
+  ).length;
 
   console.log(`Broadcast complete: ${successful} successful, ${failed} failed`);
 }

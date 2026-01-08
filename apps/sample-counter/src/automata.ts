@@ -2,11 +2,7 @@
  * Automata client initialization
  */
 
-import {
-  AutomataClient,
-  withStore,
-  setAutomataClient,
-} from '@automabase/automata-client';
+import { AutomataClient, setAutomataClient, withStore } from '@automabase/automata-client';
 
 // API base URL (proxied through Vite in dev, or direct in production)
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';

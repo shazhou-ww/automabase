@@ -7,7 +7,12 @@ export type AuthErrorCode =
   | 'MISSING_CLAIMS'
   | 'MISSING_TOKEN'
   | 'JWKS_ERROR'
-  | 'FORBIDDEN';
+  | 'FORBIDDEN'
+  | 'MISSING_HEADER'
+  | 'INVALID_HEADER'
+  | 'REPLAY_ATTACK'
+  | 'INTERNAL_ERROR'
+  | 'INVALID_SIGNATURE';
 
 /**
  * Authentication error

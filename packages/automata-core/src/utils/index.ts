@@ -2,16 +2,15 @@
  * Utilities exports for @automabase/automata-core
  */
 
-export { executeTransition } from './jsonata-runner';
 export {
-  versionIncrement,
-  versionDecrement,
-  versionCompare,
   isValidVersion,
-  versionToNumber,
   numberToVersion,
-  versionAdd,
   VERSION_LENGTH,
-  VERSION_ZERO,
   VERSION_MAX,
+  versionAdd,
+  versionCompare,
+  versionDecrement,
+  versionIncrement,
+  versionToNumber,
 } from './base62';
+export { executeTransition } from './jsonata-runner';

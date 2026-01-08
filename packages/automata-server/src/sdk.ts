@@ -1,7 +1,7 @@
 import {
-  signDescriptor,
-  computeDescriptorHash,
   type AutomataDescriptor,
+  computeDescriptorHash,
+  signDescriptor,
 } from '@automabase/automata-auth';
 
 /**
@@ -18,7 +18,7 @@ export interface AutomataServerSDKConfig {
 
 /**
  * Server-side SDK for automata operations
- * 
+ *
  * This SDK is designed to be used by tenant authentication services
  * to sign automata descriptors before they are sent to clients.
  */
@@ -35,15 +35,15 @@ export class AutomataServerSDK {
 
   /**
    * Sign an automata descriptor
-   * 
+   *
    * Creates a JWT signature for the automata descriptor that can be used
    * by clients to create automata. The signature ensures that only
    * tenant-authorized descriptors can be created.
-   * 
+   *
    * @param descriptor - The automata descriptor to sign
    * @param expiresInSeconds - Signature expiration time in seconds (optional, uses default if not provided)
    * @returns Promise resolving to JWT signature string
-   * 
+   *
    * @example
    * ```typescript
    * const signature = await sdk.signDescriptor({
@@ -55,19 +55,16 @@ export class AutomataServerSDK {
    * }, 7200); // 2 hours expiration
    * ```
    */
-  async signDescriptor(
-    descriptor: AutomataDescriptor,
-    expiresInSeconds?: number
-  ): Promise<string> {
+  async signDescriptor(descriptor: AutomataDescriptor, expiresInSeconds?: number): Promise<string> {
     const expiration = expiresInSeconds ?? this.defaultExpirationSeconds;
     return await signDescriptor(descriptor, this.tenantId, this.privateKey, expiration);
   }
 
   /**
    * Compute hash of an automata descriptor
-   * 
+   *
    * This can be useful for caching or comparing descriptors.
-   * 
+   *
    * @param descriptor - The automata descriptor to hash
    * @returns SHA-256 hash string
    */

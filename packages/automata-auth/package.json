@@ -12,6 +12,7 @@
     "clean": "echo 'No dist to clean'"
   },
   "dependencies": {
+    "@automabase/automata-core": "workspace:*",
     "jose": "^5.2.0"
   },
   "devDependencies": {

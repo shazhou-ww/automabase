@@ -1,29 +1,27 @@
-import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { AuthError } from '@automabase/automata-auth';
-import { authenticate } from './utils/auth-middleware';
-import { handleListRealms } from './handlers/realm-handlers';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import {
   handleCreateAutomata,
-  handleListAutomatas,
-  handleGetState,
   handleGetDescriptor,
+  handleGetState,
+  handleListAutomatas,
   handleUpdateAutomata,
 } from './handlers/automata-handlers';
 import {
-  handleSendEvent,
-  handleListEvents,
-  handleGetEvent,
-} from './handlers/event-handlers';
-import {
+  handleBatchGetStates,
   handleBatchSendEventsToAutomata,
   handleBatchSendEventsToRealm,
-  handleBatchGetStates,
 } from './handlers/batch-handlers';
+import { handleGetEvent, handleListEvents, handleSendEvent } from './handlers/event-handlers';
+import { handleGetHistoricalState, handleListSnapshots } from './handlers/history-handlers';
+import { handleListRealms } from './handlers/realm-handlers';
+import { authenticate } from './utils/auth-middleware';
 import {
-  handleGetHistoricalState,
-  handleListSnapshots,
-} from './handlers/history-handlers';
-import { unauthorized, badRequest, methodNotAllowed, internalError } from './utils/response-helpers';
+  badRequest,
+  internalError,
+  methodNotAllowed,
+  unauthorized,
+} from './utils/response-helpers';
 
 /**
  * Route matcher for path patterns
@@ -59,27 +57,87 @@ function matchRoute(
 const routes = [
   // Realm routes
   { pattern: /^\/realms$/, method: 'GET', handler: 'listRealms' },
-  { pattern: /^\/realms\/([^/]+)\/automatas$/, method: 'POST', handler: 'createAutomata', params: ['realmId'] },
-  { pattern: /^\/realms\/([^/]+)\/automatas$/, method: 'GET', handler: 'listAutomatas', params: ['realmId'] },
+  {
+    pattern: /^\/realms\/([^/]+)\/automatas$/,
+    method: 'POST',
+    handler: 'createAutomata',
+    params: ['realmId'],
+  },
+  {
+    pattern: /^\/realms\/([^/]+)\/automatas$/,
+    method: 'GET',
+    handler: 'listAutomatas',
+    params: ['realmId'],
+  },
 
   // Automata routes
-  { pattern: /^\/automatas\/([^/]+)\/state$/, method: 'GET', handler: 'getState', params: ['automataId'] },
-  { pattern: /^\/automatas\/([^/]+)\/descriptor$/, method: 'GET', handler: 'getDescriptor', params: ['automataId'] },
-  { pattern: /^\/automatas\/([^/]+)$/, method: 'PATCH', handler: 'updateAutomata', params: ['automataId'] },
+  {
+    pattern: /^\/automatas\/([^/]+)\/state$/,
+    method: 'GET',
+    handler: 'getState',
+    params: ['automataId'],
+  },
+  {
+    pattern: /^\/automatas\/([^/]+)\/descriptor$/,
+    method: 'GET',
+    handler: 'getDescriptor',
+    params: ['automataId'],
+  },
+  {
+    pattern: /^\/automatas\/([^/]+)$/,
+    method: 'PATCH',
+    handler: 'updateAutomata',
+    params: ['automataId'],
+  },
 
   // Event routes
-  { pattern: /^\/automatas\/([^/]+)\/events$/, method: 'POST', handler: 'sendEvent', params: ['automataId'] },
-  { pattern: /^\/automatas\/([^/]+)\/events$/, method: 'GET', handler: 'listEvents', params: ['automataId'] },
-  { pattern: /^\/automatas\/([^/]+)\/events\/([^/]+)$/, method: 'GET', handler: 'getEvent', params: ['automataId', 'version'] },
-  
+  {
+    pattern: /^\/automatas\/([^/]+)\/events$/,
+    method: 'POST',
+    handler: 'sendEvent',
+    params: ['automataId'],
+  },
+  {
+    pattern: /^\/automatas\/([^/]+)\/events$/,
+    method: 'GET',
+    handler: 'listEvents',
+    params: ['automataId'],
+  },
+  {
+    pattern: /^\/automatas\/([^/]+)\/events\/([^/]+)$/,
+    method: 'GET',
+    handler: 'getEvent',
+    params: ['automataId', 'version'],
+  },
+
   // Batch routes
-  { pattern: /^\/automatas\/([^/]+)\/events\/batch$/, method: 'POST', handler: 'batchSendEventsToAutomata', params: ['automataId'] },
-  { pattern: /^\/realms\/([^/]+)\/events\/batch$/, method: 'POST', handler: 'batchSendEventsToRealm', params: ['realmId'] },
+  {
+    pattern: /^\/automatas\/([^/]+)\/events\/batch$/,
+    method: 'POST',
+    handler: 'batchSendEventsToAutomata',
+    params: ['automataId'],
+  },
+  {
+    pattern: /^\/realms\/([^/]+)\/events\/batch$/,
+    method: 'POST',
+    handler: 'batchSendEventsToRealm',
+    params: ['realmId'],
+  },
   { pattern: /^\/automatas\/batch\/states$/, method: 'POST', handler: 'batchGetStates' },
-  
+
   // History routes
-  { pattern: /^\/automatas\/([^/]+)\/history\/([^/]+)$/, method: 'GET', handler: 'getHistoricalState', params: ['automataId', 'version'] },
-  { pattern: /^\/automatas\/([^/]+)\/snapshots$/, method: 'GET', handler: 'listSnapshots', params: ['automataId'] },
+  {
+    pattern: /^\/automatas\/([^/]+)\/history\/([^/]+)$/,
+    method: 'GET',
+    handler: 'getHistoricalState',
+    params: ['automataId', 'version'],
+  },
+  {
+    pattern: /^\/automatas\/([^/]+)\/snapshots$/,
+    method: 'GET',
+    handler: 'listSnapshots',
+    params: ['automataId'],
+  },
 ];
 
 /**

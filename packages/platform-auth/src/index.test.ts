@@ -2,10 +2,10 @@
  * Platform Auth Tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import type { APIGatewayProxyEvent } from 'aws-lambda';
+import { describe, expect, it } from 'vitest';
 import { parseApiKeyHeader } from './utils/api-key-verifier';
 import { extractApiKeyHeader } from './utils/middleware';
-import type { APIGatewayProxyEvent } from 'aws-lambda';
 
 describe('parseApiKeyHeader', () => {
   it('should parse keyId:secret format', () => {
@@ -102,4 +102,3 @@ describe('extractApiKeyHeader', () => {
     expect(extractApiKeyHeader(event)).toBeUndefined();
   });
 });
-

@@ -2,7 +2,7 @@
  * Tenant Admin API Tests
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('Tenant Admin API', () => {
   // Note: Full integration tests require mocking DynamoDB and Secrets Manager
@@ -37,4 +37,3 @@ describe('Tenant Admin API', () => {
     expect(helpers.internalError).toBeDefined();
   });
 });
-

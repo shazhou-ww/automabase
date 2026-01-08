@@ -8,11 +8,11 @@
  * - GET /tenant - Read tenant info (any authenticated user)
  */
 
-import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { AuthError } from '@automabase/automata-auth';
-import { authenticate } from './utils/auth-middleware';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { handleGetTenant } from './handlers/tenant-handlers';
-import { unauthorized, methodNotAllowed, internalError } from './utils/response-helpers';
+import { authenticate } from './utils/auth-middleware';
+import { internalError, methodNotAllowed, unauthorized } from './utils/response-helpers';
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -32,7 +32,8 @@ export const handler = async (
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Request-Id,X-Request-Timestamp,X-Request-Signature',
+        'Access-Control-Allow-Headers':
+          'Content-Type,Authorization,X-Request-Id,X-Request-Timestamp,X-Request-Signature',
         'Access-Control-Allow-Methods': 'GET,OPTIONS',
       },
       body: '',

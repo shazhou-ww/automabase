@@ -4,10 +4,11 @@
 
 import { timingSafeEqual } from 'node:crypto';
 import type {
-  PlatformAuthResult,
-  PlatformAuthContext,
+  AdminApiKeySecret,
   PlatformAuthConfig,
+  PlatformAuthContext,
   PlatformAuthProvider,
+  PlatformAuthResult,
 } from '../types/platform-types';
 import { getAdminApiKey, invalidateSecretCache } from './secrets-manager';
 
@@ -25,9 +26,7 @@ const DEFAULT_SECRET_NAME = 'automabase/admin-api-key';
  * @param headerValue The header value
  * @returns Parsed key ID and secret, or null if invalid format
  */
-export function parseApiKeyHeader(
-  headerValue: string
-): { keyId: string; secret: string } | null {
+export function parseApiKeyHeader(headerValue: string): { keyId: string; secret: string } | null {
   if (!headerValue) {
     return null;
   }
@@ -107,7 +106,7 @@ export async function verifyApiKey(
   }
 
   // Fetch the stored secret
-  let storedSecret;
+  let storedSecret: AdminApiKeySecret;
   try {
     storedSecret = await getAdminApiKey(secretName, region, cacheTtlSeconds);
   } catch (error) {
@@ -177,4 +176,3 @@ export function createApiKeyAuthProvider(
     },
   };
 }
-

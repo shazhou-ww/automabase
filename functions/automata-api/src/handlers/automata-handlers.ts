@@ -3,28 +3,32 @@
  * Based on BUSINESS_MODEL_SPEC.md Section 5.4
  */
 
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import {
-  getAutomata,
-  createAutomata,
-  listAutomatasInRealm,
-  archiveAutomata,
-} from '@automabase/automata-core';
-import {
-  computeDescriptorHash,
-  type AutomataDescriptor,
-} from '@automabase/automata-auth';
+import { type AutomataDescriptor, computeDescriptorHash } from '@automabase/automata-auth';
 import type {
+  AutomataDescriptorResponse,
+  AutomataStateResponse,
   CreateAutomataRequest,
   CreateAutomataResponse,
   ListAutomatasResponse,
-  AutomataStateResponse,
-  AutomataDescriptorResponse,
   UpdateAutomataRequest,
   UpdateAutomataResponse,
 } from '@automabase/automata-core';
+import {
+  archiveAutomata,
+  createAutomata,
+  getAutomata,
+  listAutomatasInRealm,
+} from '@automabase/automata-core';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import type { AuthContext } from '../utils/auth-middleware';
-import { ok, created, badRequest, forbidden, notFound, internalError } from '../utils/response-helpers';
+import {
+  badRequest,
+  created,
+  forbidden,
+  internalError,
+  notFound,
+  ok,
+} from '../utils/response-helpers';
 
 /**
  * POST /realms/{realmId}/automatas
@@ -139,10 +143,7 @@ export async function handleListAutomatas(
   }
 
   // Parse pagination params
-  const limit = Math.min(
-    Number.parseInt(event.queryStringParameters?.limit ?? '100', 10),
-    1000
-  );
+  const limit = Math.min(Number.parseInt(event.queryStringParameters?.limit ?? '100', 10), 1000);
   const cursor = event.queryStringParameters?.cursor;
 
   try {
@@ -192,9 +193,7 @@ export async function handleGetState(
     }
 
     // Check permission (realm or automata level)
-    if (
-      !auth.permissions.canReadAutomata(automataId, automata.realmId)
-    ) {
+    if (!auth.permissions.canReadAutomata(automataId, automata.realmId)) {
       return forbidden('Insufficient permissions to read automata state');
     }
 

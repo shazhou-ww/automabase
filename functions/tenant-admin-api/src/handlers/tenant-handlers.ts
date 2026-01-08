@@ -3,30 +3,27 @@
  * CRUD operations for tenant management
  */
 
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import type { CreateTenantRequest, TenantStatus } from '@automabase/automata-core';
 import {
-  getTenant,
   createTenant,
-  updateTenant,
   generateTenantId,
   getDocClient,
+  getTenant,
+  META_SK,
   TABLE_NAME,
   tenantKeys,
-  META_SK,
-} from '@automabase/automata-core';
-import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import type {
-  CreateTenantRequest,
-  TenantStatus,
+  updateTenant,
 } from '@automabase/automata-core';
 import type { PlatformAuthContext } from '@automabase/platform-auth';
+import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
-  ok,
-  created,
   badRequest,
-  notFound,
   conflict,
+  created,
   internalError,
+  notFound,
+  ok,
 } from '../utils/response-helpers';
 
 /**
@@ -407,4 +404,3 @@ async function updateTenantStatus(
 
   return { updatedAt: now };
 }
-

@@ -5,7 +5,7 @@
 
 import type { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { verifyToken } from '../utils/auth';
-import { storeConnection, deleteConnection } from '../utils/connections';
+import { deleteConnection, storeConnection } from '../utils/connections';
 
 /**
  * WebSocket connect event type (includes query string parameters)
@@ -46,11 +46,7 @@ export async function handleConnect(
 
   try {
     // Store connection
-    await storeConnection(
-      connectionId,
-      authResult.token.tenantId,
-      authResult.token.subjectId
-    );
+    await storeConnection(connectionId, authResult.token.tenantId, authResult.token.subjectId);
 
     console.log('Connection stored:', connectionId, authResult.token.tenantId);
     return { statusCode: 200, body: 'Connected' };

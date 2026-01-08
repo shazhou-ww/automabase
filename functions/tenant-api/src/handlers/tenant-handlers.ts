@@ -5,11 +5,11 @@
  * Note: Tenant updates are now handled by tenant-admin-api
  */
 
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { getTenant } from '@automabase/automata-core';
 import type { TenantResponse } from '@automabase/automata-core';
+import { getTenant } from '@automabase/automata-core';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import type { AuthContext } from '../utils/auth-middleware';
-import { ok, notFound, internalError } from '../utils/response-helpers';
+import { internalError, notFound, ok } from '../utils/response-helpers';
 
 /**
  * GET /tenant

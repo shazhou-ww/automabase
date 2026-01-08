@@ -2,25 +2,23 @@
  * Tests for @automabase/automata-core
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  // Base62 utilities
-  versionIncrement,
-  versionDecrement,
-  versionToNumber,
-  numberToVersion,
-  isValidVersion,
-  VERSION_ZERO,
-  VERSION_MAX,
-
-  // Permission utilities
-  parsePermission,
-  formatPermission,
-  PermissionChecker,
-
   // Event utilities
   createEventId,
+  formatPermission,
+  isValidVersion,
+  numberToVersion,
+  PermissionChecker,
   parseEventId,
+  // Permission utilities
+  parsePermission,
+  VERSION_MAX,
+  VERSION_ZERO,
+  versionDecrement,
+  // Base62 utilities
+  versionIncrement,
+  versionToNumber,
 } from './index';
 
 describe('Base62 Version Utilities', () => {
@@ -121,20 +119,20 @@ describe('Permission Utilities', () => {
 
   describe('PermissionChecker', () => {
     it('should check realm permissions', () => {
-      const checker = new PermissionChecker([
-        'realm:01F8MECHZX3TBDSZ7XRADM79XV:readwrite',
-      ]);
+      const checker = new PermissionChecker(['realm:01F8MECHZX3TBDSZ7XRADM79XV:readwrite']);
       expect(checker.canReadRealm('01F8MECHZX3TBDSZ7XRADM79XV')).toBe(true);
       expect(checker.canWriteRealm('01F8MECHZX3TBDSZ7XRADM79XV')).toBe(true);
     });
 
     it('should check automata permissions with realm inheritance', () => {
-      const checker = new PermissionChecker([
-        'realm:01F8MECHZX3TBDSZ7XRADM79XV:read',
-      ]);
+      const checker = new PermissionChecker(['realm:01F8MECHZX3TBDSZ7XRADM79XV:read']);
       // Direct automata permission check with realm
-      expect(checker.canReadAutomata('01AN4Z07BY79KA1307SR9X4MV3', '01F8MECHZX3TBDSZ7XRADM79XV')).toBe(true);
-      expect(checker.canWriteAutomata('01AN4Z07BY79KA1307SR9X4MV3', '01F8MECHZX3TBDSZ7XRADM79XV')).toBe(false);
+      expect(
+        checker.canReadAutomata('01AN4Z07BY79KA1307SR9X4MV3', '01F8MECHZX3TBDSZ7XRADM79XV')
+      ).toBe(true);
+      expect(
+        checker.canWriteAutomata('01AN4Z07BY79KA1307SR9X4MV3', '01F8MECHZX3TBDSZ7XRADM79XV')
+      ).toBe(false);
     });
 
     it('should get readable realm IDs', () => {

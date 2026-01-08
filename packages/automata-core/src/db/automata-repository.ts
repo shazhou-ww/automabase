@@ -2,17 +2,17 @@
  * Automata Repository - DynamoDB operations for Automata entity
  */
 
+import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import {
   GetCommand,
-  PutCommand,
-  UpdateCommand,
-  QueryCommand,
   type GetCommandInput,
+  PutCommand,
   type PutCommandInput,
-  type UpdateCommandInput,
+  QueryCommand,
   type QueryCommandInput,
+  UpdateCommand,
+  type UpdateCommandInput,
 } from '@aws-sdk/lib-dynamodb';
-import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import { ulid } from 'ulid';
 
 import type {
@@ -22,7 +22,7 @@ import type {
   CreateAutomataRequest,
 } from '../types/automata';
 import { getDocClient } from './client';
-import { TABLE_NAME, META_SK, GSI, DEFAULT_PAGE_SIZE, VERSION_ZERO } from './constants';
+import { DEFAULT_PAGE_SIZE, GSI, META_SK, TABLE_NAME, VERSION_ZERO } from './constants';
 import { automataKeys, automataPK, gsi1PK, gsi1SK, gsi2PK, gsi2SK } from './keys';
 
 /**
@@ -177,9 +177,7 @@ export async function listAutomatasInRealm(
   };
 
   if (options?.cursor) {
-    params.ExclusiveStartKey = JSON.parse(
-      Buffer.from(options.cursor, 'base64').toString('utf-8')
-    );
+    params.ExclusiveStartKey = JSON.parse(Buffer.from(options.cursor, 'base64').toString('utf-8'));
   }
 
   const result = await docClient.send(new QueryCommand(params));
@@ -211,7 +209,8 @@ export async function updateAutomataState(
   const params: UpdateCommandInput = {
     TableName: TABLE_NAME,
     Key: automataKeys(automataId),
-    UpdateExpression: 'SET #currentState = :newState, #version = :newVersion, #updatedAt = :updatedAt',
+    UpdateExpression:
+      'SET #currentState = :newState, #version = :newVersion, #updatedAt = :updatedAt',
     ExpressionAttributeNames: {
       '#currentState': 'currentState',
       '#version': 'version',

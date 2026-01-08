@@ -2,10 +2,7 @@
  * AWS Secrets Manager utilities for platform authentication
  */
 
-import {
-  SecretsManagerClient,
-  GetSecretValueCommand,
-} from '@aws-sdk/client-secrets-manager';
+import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import type { AdminApiKeySecret } from '../types/platform-types';
 
 // Default secret name
@@ -95,4 +92,3 @@ export function resetSecretsClient(): void {
   secretsClient = null;
   invalidateSecretCache();
 }
-

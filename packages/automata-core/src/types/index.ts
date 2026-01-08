@@ -2,66 +2,61 @@
  * Type exports for @automabase/automata-core
  */
 
-// Tenant types
-export type {
-  Tenant,
-  TenantStatus,
-  CreateTenantRequest,
-  UpdateTenantRequest,
-  TenantResponse,
-  UpdateTenantResponse,
-} from './tenant';
-
 // Automata types
 export type {
   Automata,
-  AutomataStatus,
   AutomataDescriptor,
+  AutomataDescriptorResponse,
+  AutomataListItem,
+  AutomataStateResponse,
+  AutomataStatus,
   CreateAutomataRequest,
   CreateAutomataResponse,
-  AutomataListItem,
   ListAutomatasResponse,
-  AutomataStateResponse,
-  AutomataDescriptorResponse,
   UpdateAutomataRequest,
   UpdateAutomataResponse,
 } from './automata';
-
 // Event types
 export type {
   AutomataEvent,
-  SendEventRequest,
-  SendEventResponse,
+  BatchEventResult,
+  BatchGetStatesRequest,
+  BatchGetStatesResponse,
+  BatchSendEventsToAutomataRequest,
+  BatchSendEventsToAutomataResponse,
+  BatchSendEventsToRealmRequest,
+  BatchSendEventsToRealmResponse,
+  BatchStateResult,
   EventListItem,
   EventQueryDirection,
+  EventResponse,
   ListEventsParams,
   ListEventsResponse,
-  EventResponse,
-  BatchSendEventsToAutomataRequest,
-  BatchSendEventsToRealmRequest,
-  BatchEventResult,
-  BatchSendEventsToAutomataResponse,
-  BatchSendEventsToRealmResponse,
-  BatchGetStatesRequest,
-  BatchStateResult,
-  BatchGetStatesResponse,
+  SendEventRequest,
+  SendEventResponse,
 } from './event';
 export { createEventId, parseEventId } from './event';
-
-// Realm types
-export type { RealmSummary, ListRealmsResponse } from './realm';
-
-// Permission types
-export type {
-  ResourceType,
-  AccessLevel,
-  Permission,
-} from './permission';
-export { parsePermission, formatPermission, PermissionChecker } from './permission';
-
 // JWT types
 export type {
   AutomabaseJwtPayload,
-  VerifiedAutomabaseToken,
   RequestContext,
+  VerifiedAutomabaseToken,
 } from './jwt';
+// Permission types
+export type {
+  AccessLevel,
+  Permission,
+  ResourceType,
+} from './permission';
+export { formatPermission, PermissionChecker, parsePermission } from './permission';
+// Realm types
+export type { ListRealmsResponse, RealmSummary } from './realm';
+// Tenant types
+export type {
+  CreateTenantRequest,
+  Tenant,
+  TenantResponse,
+  TenantStatus,
+  UpdateTenantRequest,
+  UpdateTenantResponse,
+} from './tenant';

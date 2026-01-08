@@ -3,12 +3,12 @@
  * Based on BUSINESS_MODEL_SPEC.md Section 5.6
  */
 
-import type { APIGatewayProxyWebsocketEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
-import { getAutomata, PermissionChecker } from '@automabase/automata-core';
+import { getAutomata, type PermissionChecker } from '@automabase/automata-core';
+import type { APIGatewayProxyResultV2, APIGatewayProxyWebsocketEventV2 } from 'aws-lambda';
 import { verifyToken } from '../utils/auth';
 import {
-  getConnection,
   addSubscription,
+  getConnection,
   removeSubscription,
   sendToConnection,
 } from '../utils/connections';
@@ -188,11 +188,7 @@ export async function handleUnsubscribe(
 /**
  * Send error message to connection
  */
-async function sendError(
-  connectionId: string,
-  message: string,
-  code?: string
-): Promise<void> {
+async function sendError(connectionId: string, message: string, code?: string): Promise<void> {
   const response: ErrorResponse = {
     type: 'error',
     message,

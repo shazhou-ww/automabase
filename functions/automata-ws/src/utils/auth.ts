@@ -3,9 +3,9 @@
  */
 
 import {
-  verifyAutomabaseJwtWithTenantLookup,
-  type VerifiedAutomabaseToken,
   type TenantConfig,
+  type VerifiedAutomabaseToken,
+  verifyAutomabaseJwtWithTenantLookup,
 } from '@automabase/automata-auth';
 import { getTenant, PermissionChecker } from '@automabase/automata-core';
 

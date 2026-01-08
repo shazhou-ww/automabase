@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { getClient } from '../automata';
 import { useDeleteAutomata } from '@automabase/automata-client';
+import { useCallback, useEffect, useState } from 'react';
+import { getClient } from '../automata';
 import './CounterList.css';
 
 interface CounterListProps {
@@ -20,12 +20,12 @@ export function CounterList({ selectedId, onSelect }: CounterListProps) {
   const { deleteAutomata, loading: deleting } = useDeleteAutomata();
 
   // Load counters from local cache
-  const loadCounters = async () => {
+  const loadCounters = useCallback(async () => {
     try {
       setLoading(true);
       const client = getClient();
       const ids = await client.store.listIds();
-      
+
       const items: CounterItem[] = [];
       for (const id of ids) {
         const cached = await client.getCached(id);
@@ -37,28 +37,28 @@ export function CounterList({ selectedId, onSelect }: CounterListProps) {
           });
         }
       }
-      
+
       setCounters(items);
     } catch (err) {
       console.error('Failed to load counters:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadCounters();
-    
+
     // Refresh list periodically
     const interval = setInterval(loadCounters, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadCounters]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (!confirm('Delete this counter?')) return;
-    
+
     const success = await deleteAutomata(id);
     if (success) {
       setCounters((prev) => prev.filter((c) => c.id !== id));
@@ -102,10 +102,14 @@ export function CounterList({ selectedId, onSelect }: CounterListProps) {
       ) : (
         <div className="list-items">
           {counters.map((counter) => (
+            // biome-ignore lint/a11y/useSemanticElements: complex list item layout with nested button requires div
             <div
               key={counter.id}
+              role="button"
+              tabIndex={0}
               className={`list-item ${selectedId === counter.id ? 'selected' : ''}`}
               onClick={() => onSelect(counter.id)}
+              onKeyDown={(e) => e.key === 'Enter' && onSelect(counter.id)}
             >
               <div className="item-info">
                 <span className="item-id">{counter.id.slice(0, 8)}...</span>
@@ -114,6 +118,7 @@ export function CounterList({ selectedId, onSelect }: CounterListProps) {
               <div className="item-actions">
                 <span className="item-version">v{counter.version}</span>
                 <button
+                  type="button"
                   className="btn btn-ghost btn-icon btn-sm"
                   onClick={(e) => handleDelete(counter.id, e)}
                   disabled={deleting}
@@ -127,7 +132,7 @@ export function CounterList({ selectedId, onSelect }: CounterListProps) {
         </div>
       )}
 
-      <button className="btn btn-ghost btn-sm refresh-btn" onClick={loadCounters}>
+      <button type="button" className="btn btn-ghost btn-sm refresh-btn" onClick={loadCounters}>
         ↻ Refresh List
       </button>
     </div>

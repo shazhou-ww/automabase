@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { extractBearerToken, AuthError, clearJwksCache } from './index';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { AuthError, clearJwksCache, extractBearerToken } from './index';
 
 describe('automata-auth', () => {
   beforeEach(() => {

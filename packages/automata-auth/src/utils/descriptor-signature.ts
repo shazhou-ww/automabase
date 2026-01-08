@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import * as jose from 'jose';
 import type { TenantConfig } from '../types/auth-types';
 import { verifyJwtWithTenantConfig } from './token-utils';
@@ -125,21 +125,21 @@ export async function verifyDescriptorSignature(
 
 /**
  * Create a descriptor signature JWT (server-side use)
- * 
+ *
  * This function should be used by tenant authentication services to sign
  * automata descriptors. It generates a proper JWT token signed with the
  * tenant's private key.
- * 
+ *
  * @param descriptor - The automata descriptor to sign
  * @param tenantId - Tenant ID that will sign the descriptor
  * @param privateKey - Private RSA key in PEM format or JWK format
  * @param expiresInSeconds - Signature expiration time in seconds (default: 3600 = 1 hour)
  * @returns Promise resolving to JWT signature string
- * 
+ *
  * @example
  * ```typescript
  * import { signDescriptor } from '@automabase/automata-auth';
- * 
+ *
  * // Using PEM format private key
  * const signature = await signDescriptor(
  *   {
@@ -152,7 +152,7 @@ export async function verifyDescriptorSignature(
  *   tenantId,
  *   privateKeyPEM
  * );
- * 
+ *
  * // Using JWK format private key
  * const signature = await signDescriptor(
  *   descriptor,
@@ -205,10 +205,10 @@ export async function signDescriptor(
 
 /**
  * Create a descriptor signature JWT (mock implementation for testing/client use)
- * 
+ *
  * ⚠️ WARNING: This is a mock implementation that does NOT produce valid signatures.
  * It is only for testing purposes. In production, use signDescriptor() instead.
- * 
+ *
  * @deprecated Use signDescriptor() for production code. This function will be removed in a future version.
  */
 export function createDescriptorSignature(

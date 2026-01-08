@@ -3,9 +3,9 @@
  * Local caching and offline support
  */
 
-import { openDB, type IDBPDatabase } from 'idb';
+import { type IDBPDatabase, openDB } from 'idb';
 import type { AutomataClient } from './client';
-import type { StoredAutomata, AutomataMeta, PostEventRequest, PostEventResponse } from './types';
+import type { AutomataMeta, PostEventRequest, PostEventResponse, StoredAutomata } from './types';
 
 const DB_NAME = 'automata-store';
 const DB_VERSION = 1;
@@ -135,12 +135,12 @@ export interface CachedAutomataClient extends AutomataClient {
 
 /**
  * Wrap an AutomataClient with IndexedDB caching
- * 
+ *
  * @example
  * ```typescript
  * const client = new AutomataClient({ baseUrl: '...', wsUrl: '...' });
  * const cachedClient = withStore(client);
- * 
+ *
  * // Now all get/postEvent operations are cached
  * const meta = await cachedClient.get('automata-id');
  * ```
@@ -159,31 +159,31 @@ export function withStore(
   });
 
   // Override get - cache the result
-  cachedClient.get = async function (automataId: string): Promise<AutomataMeta> {
+  cachedClient.get = async (automataId: string): Promise<AutomataMeta> => {
     const meta = await client.get(automataId);
     await store.saveMeta(meta);
     return meta;
   };
 
   // Override postEvent - update cache
-  cachedClient.postEvent = async function (
+  cachedClient.postEvent = async (
     automataId: string,
     event: PostEventRequest
-  ): Promise<PostEventResponse> {
+  ): Promise<PostEventResponse> => {
     const result = await client.postEvent(automataId, event);
     await store.saveState(automataId, result.state, result.version);
     return result;
   };
 
   // Override delete - clear cache
-  cachedClient.delete = async function (automataId: string): Promise<void> {
+  cachedClient.delete = async (automataId: string): Promise<void> => {
     await client.delete(automataId);
     await store.delete(automataId);
   };
 
   // Override subscribe - cache state updates
   const originalSubscribe = client.subscribe.bind(client);
-  cachedClient.subscribe = function (
+  cachedClient.subscribe = (
     automataId: string,
     callback: (
       state: unknown,
@@ -191,25 +191,22 @@ export function withStore(
       event?: { type: string; data: unknown },
       timestamp?: string
     ) => void
-  ): () => void {
-    return originalSubscribe(automataId, (state, version, event, timestamp) => {
+  ): (() => void) =>
+    originalSubscribe(automataId, (state, version, event, timestamp) => {
       // Save to cache asynchronously
       store.saveState(automataId, state, version).catch(console.error);
       // Call original callback
       callback(state, version, event, timestamp);
     });
-  };
 
   // Add cache helper methods
-  cachedClient.getCached = async function (automataId: string) {
-    return store.getState(automataId);
-  };
+  cachedClient.getCached = async (automataId: string) => store.getState(automataId);
 
-  cachedClient.clearCache = async function (automataId: string) {
+  cachedClient.clearCache = async (automataId: string) => {
     await store.delete(automataId);
   };
 
-  cachedClient.clearAllCache = async function () {
+  cachedClient.clearAllCache = async () => {
     await store.clear();
   };
 

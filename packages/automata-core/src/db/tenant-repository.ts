@@ -2,20 +2,20 @@
  * Tenant Repository - DynamoDB operations for Tenant entity
  */
 
+import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import {
   GetCommand,
-  PutCommand,
-  UpdateCommand,
   type GetCommandInput,
+  PutCommand,
   type PutCommandInput,
+  UpdateCommand,
   type UpdateCommandInput,
 } from '@aws-sdk/lib-dynamodb';
-import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import { ulid } from 'ulid';
 
-import type { Tenant, CreateTenantRequest, UpdateTenantRequest } from '../types/tenant';
+import type { CreateTenantRequest, Tenant, UpdateTenantRequest } from '../types/tenant';
 import { getDocClient } from './client';
-import { TABLE_NAME, META_SK } from './constants';
+import { META_SK, TABLE_NAME } from './constants';
 import { tenantKeys, tenantPK } from './keys';
 
 /**

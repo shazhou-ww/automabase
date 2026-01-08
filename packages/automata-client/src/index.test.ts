@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AutomataClient } from './client';
 
 describe('AutomataClient', () => {
@@ -108,8 +108,20 @@ describe('AutomataClient', () => {
               success: true,
               data: {
                 events: [
-                  { version: '000002', type: 'INCREMENT', data: {}, nextState: { count: 2 }, createdAt: '' },
-                  { version: '000001', type: 'INCREMENT', data: {}, nextState: { count: 1 }, createdAt: '' },
+                  {
+                    version: '000002',
+                    type: 'INCREMENT',
+                    data: {},
+                    nextState: { count: 2 },
+                    createdAt: '',
+                  },
+                  {
+                    version: '000001',
+                    type: 'INCREMENT',
+                    data: {},
+                    nextState: { count: 1 },
+                    createdAt: '',
+                  },
                 ],
                 nextAnchor: null,
               },
@@ -126,8 +138,7 @@ describe('AutomataClient', () => {
     describe('error handling', () => {
       it('should throw on error response', async () => {
         mockFetch.mockResolvedValueOnce({
-          json: () =>
-            Promise.resolve({ success: false, error: 'Automata not found' }),
+          json: () => Promise.resolve({ success: false, error: 'Automata not found' }),
         });
 
         await expect(client.get('nonexistent')).rejects.toThrow('Automata not found');

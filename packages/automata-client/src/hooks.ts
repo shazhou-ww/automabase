@@ -2,13 +2,14 @@
  * React Hooks for Automata
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AutomataClient } from './client';
 import type { CachedAutomataClient } from './store';
 import type {
+  CreateAutomataRequest,
+  PostEventResponse,
   UseAutomataOptions,
   UseAutomataResult,
-  PostEventResponse,
 } from './types';
 
 // Global client instance
@@ -16,7 +17,7 @@ let globalClient: AutomataClient | CachedAutomataClient | null = null;
 
 /**
  * Set global automata client (call once at app initialization)
- * 
+ *
  * @example
  * ```typescript
  * const client = new AutomataClient({ baseUrl: '...', wsUrl: '...' });
@@ -33,9 +34,7 @@ export function setAutomataClient(client: AutomataClient | CachedAutomataClient)
  */
 export function getAutomataClient(): AutomataClient | CachedAutomataClient {
   if (!globalClient) {
-    throw new Error(
-      'Automata client not initialized. Call setAutomataClient() first.'
-    );
+    throw new Error('Automata client not initialized. Call setAutomataClient() first.');
   }
   return globalClient;
 }
@@ -43,20 +42,22 @@ export function getAutomataClient(): AutomataClient | CachedAutomataClient {
 /**
  * Check if client has cache capabilities
  */
-function isCachedClient(client: AutomataClient | CachedAutomataClient): client is CachedAutomataClient {
+function isCachedClient(
+  client: AutomataClient | CachedAutomataClient
+): client is CachedAutomataClient {
   return 'store' in client && 'getCached' in client;
 }
 
 /**
  * Hook to use an automata with real-time updates and local caching
- * 
+ *
  * @example
  * ```typescript
  * function Counter({ id }: { id: string }) {
  *   const { state, send, loading, connected } = useAutomata<{ count: number }>(id);
- * 
+ *
  *   if (loading) return <div>Loading...</div>;
- * 
+ *
  *   return (
  *     <div>
  *       <p>Count: {state?.count}</p>
@@ -70,11 +71,7 @@ export function useAutomata<TState = unknown>(
   automataId: string | null,
   options: UseAutomataOptions = {}
 ): UseAutomataResult<TState> {
-  const {
-    subscribe = true,
-    useLocalCache = true,
-    onStateChange,
-  } = options;
+  const { subscribe = true, useLocalCache = true, onStateChange } = options;
 
   const [state, setState] = useState<TState | null>(null);
   const [version, setVersion] = useState<string | null>(null);
@@ -144,7 +141,7 @@ export function useAutomata<TState = unknown>(
     if (!automataId || !subscribe || !client?.trackingEnabled) return;
 
     // Track connection status
-    const originalCallbacks = { ...client['trackerCallbacks'] };
+    const originalCallbacks = { ...client.trackerCallbacks };
     client.setTrackerCallbacks({
       ...originalCallbacks,
       onConnected: () => {
@@ -233,12 +230,7 @@ export function useCreateAutomata() {
   }, []);
 
   const create = useCallback(
-    async (request: {
-      stateSchema: unknown;
-      eventSchemas: Record<string, unknown>;
-      initialState: unknown;
-      transition: string;
-    }): Promise<string | null> => {
+    async (request: CreateAutomataRequest): Promise<string | null> => {
       if (!client) {
         setError('Client not initialized');
         return null;
@@ -343,9 +335,7 @@ export function useAutomataHistory(
       setError(null);
 
       const method =
-        direction === 'backtrace'
-          ? client.backtrace.bind(client)
-          : client.replay.bind(client);
+        direction === 'backtrace' ? client.backtrace.bind(client) : client.replay.bind(client);
 
       const result = await method(automataId, { anchor: anchor || undefined, limit });
 
@@ -369,7 +359,7 @@ export function useAutomataHistory(
     if (automataId) {
       loadMore();
     }
-  }, [automataId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [automataId, loadMore]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { events, loading, error, hasMore, loadMore };
 }

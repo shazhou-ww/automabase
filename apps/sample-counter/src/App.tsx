@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Counter } from './components/Counter';
-import { CreateCounter } from './components/CreateCounter';
 import { CounterList } from './components/CounterList';
+import { CreateCounter } from './components/CreateCounter';
 import './App.css';
 
 function App() {
@@ -25,10 +25,7 @@ function App() {
             {/* Left Panel - Counter List & Create */}
             <aside className="sidebar">
               <CreateCounter onCreated={setSelectedId} />
-              <CounterList
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-              />
+              <CounterList selectedId={selectedId} onSelect={setSelectedId} />
             </aside>
 
             {/* Right Panel - Counter Display */}
@@ -49,8 +46,7 @@ function App() {
 
       <footer className="footer">
         <p>
-          Built with <span className="heart">♥</span> using{' '}
-          <code>@automabase/automata-client</code>
+          Built with <span className="heart">♥</span> using <code>@automabase/automata-client</code>
         </p>
       </footer>
     </div>

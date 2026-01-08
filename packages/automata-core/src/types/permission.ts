@@ -99,11 +99,7 @@ export class PermissionChecker {
   /**
    * Check if the user has the required access level for a resource
    */
-  hasAccess(
-    resourceType: ResourceType,
-    resourceId: string,
-    requiredLevel: AccessLevel
-  ): boolean {
+  hasAccess(resourceType: ResourceType, resourceId: string, requiredLevel: AccessLevel): boolean {
     for (const perm of this.permissions) {
       // Wildcard match
       if (perm.resourceType === resourceType && perm.isWildcard) {

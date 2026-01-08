@@ -3,24 +3,22 @@
  */
 
 import {
-  DynamoDBClient,
-} from '@aws-sdk/client-dynamodb';
-import {
-  DynamoDBDocumentClient,
-  PutCommand,
-  DeleteCommand,
-  QueryCommand,
-  GetCommand,
-  type PutCommandInput,
-  type DeleteCommandInput,
-  type QueryCommandInput,
-  type GetCommandInput,
-} from '@aws-sdk/lib-dynamodb';
-import {
   ApiGatewayManagementApiClient,
-  PostToConnectionCommand,
   DeleteConnectionCommand,
+  PostToConnectionCommand,
 } from '@aws-sdk/client-apigatewaymanagementapi';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import {
+  DeleteCommand,
+  type DeleteCommandInput,
+  DynamoDBDocumentClient,
+  GetCommand,
+  type GetCommandInput,
+  PutCommand,
+  type PutCommandInput,
+  QueryCommand,
+  type QueryCommandInput,
+} from '@aws-sdk/lib-dynamodb';
 
 // Table name for connections
 const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE || 'automabase-connections';
@@ -177,10 +175,7 @@ export async function addSubscription(
 /**
  * Remove a subscription
  */
-export async function removeSubscription(
-  connectionId: string,
-  automataId: string
-): Promise<void> {
+export async function removeSubscription(connectionId: string, automataId: string): Promise<void> {
   const params: DeleteCommandInput = {
     TableName: CONNECTIONS_TABLE,
     Key: {
@@ -195,9 +190,7 @@ export async function removeSubscription(
 /**
  * Get all connections subscribed to an automata
  */
-export async function getSubscribersForAutomata(
-  automataId: string
-): Promise<string[]> {
+export async function getSubscribersForAutomata(automataId: string): Promise<string[]> {
   const params: QueryCommandInput = {
     TableName: CONNECTIONS_TABLE,
     IndexName: 'gsi1-automata-index',
@@ -215,10 +208,7 @@ export async function getSubscribersForAutomata(
 /**
  * Send a message to a connection
  */
-export async function sendToConnection(
-  connectionId: string,
-  message: unknown
-): Promise<boolean> {
+export async function sendToConnection(connectionId: string, message: unknown): Promise<boolean> {
   const client = getApiGwClient();
 
   try {

@@ -3,19 +3,16 @@
  * Phase 3: Historical state query API
  */
 
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
   getAutomata,
-  getSnapshot,
   getLatestSnapshot,
-  listSnapshots,
-  listEvents,
   isValidVersion,
+  listSnapshots,
   versionToNumber,
-  numberToVersion,
 } from '@automabase/automata-core';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import type { AuthContext } from '../utils/auth-middleware';
-import { ok, badRequest, forbidden, notFound, internalError } from '../utils/response-helpers';
+import { badRequest, forbidden, internalError, notFound, ok } from '../utils/response-helpers';
 
 /**
  * GET /automatas/{automataId}/history/{version}
@@ -64,7 +61,9 @@ export async function handleGetHistoricalState(
 
     // Check if requested version is in the future
     if (requestedVersionNum > currentVersionNum) {
-      return badRequest(`Version ${version} is in the future. Current version is ${automata.version}`);
+      return badRequest(
+        `Version ${version} is in the future. Current version is ${automata.version}`
+      );
     }
 
     // If requesting current version, return current state
@@ -148,10 +147,7 @@ export async function handleListSnapshots(
     }
 
     // Parse query params
-    const limit = Math.min(
-      Number.parseInt(event.queryStringParameters?.limit ?? '100', 10),
-      1000
-    );
+    const limit = Math.min(Number.parseInt(event.queryStringParameters?.limit ?? '100', 10), 1000);
     const startVersion = event.queryStringParameters?.startVersion;
 
     if (startVersion && !isValidVersion(startVersion)) {
@@ -176,4 +172,3 @@ export async function handleListSnapshots(
     return internalError('Failed to list snapshots');
   }
 }
-

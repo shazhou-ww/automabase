@@ -2,16 +2,16 @@
  * Authentication middleware for tenant-api
  */
 
-import type { APIGatewayProxyEvent } from 'aws-lambda';
 import {
+  AuthError,
   extractBearerToken,
+  type TenantConfig,
+  type VerifiedAutomabaseToken,
   verifyAutomabaseJwtWithTenantLookup,
   verifyRequestSignatureAndReplay,
-  AuthError,
-  type VerifiedAutomabaseToken,
-  type TenantConfig,
 } from '@automabase/automata-auth';
 import { getTenant, PermissionChecker } from '@automabase/automata-core';
+import type { APIGatewayProxyEvent } from 'aws-lambda';
 
 /**
  * Authentication context extracted from JWT
@@ -65,7 +65,11 @@ export async function authenticate(
     // Verify request signature and replay protection (Phase 2)
     const signatureCheck = await verifyRequestSignatureAndReplay(event, verified);
     if (!signatureCheck.valid) {
-      return { error: signatureCheck.error || new AuthError('Signature verification failed', 'INVALID_SIGNATURE') };
+      return {
+        error:
+          signatureCheck.error ||
+          new AuthError('Signature verification failed', 'INVALID_SIGNATURE'),
+      };
     }
 
     // Create permission checker with scopes from token

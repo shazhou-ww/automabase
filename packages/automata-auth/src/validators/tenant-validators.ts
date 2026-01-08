@@ -1,5 +1,5 @@
-import type { TenantRegistrationRequest } from '../types/auth-types';
 import { AuthError } from '../errors/auth-error';
+import type { TenantRegistrationRequest } from '../types/auth-types';
 
 /**
  * Validate ULID format
@@ -71,13 +71,10 @@ export async function validateJwksEndpoint(jwksUri: string): Promise<boolean> {
   try {
     const response = await fetch(jwksUri);
     if (!response.ok) {
-      throw new AuthError(
-        `JWKS endpoint returned status ${response.status}`,
-        'JWKS_ERROR'
-      );
+      throw new AuthError(`JWKS endpoint returned status ${response.status}`, 'JWKS_ERROR');
     }
 
-    const jwks = await response.json() as { keys?: unknown[] };
+    const jwks = (await response.json()) as { keys?: unknown[] };
     if (!jwks.keys || !Array.isArray(jwks.keys) || jwks.keys.length === 0) {
       throw new AuthError('JWKS must contain at least one key', 'JWKS_ERROR');
     }
@@ -89,10 +86,7 @@ export async function validateJwksEndpoint(jwksUri: string): Promise<boolean> {
     });
 
     if (!hasValidKey) {
-      throw new AuthError(
-        'JWKS must contain at least one RSA key for RS256 signing',
-        'JWKS_ERROR'
-      );
+      throw new AuthError('JWKS must contain at least one RSA key for RS256 signing', 'JWKS_ERROR');
     }
 
     return true;

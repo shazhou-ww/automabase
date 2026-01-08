@@ -3,10 +3,10 @@
  * Based on BUSINESS_MODEL_SPEC.md Section 5.3
  */
 
+import type { ListRealmsResponse, RealmSummary } from '@automabase/automata-core';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import type { AuthContext } from '../utils/auth-middleware';
-import { ok, forbidden } from '../utils/response-helpers';
-import type { ListRealmsResponse, RealmSummary } from '@automabase/automata-core';
+import { forbidden, ok } from '../utils/response-helpers';
 
 /**
  * GET /realms
@@ -26,10 +26,7 @@ export async function handleListRealms(
   }
 
   // Parse pagination params
-  const limit = Math.min(
-    Number.parseInt(event.queryStringParameters?.limit ?? '100', 10),
-    1000
-  );
+  const limit = Math.min(Number.parseInt(event.queryStringParameters?.limit ?? '100', 10), 1000);
   const cursor = event.queryStringParameters?.cursor;
 
   // Note: In a real implementation, we would query DynamoDB for realm summaries

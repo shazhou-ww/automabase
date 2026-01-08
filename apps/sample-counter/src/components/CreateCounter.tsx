@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { useCreateAutomata } from '@automabase/automata-client';
+import { useState } from 'react';
 import { COUNTER_SCHEMA } from '../automata';
 import './CreateCounter.css';
 
@@ -13,7 +13,7 @@ export function CreateCounter({ onCreated }: CreateCounterProps) {
 
   const handleCreate = async () => {
     const value = parseInt(initialValue, 10) || 0;
-    
+
     const id = await create({
       ...COUNTER_SCHEMA,
       initialState: {
@@ -39,8 +39,11 @@ export function CreateCounter({ onCreated }: CreateCounterProps) {
 
       <div className="create-form">
         <div className="form-group">
-          <label className="form-label">Initial Value</label>
+          <label className="form-label" htmlFor="initial-value">
+            Initial Value
+          </label>
           <input
+            id="initial-value"
             type="number"
             className="input"
             value={initialValue}
@@ -49,11 +52,7 @@ export function CreateCounter({ onCreated }: CreateCounterProps) {
           />
         </div>
 
-        <button
-          className="btn btn-primary"
-          onClick={handleCreate}
-          disabled={loading}
-        >
+        <button type="button" className="btn btn-primary" onClick={handleCreate} disabled={loading}>
           {loading ? (
             <>
               <span className="spinner" style={{ width: 16, height: 16 }} />

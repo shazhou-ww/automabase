@@ -3,24 +3,24 @@
  * Phase 3: Batch operations for sending events and querying states
  */
 
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
-  getAutomata,
-  createEventWithStateUpdate,
-  createEventId,
-  type BatchSendEventsToAutomataRequest,
-  type BatchSendEventsToRealmRequest,
-  type BatchSendEventsToAutomataResponse,
-  type BatchSendEventsToRealmResponse,
+  type AutomataStateResponse,
+  type BatchEventResult,
   type BatchGetStatesRequest,
   type BatchGetStatesResponse,
-  type BatchEventResult,
+  type BatchSendEventsToAutomataRequest,
+  type BatchSendEventsToAutomataResponse,
+  type BatchSendEventsToRealmRequest,
+  type BatchSendEventsToRealmResponse,
   type BatchStateResult,
-  type AutomataStateResponse,
+  createEventId,
+  createEventWithStateUpdate,
+  executeTransition,
+  getAutomata,
 } from '@automabase/automata-core';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import type { AuthContext } from '../utils/auth-middleware';
-import { executeTransition } from '@automabase/automata-core';
-import { ok, badRequest, forbidden, notFound, internalError } from '../utils/response-helpers';
+import { badRequest, forbidden, internalError, notFound, ok } from '../utils/response-helpers';
 
 /**
  * POST /automatas/{automataId}/events/batch
@@ -64,7 +64,7 @@ export async function handleBatchSendEventsToAutomata(
 
   try {
     // Get automata
-    let automata = await getAutomata(automataId);
+    const automata = await getAutomata(automataId);
 
     if (!automata) {
       return notFound('Automata not found');
@@ -643,4 +643,3 @@ export async function handleBatchGetStates(
 
   return ok(response);
 }
-

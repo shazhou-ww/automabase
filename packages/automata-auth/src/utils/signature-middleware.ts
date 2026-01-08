@@ -3,20 +3,17 @@
  * Based on BUSINESS_MODEL_SPEC.md Section 4.2 and 4.3
  */
 
+import { checkAndRecordRequestId } from '@automabase/automata-core';
 import type { APIGatewayProxyEvent } from 'aws-lambda';
 import { AuthError } from '../errors/auth-error';
 import type { VerifiedAutomabaseToken } from '../types/auth-types';
+import { validateRequestIdFormat, validateRequestTimestamp } from './replay-protection';
 import { verifyRequestSignatureFromEvent } from './request-signature';
-import { validateRequestTimestamp, validateRequestIdFormat } from './replay-protection';
-import { checkAndRecordRequestId } from '@automabase/automata-core';
 
 /**
  * Extract headers from API Gateway event
  */
-function extractHeader(
-  event: APIGatewayProxyEvent,
-  name: string
-): string | undefined {
+function extractHeader(event: APIGatewayProxyEvent, name: string): string | undefined {
   const headers = event.headers || {};
   const multiValueHeaders = event.multiValueHeaders || {};
 
@@ -111,10 +108,12 @@ export async function verifyRequestSignatureAndReplay(
   if (!signatureCheck.valid) {
     return {
       valid: false,
-      error: new AuthError(signatureCheck.error || 'Invalid request signature', 'INVALID_SIGNATURE'),
+      error: new AuthError(
+        signatureCheck.error || 'Invalid request signature',
+        'INVALID_SIGNATURE'
+      ),
     };
   }
 
   return { valid: true };
 }
-

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { handler } from './index';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
+import { describe, expect, it } from 'vitest';
+import { handler } from './index';
 
 const createMockContext = (): Context => ({
   callbackWaitsForEmptyEventLoop: true,
@@ -34,14 +34,15 @@ const createMockEvent = (overrides: Partial<APIGatewayProxyEvent> = {}): APIGate
 });
 
 describe('automata-api handler', () => {
-  it('should return 501 for unimplemented routes', async () => {
+  it('should return 400 for unknown routes', async () => {
+    // /automatas without further path doesn't match any route
     const event = createMockEvent({ path: '/automatas', httpMethod: 'GET' });
     const context = createMockContext();
 
     const result = await handler(event, context);
 
-    expect(result.statusCode).toBe(501);
+    expect(result.statusCode).toBe(400);
     const body = JSON.parse(result.body);
-    expect(body.message).toContain('Not implemented');
+    expect(body.message).toContain('Unknown route');
   });
 });

@@ -3,8 +3,6 @@
  * Based on BUSINESS_MODEL_SPEC.md Section 4.3
  */
 
-import { AuthError } from '../errors/auth-error';
-
 /**
  * Maximum allowed time difference between request timestamp and server time (5 minutes)
  */
@@ -25,7 +23,7 @@ export function validateRequestTimestamp(
   let requestTime: Date;
   try {
     requestTime = new Date(requestTimestamp);
-    if (isNaN(requestTime.getTime())) {
+    if (Number.isNaN(requestTime.getTime())) {
       return { valid: false, error: 'Invalid timestamp format' };
     }
   } catch {
@@ -63,4 +61,3 @@ export function validateRequestIdFormat(requestId: string): { valid: boolean; er
 
   return { valid: true };
 }
-

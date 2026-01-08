@@ -7,7 +7,8 @@ import type { APIGatewayProxyResult } from 'aws-lambda';
 const DEFAULT_HEADERS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Request-Id,X-Request-Timestamp,X-Request-Signature',
+  'Access-Control-Allow-Headers':
+    'Content-Type,Authorization,X-Request-Id,X-Request-Timestamp,X-Request-Signature',
 };
 
 /**
@@ -67,7 +68,10 @@ export function notFound(message = 'Not Found'): APIGatewayProxyResult {
  * Create a 405 Method Not Allowed response
  */
 export function methodNotAllowed(method: string): APIGatewayProxyResult {
-  return jsonResponse(405, { error: 'Method Not Allowed', message: `Method ${method} not allowed` });
+  return jsonResponse(405, {
+    error: 'Method Not Allowed',
+    message: `Method ${method} not allowed`,
+  });
 }
 
 /**
@@ -80,6 +84,9 @@ export function conflict(message = 'Conflict'): APIGatewayProxyResult {
 /**
  * Create a 500 Internal Server Error response
  */
-export function internalError(message = 'Internal Server Error', requestId?: string): APIGatewayProxyResult {
+export function internalError(
+  message = 'Internal Server Error',
+  requestId?: string
+): APIGatewayProxyResult {
   return jsonResponse(500, { error: 'Internal Server Error', message, requestId });
 }

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { handler } from './index';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
+import { describe, expect, it } from 'vitest';
+import { handler } from './index';
 
 const createMockContext = (): Context => ({
   callbackWaitsForEmptyEventLoop: true,

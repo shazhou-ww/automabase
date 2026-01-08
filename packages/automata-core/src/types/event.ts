@@ -3,6 +3,8 @@
  * Based on BUSINESS_MODEL_SPEC.md Section 2.3
  */
 
+import type { AutomataStateResponse } from './automata';
+
 /**
  * Event entity - triggers state transitions (immutable record)
  */

@@ -3,26 +3,34 @@
  * Based on BUSINESS_MODEL_SPEC.md Section 5.5
  */
 
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import {
-  getAutomata,
-  getEvent,
-  listEvents,
-  createEventWithStateUpdate,
-  isValidVersion,
-  createEventId,
-} from '@automabase/automata-core';
 import type {
+  AutomataEvent,
+  EventQueryDirection,
+  EventResponse,
+  ListEventsResponse,
   SendEventRequest,
   SendEventResponse,
-  ListEventsResponse,
-  EventResponse,
-  EventQueryDirection,
-  AutomataEvent,
 } from '@automabase/automata-core';
+import {
+  createEventId,
+  createEventWithStateUpdate,
+  executeTransition,
+  getAutomata,
+  getEvent,
+  isValidVersion,
+  listEvents,
+} from '@automabase/automata-core';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import type { AuthContext } from '../utils/auth-middleware';
-import { executeTransition } from '@automabase/automata-core';
-import { ok, created, badRequest, forbidden, notFound, conflict, internalError } from '../utils/response-helpers';
+import {
+  badRequest,
+  conflict,
+  created,
+  forbidden,
+  internalError,
+  notFound,
+  ok,
+} from '../utils/response-helpers';
 
 /**
  * POST /automatas/{automataId}/events
@@ -81,7 +89,9 @@ export async function handleSendEvent(
     // Validate event type against schema
     const eventSchemas = automata.descriptor.eventSchemas;
     if (!eventSchemas[request.eventType]) {
-      return badRequest(`Unknown event type: ${request.eventType}. Valid types: ${Object.keys(eventSchemas).join(', ')}`);
+      return badRequest(
+        `Unknown event type: ${request.eventType}. Valid types: ${Object.keys(eventSchemas).join(', ')}`
+      );
     }
 
     // TODO: Validate event data against schema
@@ -192,10 +202,7 @@ export async function handleListEvents(
       return badRequest('Invalid anchor version format');
     }
 
-    const limit = Math.min(
-      Number.parseInt(event.queryStringParameters?.limit ?? '100', 10),
-      1000
-    );
+    const limit = Math.min(Number.parseInt(event.queryStringParameters?.limit ?? '100', 10), 1000);
 
     const result = await listEvents(automataId, {
       direction,

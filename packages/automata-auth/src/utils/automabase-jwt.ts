@@ -4,12 +4,12 @@
  */
 
 import * as jose from 'jose';
+import { AuthError } from '../errors/auth-error';
 import type {
   AutomabaseJwtClaims,
-  VerifiedAutomabaseToken,
   TenantConfig,
+  VerifiedAutomabaseToken,
 } from '../types/auth-types';
-import { AuthError } from '../errors/auth-error';
 import { getJwks } from './jwks-cache';
 
 /**

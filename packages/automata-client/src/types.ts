@@ -42,7 +42,7 @@ export interface EventListResult {
 
 /**
  * Create automata request
- * 
+ *
  * Authorization Requirements:
  * - Valid JWT token (tenant & user authorization)
  * - Descriptor signature from tenant (prevents unauthorized automata creation)
@@ -56,10 +56,10 @@ export interface CreateAutomataRequest {
   initialState: unknown;
   /** JSONata expression for state transitions */
   transition: string;
-  /** Name for the automata (required) */
-  name: string;
-  /** JWT signature of the automata descriptor from tenant (required) */
-  descriptorSignature: string;
+  /** Name for the automata (optional for dev, required for production) */
+  name?: string;
+  /** JWT signature of the automata descriptor from tenant (optional for dev, required for production) */
+  descriptorSignature?: string;
 }
 
 // Automata list item (returned by list API)
@@ -130,7 +130,13 @@ export interface TrackerCallbacks {
   onConnected?: () => void;
   onDisconnected?: () => void;
   onSubscribed?: (automataId: string, state: unknown, version: string) => void;
-  onStateUpdate?: (automataId: string, event: { type: string; data: unknown }, state: unknown, version: string, timestamp: string) => void;
+  onStateUpdate?: (
+    automataId: string,
+    event: { type: string; data: unknown },
+    state: unknown,
+    version: string,
+    timestamp: string
+  ) => void;
   onError?: (message: string) => void;
 }
 

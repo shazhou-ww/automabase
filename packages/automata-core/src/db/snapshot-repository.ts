@@ -5,18 +5,17 @@
  */
 
 import {
-  PutCommand,
   GetCommand,
-  QueryCommand,
-  type PutCommandInput,
   type GetCommandInput,
+  PutCommand,
+  type PutCommandInput,
+  QueryCommand,
   type QueryCommandInput,
 } from '@aws-sdk/lib-dynamodb';
-
+import { numberToVersion, versionToNumber } from '../utils/base62';
 import { getDocClient } from './client';
 import { TABLE_NAME } from './constants';
-import { automataPK, snapshotSK, automataKeys } from './keys';
-import { versionToNumber, numberToVersion } from '../utils/base62';
+import { automataPK, snapshotSK } from './keys';
 
 /**
  * Snapshot entity
@@ -90,7 +89,7 @@ export async function createSnapshot(
 
   try {
     await docClient.send(new PutCommand(params));
-  } catch (error) {
+  } catch (_error) {
     // Ignore if snapshot already exists
     console.log(`Snapshot already exists for ${automataId} at version ${version}`);
   }
@@ -99,10 +98,7 @@ export async function createSnapshot(
 /**
  * Get snapshot at a specific version
  */
-export async function getSnapshot(
-  automataId: string,
-  version: string
-): Promise<Snapshot | null> {
+export async function getSnapshot(automataId: string, version: string): Promise<Snapshot | null> {
   const docClient = getDocClient();
 
   const params: GetCommandInput = {
@@ -129,7 +125,6 @@ export async function getLatestSnapshot(
   automataId: string,
   maxVersion: string
 ): Promise<Snapshot | null> {
-  const docClient = getDocClient();
   const maxVersionNum = versionToNumber(maxVersion);
 
   // Find the largest snapshot version <= maxVersion
@@ -176,4 +171,3 @@ export async function listSnapshots(
 
   return (result.Items ?? []).map((item) => itemToSnapshot(item as SnapshotItem));
 }
-

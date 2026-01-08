@@ -14,18 +14,18 @@
  * - DELETE /admin/tenants/{tenantId}   - Delete a tenant
  */
 
-import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { authenticateRequest } from '@automabase/platform-auth';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import {
   handleCreateTenant,
-  handleListTenants,
-  handleGetTenant,
-  handleUpdateTenant,
-  handleSuspendTenant,
-  handleResumeTenant,
   handleDeleteTenant,
+  handleGetTenant,
+  handleListTenants,
+  handleResumeTenant,
+  handleSuspendTenant,
+  handleUpdateTenant,
 } from './handlers/tenant-handlers';
-import { methodNotAllowed, internalError } from './utils/response-helpers';
+import { internalError, methodNotAllowed } from './utils/response-helpers';
 
 /**
  * Main Lambda handler
@@ -112,4 +112,3 @@ export const handler = async (
     return internalError('Internal server error', context.awsRequestId);
   }
 };
-

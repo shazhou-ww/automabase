@@ -2,87 +2,80 @@
  * Database exports for @automabase/automata-core
  */
 
+// Automata repository
+export {
+  archiveAutomata,
+  createAutomata,
+  generateAutomataId,
+  getAutomata,
+  listAutomatasInRealm,
+  updateAutomataState,
+} from './automata-repository';
+// Client
+export {
+  createDocClient,
+  createDynamoDBClient,
+  getDocClient,
+  getDynamoDBClient,
+  resetClients,
+} from './client';
 // Constants
 export {
-  TABLE_NAME,
-  REQUEST_ID_TABLE,
-  META_SK,
-  PREFIX,
+  DEFAULT_PAGE_SIZE,
   GSI,
   LSI,
-  DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
+  META_SK,
+  PREFIX,
+  REQUEST_ID_TABLE,
   REQUEST_ID_TTL_SECONDS,
+  TABLE_NAME,
   VERSION_ZERO,
 } from './constants';
-
+// Event repository
+export {
+  createEvent,
+  createEventWithStateUpdate,
+  getEvent,
+  listEvents,
+  listEventsByType,
+} from './event-repository';
 // Key builders
 export {
-  tenantPK,
+  automataKeys,
   automataPK,
+  eventKeys,
   eventSK,
   eventTypeSK,
-  snapshotSK,
+  extractAutomataId,
+  extractEventVersion,
+  extractTenantId,
   gsi1PK,
   gsi1SK,
   gsi2PK,
   gsi2SK,
+  snapshotSK,
   tenantKeys,
-  automataKeys,
-  eventKeys,
-  extractTenantId,
-  extractAutomataId,
-  extractEventVersion,
+  tenantPK,
 } from './keys';
-
-// Client
-export {
-  createDynamoDBClient,
-  createDocClient,
-  getDynamoDBClient,
-  getDocClient,
-  resetClients,
-} from './client';
-
-// Tenant repository
-export {
-  getTenant,
-  createTenant,
-  updateTenant,
-  generateTenantId,
-} from './tenant-repository';
-
-// Automata repository
-export {
-  getAutomata,
-  createAutomata,
-  listAutomatasInRealm,
-  updateAutomataState,
-  archiveAutomata,
-  generateAutomataId,
-} from './automata-repository';
-
-// Event repository
-export {
-  getEvent,
-  createEvent,
-  createEventWithStateUpdate,
-  listEvents,
-  listEventsByType,
-} from './event-repository';
-
 // Request ID repository
 export {
   checkAndRecordRequestId,
   hasRequestId,
 } from './request-id-repository';
-
 // Snapshot repository
 export {
   createSnapshot,
-  getSnapshot,
   getLatestSnapshot,
+  getSnapshot,
   listSnapshots,
-  shouldCreateSnapshot,
   type Snapshot,
+  shouldCreateSnapshot,
 } from './snapshot-repository';
+// Tenant repository
+export {
+  createTenant,
+  generateTenantId,
+  getTenant,
+  updateTenant,
+} from './tenant-repository';

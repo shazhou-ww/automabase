@@ -3,7 +3,12 @@
  * Based on BUSINESS_MODEL_SPEC.md Section 6.4
  */
 
-import { GetCommand, PutCommand, type GetCommandInput, type PutCommandInput } from '@aws-sdk/lib-dynamodb';
+import {
+  GetCommand,
+  type GetCommandInput,
+  PutCommand,
+  type PutCommandInput,
+} from '@aws-sdk/lib-dynamodb';
 import { getDocClient } from './client';
 import { REQUEST_ID_TABLE, REQUEST_ID_TTL_SECONDS } from './constants';
 
@@ -81,4 +86,3 @@ export async function hasRequestId(requestId: string): Promise<boolean> {
   const result = await docClient.send(new GetCommand(getInput));
   return !!result.Item;
 }
-

@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { useAutomata, useAutomataHistory } from '@automabase/automata-client';
+import { useState } from 'react';
 import './Counter.css';
 
 interface CounterState {
@@ -12,15 +12,8 @@ interface CounterProps {
 }
 
 export function Counter({ automataId }: CounterProps) {
-  const {
-    state,
-    version,
-    loading,
-    error,
-    connected,
-    send,
-    refresh,
-  } = useAutomata<CounterState>(automataId);
+  const { state, version, loading, error, connected, send, refresh } =
+    useAutomata<CounterState>(automataId);
 
   const [customAmount, setCustomAmount] = useState('1');
   const [showHistory, setShowHistory] = useState(false);
@@ -39,7 +32,7 @@ export function Counter({ automataId }: CounterProps) {
     return (
       <div className="counter-card">
         <div className="error">{error}</div>
-        <button className="btn btn-secondary" onClick={refresh}>
+        <button type="button" className="btn btn-secondary" onClick={refresh}>
           Retry
         </button>
       </div>
@@ -61,9 +54,7 @@ export function Counter({ automataId }: CounterProps) {
             {connected ? 'Live' : 'Offline'}
           </span>
         </div>
-        <div className="counter-version">
-          v{version}
-        </div>
+        <div className="counter-version">v{version}</div>
       </div>
 
       {/* Count Display */}
@@ -76,6 +67,7 @@ export function Counter({ automataId }: CounterProps) {
       <div className="counter-controls">
         <div className="control-row">
           <button
+            type="button"
             className="btn btn-secondary btn-lg"
             onClick={() => send('DECREMENT', { amount })}
             disabled={loading}
@@ -83,6 +75,7 @@ export function Counter({ automataId }: CounterProps) {
             − {amount}
           </button>
           <button
+            type="button"
             className="btn btn-primary btn-lg"
             onClick={() => send('INCREMENT', { amount })}
             disabled={loading}
@@ -101,6 +94,7 @@ export function Counter({ automataId }: CounterProps) {
             placeholder="Amount"
           />
           <button
+            type="button"
             className="btn btn-secondary"
             onClick={() => send('RESET')}
             disabled={loading}
@@ -111,16 +105,13 @@ export function Counter({ automataId }: CounterProps) {
 
         <div className="control-row">
           <button
+            type="button"
             className="btn btn-ghost"
             onClick={() => setShowHistory(!showHistory)}
           >
             {showHistory ? '▲ Hide History' : '▼ Show History'}
           </button>
-          <button
-            className="btn btn-ghost"
-            onClick={refresh}
-            disabled={loading}
-          >
+          <button type="button" className="btn btn-ghost" onClick={refresh} disabled={loading}>
             ↻ Refresh
           </button>
         </div>
@@ -151,7 +142,7 @@ function EventHistory({ automataId }: { automataId: string }) {
   return (
     <div className="history-panel">
       <h3 className="history-title">Event History</h3>
-      
+
       {events.length === 0 && !loading ? (
         <div className="history-empty">No events yet</div>
       ) : (
@@ -165,9 +156,7 @@ function EventHistory({ automataId }: { automataId: string }) {
               <div className="history-state">
                 → count: {(event.nextState as CounterState).count}
               </div>
-              <div className="history-time">
-                {new Date(event.createdAt).toLocaleTimeString()}
-              </div>
+              <div className="history-time">{new Date(event.createdAt).toLocaleTimeString()}</div>
             </div>
           ))}
         </div>
@@ -180,7 +169,7 @@ function EventHistory({ automataId }: { automataId: string }) {
       )}
 
       {hasMore && !loading && (
-        <button className="btn btn-ghost btn-sm" onClick={loadMore}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={loadMore}>
           Load more...
         </button>
       )}

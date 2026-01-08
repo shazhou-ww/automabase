@@ -3,7 +3,7 @@
  * Based on BUSINESS_MODEL_SPEC.md Section 4.2
  */
 
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 
 /**
  * Extract headers from API Gateway event
@@ -56,9 +56,7 @@ function buildCanonicalQueryString(queryParams?: Record<string, string | string[
   });
 
   // URL encode and join
-  return params
-    .map((p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
-    .join('&');
+  return params.map((p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join('&');
 }
 
 /**
@@ -75,7 +73,7 @@ function buildCanonicalHeaders(headers: Record<string, string>, signedHeaders: s
     }
   }
 
-  return canonicalHeaders.join('\n') + '\n';
+  return `${canonicalHeaders.join('\n')}\n`;
 }
 
 /**
@@ -256,4 +254,3 @@ export async function verifyRequestSignatureFromEvent(
 
   return { valid: true };
 }
-
