@@ -4,13 +4,13 @@
  */
 
 import type { CreateTenantRequest } from '@automabase/automata-core';
-import { getTenant } from '@automabase/automata-core';
 import {
   createTenant,
   generateTenantId,
+  getTenant,
   updateTenant,
   updateTenantStatus,
-} from '@automabase/tenant-admin';
+} from '@automabase/automata-core';
 import type { PlatformAuthContext } from '@automabase/platform-auth';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {

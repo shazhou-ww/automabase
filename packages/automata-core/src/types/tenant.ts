@@ -40,8 +40,8 @@ export interface Tenant {
  * Tenant creation request
  */
 export interface CreateTenantRequest {
-  /** Tenant ID (ULID format, 26 characters) */
-  tenantId: string;
+  /** Tenant ID (ULID format, 26 characters), auto-generated if not provided */
+  tenantId?: string;
   /** Owner Subject ID = SHA256(OwnerPubKey) */
   ownerSubjectId: string;
   /** JWKS endpoint URL */

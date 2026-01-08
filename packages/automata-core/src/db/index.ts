@@ -72,5 +72,12 @@ export {
   type Snapshot,
   shouldCreateSnapshot,
 } from './snapshot-repository';
-// Tenant repository (read-only, write operations are in @automabase/tenant-admin)
-export { getTenant } from './tenant-repository';
+// Tenant repository
+export {
+  createTenant,
+  generateTenantId,
+  getTenant,
+  updateTenant,
+  updateTenantStatus,
+  type UpdateTenantResult,
+} from './tenant-repository';
