@@ -1,0 +1,12 @@
+{
+  "httpMethod": "GET",
+  "path": "/admin/tenants",
+  "resource": "/admin/tenants",
+  "headers": {
+    "X-Admin-Key": "dev-admin:dev-secret-change-me"
+  },
+  "requestContext": {
+    "requestId": "test-123"
+  }
+}
+
