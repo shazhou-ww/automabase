@@ -1,161 +1,195 @@
 # Automabase
 
-Automabase - Fullstack Monorepo with Bun
+**状态机即服务 (Automata-as-a-Service)** - 开源的多租户有限状态机托管平台
 
-> **这是一个 Bun Create 模板**  
-> 使用 `bun create bun-fullstack-monorepo my-project` 或 `bun create your-username/bun-fullstack-monorepo my-project` 创建新项目
+## 概述
 
-## 项目结构
+Automabase 提供：
+
+- 多租户的有限状态机托管
+- 事件驱动的状态转换（使用 JSONata 定义转换逻辑）
+- 细粒度的权限控制
+- 完整的事件审计追踪
+- 实时状态订阅（WebSocket）
+
+## 架构
 
 ```
-automabase/
-├── functions/          # Lambda 函数包（使用 esbuild 预构建）
-├── packages/           # 共享包（直接使用 TypeScript 源码，不做构建）
-├── apps/              # 应用（前端 React/Vite 或后端 Elysia）
-├── templates/         # 模板包（用于创建新的 functions/packages/apps）
-├── scripts/           # 创建和工具脚本
-└── template.yaml      # SAM CLI 模板
+Platform Layer (Admin API Key)
+└── tenant-admin-api         # Tenant 生命周期管理
+
+Tenant Layer (Tenant JWT)
+├── tenant-api               # Tenant 信息只读查询
+├── automata-api             # Automata/Event CRUD
+└── automata-ws              # WebSocket 实时订阅
 ```
-
-## 技术栈
-
-- **运行时**: Bun（本地开发）+ Node.js 24.x（Lambda 运行时）
-- **TypeScript**: 5.3+（bun 可以直接运行 TypeScript）
-- **包管理**: Bun workspaces
-- **构建工具**:
-  - Lambda: `esbuild`（预构建到 `dist/`）
-  - Apps: `Vite`
-- **任务编排**: `Turborepo`（并行执行、智能缓存）
-- **测试**: `Vitest`（通过 bun 运行）
-- **代码检查和格式化**: `Biome`（lint + format）
-- **部署**: AWS SAM CLI
-
-## 文档
-
-- [JWT 认证与多租户架构](./docs/JWT_AUTH.md) - JWT 认证、多租户设计、本地测试指南
 
 ## 快速开始
 
-### 使用 Bun Create 创建新项目
-
-**从 npm 使用（推荐）：**
-
-```bash
-bun create bun-fullstack-monorepo my-project
-cd my-project
-bun install
-```
-
-**从 GitHub 使用：**
-
-```bash
-bun create your-username/bun-fullstack-monorepo my-project
-cd my-project
-bun run init  # 如果 bun create 没有自动运行 init
-bun install
-```
-
-**注意**: 
-- 从 npm 使用时，`init.ts` 脚本会在安装后自动运行（通过 `bun-create.postinstall`）
-- 从 GitHub 使用时，可能需要手动运行 `bun run init`
-- `init.ts` 脚本会将所有模板占位符替换为实际项目名称
-
 ### 前置要求
 
-- Bun 1.0+（[安装指南](https://bun.sh/docs/installation)）
-- AWS SAM CLI（用于本地调试和部署，可选）
-- AWS CLI（用于部署，可选）
-- Docker Desktop（用于本地运行 Lambda 函数，可选，[下载地址](https://www.docker.com/products/docker-desktop/)）
+- [Bun](https://bun.sh/) 1.0+
+- [AWS CLI](https://aws.amazon.com/cli/) 已配置凭证
+- [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)（本地开发可选）
 
-### 创建新的 Lambda 函数
-
-```bash
-bun run create:function <function-name>
-```
-
-这会：
-
-1. 从 `templates/function` 克隆模板
-2. 替换模板中的占位符
-3. 更新 `template.yaml` 添加新的 Lambda 函数
-4. 创建 esbuild 构建脚本
-
-### 创建新的共享包
+### 1. 克隆并安装依赖
 
 ```bash
-bun run create:package <package-name>
+git clone https://github.com/xxx/automabase.git
+cd automabase
+bun install --no-cache
 ```
 
-这会：
+### 2. 配置 Admin API Key
 
-1. 从 `templates/package` 克隆模板
-2. 替换模板中的占位符
-
-### 创建新的前端应用（React）
+在部署前，先在 AWS Secrets Manager 中创建 Admin API Key：
 
 ```bash
-bun run create:app:react <app-name>
+aws secretsmanager create-secret \
+  --name automabase/admin-api-key \
+  --secret-string '{
+    "keyId": "admin-001",
+    "secret": "your-secure-secret-min-32-characters-here"
+  }'
 ```
 
-这会：
+> **安全提示**：请使用强密码（至少 32 个字符），并妥善保管。
 
-1. 从 `templates/app-react` 克隆模板
-2. 设置 Vite + React 项目
-
-### 创建新的后端应用（Elysia）
+### 3. 部署到 AWS
 
 ```bash
-bun run create:app:elysia <app-name>
+# 构建并部署（首次部署使用 --guided）
+bun run sam:deploy:guided
 ```
 
-这会：
+部署完成后，会输出 API 端点：
 
-1. 从 `templates/app-elysia` 克隆模板
-2. 设置 Elysia 后端服务
+```
+Outputs:
+  AutomataApiEndpoint: https://xxx.execute-api.region.amazonaws.com/Prod/v1
+  TenantAdminApiEndpoint: https://xxx.execute-api.region.amazonaws.com/Prod/admin
+```
 
-## 开发
+### 4. 创建第一个 Tenant
 
-### 本地开发 Lambda 函数
+使用 Admin API Key 创建 Tenant：
 
-1. 复制环境变量模板并配置：
+```bash
+curl -X POST https://xxx.execute-api.region.amazonaws.com/Prod/admin/tenants \
+  -H "X-Admin-Key: admin-001:your-secure-secret" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My App",
+    "jwksUri": "https://myapp.com/.well-known/jwks.json",
+    "ownerSubjectId": "sha256:your-public-key-hash"
+  }'
+```
+
+响应：
+
+```json
+{
+  "tenantId": "01JGXXX...",
+  "name": "My App",
+  "status": "active",
+  "createdAt": "2024-01-20T10:00:00Z"
+}
+```
+
+### 5. 配置 JWKS
+
+在你的服务端托管 JWKS 公钥文件（与 `jwksUri` 对应）：
+
+```json
+{
+  "keys": [{
+    "kid": "jwt-2024-01",
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "use": "sig",
+    "x": "base64url-encoded-public-key"
+  }]
+}
+```
+
+### 6. 使用业务 API
+
+签发 Tenant JWT 后，即可使用业务 API：
+
+```bash
+# 创建 Automata
+curl -X POST https://xxx.execute-api.region.amazonaws.com/Prod/v1/realms/{realmId}/automatas \
+  -H "Authorization: Bearer {tenant-jwt}" \
+  -H "X-Request-Id: {ulid}" \
+  -H "X-Request-Timestamp: {iso8601}" \
+  -H "X-Request-Signature: {signature}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "descriptor": {
+      "name": "Counter",
+      "stateSchema": { "type": "object", "properties": { "count": { "type": "number" } } },
+      "eventSchemas": { "INCREMENT": { "type": "object" } },
+      "initialState": { "count": 0 },
+      "transition": "$merge([$$, { count: $$.count + 1 }])"
+    }
+  }'
+```
+
+---
+
+## 本地开发
+
+### 环境配置
+
+1. 复制环境变量模板：
 
 ```bash
 cp env.json.example env.json
-# 编辑 env.json 填入你的环境变量
 ```
 
-2. 构建所有函数（使用 esbuild 预构建）：
+2. 编辑 `env.json` 配置 DynamoDB Local 端点：
+
+```json
+{
+  "Parameters": {
+    "NODE_ENV": "development"
+  },
+  "TenantAdminApiFunction": {
+    "TABLE_NAME": "automabase-dev",
+    "ADMIN_API_KEY_SECRET": "automabase/admin-api-key"
+  }
+}
+```
+
+### 启动本地 DynamoDB
 
 ```bash
+# 使用 Docker 启动 DynamoDB Local
+docker run -d -p 8000:8000 amazon/dynamodb-local
+```
+
+### 启动本地 API
+
+```bash
+# 构建所有函数
 bun run build:functions
-```
 
-3. 使用 SAM CLI 本地启动 API：
+# 合并 SAM 模板
+bun run sam:merge
 
-```bash
+# 启动本地 API Gateway
 bun run sam:local
-```
-
-> **注意**: `sam:local` 使用 `--env-vars env.json` 传递环境变量给 Lambda 容器。
-> 请确保 `env.json` 中配置了正确的函数名和环境变量。
-
-4. 测试特定函数：
-
-```bash
-bun run sam:invoke <FunctionName>
-```
-
-5. 或者直接用 bun 运行 TypeScript 进行开发：
-
-```bash
-bun run functions/<function-name>/src/index.ts
 ```
 
 ### 运行测试
 
 ```bash
-# 运行所有测试（自动生成覆盖率报告）
+# 运行所有测试
 bun run test
+
+# 运行特定包的测试
+cd packages/platform-auth && bun run test
 ```
 
 ### 类型检查
@@ -167,193 +201,113 @@ bun run typecheck
 ### 代码检查
 
 ```bash
-# 检查所有代码和 Markdown（lint:ts + lint:md）
+# 检查代码
 bun run lint
 
-# 自动修复所有代码和 Markdown（lint:ts:fix + lint:md:fix）
+# 自动修复
 bun run lint:fix
-
-# 只检查 TypeScript/JavaScript 代码（包含格式检查）
-bun run lint:ts
-
-# 自动修复 TypeScript/JavaScript 代码（包含格式修复）
-bun run lint:ts:fix
-
-# 只检查 Markdown 文件
-bun run lint:md
-
-# 自动修复 Markdown 文件
-bun run lint:md:fix
 ```
 
-## 配置
+---
 
-### 环境变量
+## 项目结构
 
-#### SAM 本地开发
-
-SAM CLI 不会自动读取 `.env` 文件。需要使用 `env.json` 配置环境变量：
-
-1. 复制模板：`cp env.json.example env.json`
-2. 编辑 `env.json` 填入环境变量：
-
-```json
-{
-  "Parameters": {
-    "NODE_ENV": "development"
-  },
-  "MyFunctionName": {
-    "API_KEY": "your-api-key-here"
-  }
-}
+```
+automabase/
+├── functions/              # Lambda 函数
+│   ├── tenant-admin-api/   # Tenant 管理 API (Admin API Key)
+│   ├── tenant-api/         # Tenant 查询 API (Tenant JWT)
+│   ├── automata-api/       # Automata 业务 API (Tenant JWT)
+│   └── automata-ws/        # WebSocket API (Tenant JWT)
+├── packages/               # 共享包
+│   ├── platform-auth/      # 平台层认证 (Admin API Key)
+│   ├── automata-auth/      # 租户层认证 (Tenant JWT)
+│   ├── automata-core/      # 核心类型和数据库操作
+│   └── automata-client/    # 客户端 SDK
+├── docs/                   # 文档
+│   ├── BUSINESS_MODEL_SPEC.md  # 业务模型规范
+│   └── JWT_AUTH.md         # JWT 认证文档
+└── template.yaml           # SAM 模板
 ```
 
-> **注意**: `env.json` 包含敏感信息，已被 `.gitignore` 忽略。
+---
 
-#### 环境配置文件
+## API 概览
 
-项目支持分级环境配置：
+### 平台层 API (Admin API Key)
 
-- `.env` - 本地开发（不应提交）
-- `.env.dev` - 开发环境
-- `.env.staging` - 预发布环境
-- `.env.prod` - 生产环境
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | /admin/tenants | 创建 Tenant |
+| GET | /admin/tenants | 列出 Tenants |
+| GET | /admin/tenants/{id} | 获取 Tenant 详情 |
+| PATCH | /admin/tenants/{id} | 更新 Tenant |
+| POST | /admin/tenants/{id}/suspend | 暂停 Tenant |
+| POST | /admin/tenants/{id}/resume | 恢复 Tenant |
+| DELETE | /admin/tenants/{id} | 删除 Tenant |
 
-每个 Lambda 函数也可以有自己的 `.env` 文件（用于参考需要的变量）。
+### 租户层 API (Tenant JWT)
 
-### TypeScript 配置
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /tenant | 获取 Tenant 信息（公开只读） |
+| GET | /realms | 列出 Realms |
+| POST | /realms/{realmId}/automatas | 创建 Automata |
+| GET | /automatas/{id}/state | 获取 Automata 状态 |
+| POST | /automatas/{id}/events | 发送 Event |
+| GET | /automatas/{id}/events | 查询 Events |
 
-- 根目录 `tsconfig.json` - 基础配置
-- 每个 package/function/app 有自己的 `tsconfig.json` 继承根配置
+---
 
-### Biome 配置
+## 权限模型
 
-- 根目录 `biome.json` - 统一配置（lint + format）
-- 所有包共享同一配置，无需单独配置文件
+### 双层认证体系
 
-## 部署
+| 层级 | 认证方式 | 用途 |
+|------|----------|------|
+| 平台层 | Admin API Key (Secrets Manager) | 管理 Tenant 生命周期 |
+| 租户层 | Tenant JWT + 请求签名 | 操作 Realm/Automata/Event |
 
-### 使用 SAM CLI 本地部署
+### 权限字格式
 
-```bash
-bun run sam:build
-sam deploy --guided
+```
+{resource-type}:{resource-id}:{access-level}
 ```
 
-### CI/CD
+示例：
 
-你可以添加 `.gitlab-ci.yml` 或其他 CI/CD 配置文件来支持自动化部署。
-
-部署流程示例：
-
-- `develop` 分支 → 自动部署到 dev 环境
-- `main` 分支 → 手动触发部署到 prod 环境
-
-## 目录说明
-
-### functions/
-
-每个 Lambda 函数是一个独立的包：
-
-- 使用 `esbuild` 预构建到 `dist/` 目录
-- SAM 直接使用预构建的 `dist` 目录部署
-- 包含 `template.yaml` 片段（会被合并到根 `template.yaml`）
-- 有自己的测试和配置
-
-### packages/
-
-共享包，不需要构建：
-
-- 直接从 `src/index.ts` 导出
-- 通过 workspace 名称引用（如 `@automabase/package-name`）
-- 使用 TypeScript 的 path mapping 引用
-
-### apps/
-
-应用（前端或后端）：
-
-- **React 前端应用**: 使用 Vite 构建，可以部署到任何静态托管服务
-- **Elysia 后端应用**: 使用 Bun 运行，可以部署到支持 Bun 的平台（如 Railway、Fly.io）
-
-### templates/
-
-模板目录，包含：
-
-- `function/` - Lambda 函数模板
-- `package/` - 共享包模板
-- `app-react/` - React 前端应用模板
-- `app-elysia/` - Elysia 后端应用模板
-
-## 最佳实践
-
-1. **命名规范**
-   - Functions: `kebab-case`（如 `user-service`）
-   - Packages: `kebab-case`（如 `shared-utils`）
-   - Apps: `kebab-case`（如 `admin-panel`）
-
-2. **代码组织**
-   - 每个包应该是自包含的
-   - 共享代码放在 `packages/`
-   - Lambda 函数保持精简，复杂逻辑抽取到 packages
-
-3. **测试**
-   - 每个包都应该有测试
-   - 使用 Vitest 编写单元测试
-   - 覆盖率目标是 80%+
-
-4. **类型安全**
-   - 充分利用 TypeScript 类型系统
-   - 避免使用 `any`
-   - 使用类型守卫和断言
-
-## 常见问题
-
-### 如何添加新的依赖？
-
-在对应的 package 目录下运行 `bun add <package>`，workspace 会自动处理依赖。
-
-### 如何引用其他 packages？
-
-使用 workspace 名称引用，例如：
-
-```typescript
-import { something } from '@automabase/shared-utils';
+```
+realm:01F8MECHZX3TBDSZ7XRADM79XV:readwrite
+automata:01AN4Z07BY79KA1307SR9X4MV3:read
+realm:*:read  # 通配符
 ```
 
-### 如何调试 Lambda 函数？
+---
 
-使用 SAM CLI 的本地调试功能：
+## 文档
 
-```bash
-sam local invoke <FunctionName> --debug-port 5858
-```
+- [业务模型规范](./docs/BUSINESS_MODEL_SPEC.md) - 完整的业务实体、权限模型、API 规范
+- [JWT 认证文档](./docs/JWT_AUTH.md) - JWT 认证、请求签名、本地测试指南
 
-然后附加调试器到该端口。
+---
 
-## 模板说明
+## 技术栈
 
-这个项目是一个 Bun Create 模板。当用户使用 `bun create` 创建新项目时：
+- **运行时**: Bun（本地开发）+ Node.js 24.x（Lambda）
+- **语言**: TypeScript 5.3+
+- **包管理**: Bun workspaces + Turborepo
+- **构建**: esbuild (Lambda) / Vite (Apps)
+- **测试**: Vitest
+- **代码检查**: Biome
+- **部署**: AWS SAM CLI
+- **数据库**: DynamoDB (Single Table Design)
 
-1. Bun 会克隆这个仓库到临时目录
-2. 复制到目标目录
-3. 运行 `bun run init`（如果配置了 postinstall 脚本）
-4. `init.ts` 脚本会替换所有占位符：
-   - `automabase` → 项目名称（kebab-case）
-   - `Automabase` → PascalCase 版本
-   - `@automabase` → 组织/命名空间名称
-   - `Automabase - Fullstack Monorepo with Bun` → 项目描述
+---
 
 ## 贡献
 
-欢迎贡献！这个模板项目旨在为社区提供一个标准的全栈 monorepo 起点。
-
-1. Fork 这个仓库
-2. 创建功能分支
-3. 提交更改
-4. 运行测试和 lint
-5. 创建 Pull Request
+欢迎贡献！请查看 [CONTRIBUTING.md](./CONTRIBUTING.md)（待创建）了解如何参与。
 
 ## 许可证
 
-[添加许可证信息]
-
+MIT License
