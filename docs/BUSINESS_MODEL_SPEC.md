@@ -773,20 +773,20 @@ wss://api.automabase.com/v1/ws?token={jwt}
 
 ### Phase 3: 高级功能
 
-- [ ] **WebSocket 读写**
-  - [ ] 上行发送 Event
-  - [ ] 双向实时通信
+- [x] **WebSocket 读写**
+  - [x] 上行发送 Event
+  - [x] 双向实时通信
 
-- [ ] **历史状态**
-  - [ ] 实现 Snapshot 存储（每 62 版本）
-  - [ ] 实现历史状态查询 API
+- [x] **历史状态**
+  - [x] 实现 Snapshot 存储（每 62 版本）
+  - [x] 实现历史状态查询 API
 
-- [ ] **通配符权限**
-  - [ ] 支持 `realm:*:read` 格式
+- [x] **通配符权限**
+  - [x] 支持 `realm:*:read` 格式
 
-- [ ] **批量操作**
-  - [ ] 批量发送 Events
-  - [ ] 批量查询状态
+- [x] **批量操作**
+  - [x] 批量发送 Events
+  - [x] 批量查询状态
 
 ---
 
