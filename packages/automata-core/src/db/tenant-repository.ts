@@ -12,7 +12,12 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { ulid } from 'ulid';
 
-import type { CreateTenantRequest, Tenant, TenantStatus, UpdateTenantRequest } from '../types/tenant';
+import type {
+  CreateTenantRequest,
+  Tenant,
+  TenantStatus,
+  UpdateTenantRequest,
+} from '../types/tenant';
 import { getDocClient } from './client';
 import { TABLE_NAME } from './constants';
 import { tenantKeys } from './keys';

@@ -16,4 +16,3 @@ export {
   updateTenant,
   updateTenantStatus,
 } from './tenant-admin-repository';
-

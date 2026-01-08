@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createTenant,
-  generateTenantId,
-  updateTenant,
-  updateTenantStatus,
-} from './index';
+import { createTenant, generateTenantId, updateTenant, updateTenantStatus } from './index';
 
 describe('@automabase/tenant-admin', () => {
   describe('exports', () => {
@@ -40,4 +35,3 @@ describe('@automabase/tenant-admin', () => {
     });
   });
 });
-

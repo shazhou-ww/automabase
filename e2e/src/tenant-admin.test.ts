@@ -6,7 +6,7 @@
  * - DynamoDB Local running with tables created
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { adminHeaders } from './config';
 import { apiRequest, uniqueId } from './utils';
 
@@ -65,7 +65,9 @@ describe('Tenant Admin API', () => {
       expect(response.data?.createdAt).toBeDefined();
 
       // Save for subsequent tests
-      createdTenantId = response.data!.tenantId;
+      if (response.data?.tenantId) {
+        createdTenantId = response.data.tenantId;
+      }
     });
 
     it('should return 400 for missing required fields', async () => {
@@ -101,11 +103,9 @@ describe('Tenant Admin API', () => {
         return;
       }
 
-      const response = await apiRequest<Tenant>(
-        'GET',
-        `/admin/tenants/${createdTenantId}`,
-        { headers: adminHeaders() }
-      );
+      const response = await apiRequest<Tenant>('GET', `/admin/tenants/${createdTenantId}`, {
+        headers: adminHeaders(),
+      });
 
       expect(response.ok).toBe(true);
       expect(response.status).toBe(200);
@@ -113,11 +113,9 @@ describe('Tenant Admin API', () => {
     });
 
     it('should return 404 for non-existent tenant', async () => {
-      const response = await apiRequest(
-        'GET',
-        '/admin/tenants/01NONEXISTENT000000000000',
-        { headers: adminHeaders() }
-      );
+      const response = await apiRequest('GET', '/admin/tenants/01NONEXISTENT000000000000', {
+        headers: adminHeaders(),
+      });
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(404);
@@ -203,4 +201,3 @@ describe('Tenant Admin API', () => {
     });
   });
 });
-

@@ -22,4 +22,3 @@ export function adminHeaders(): Record<string, string> {
     'Content-Type': 'application/json',
   };
 }
-

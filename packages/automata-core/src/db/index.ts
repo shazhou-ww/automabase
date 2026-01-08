@@ -77,7 +77,7 @@ export {
   createTenant,
   generateTenantId,
   getTenant,
+  type UpdateTenantResult,
   updateTenant,
   updateTenantStatus,
-  type UpdateTenantResult,
 } from './tenant-repository';

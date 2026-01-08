@@ -9,6 +9,17 @@
  * Read operations (getTenant) remain in @automabase/automata-core
  */
 
+import {
+  type CreateTenantRequest,
+  getDocClient,
+  META_SK,
+  TABLE_NAME,
+  type Tenant,
+  type TenantStatus,
+  tenantKeys,
+  tenantPK,
+  type UpdateTenantRequest,
+} from '@automabase/automata-core';
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import {
   PutCommand,
@@ -17,18 +28,6 @@ import {
   type UpdateCommandInput,
 } from '@aws-sdk/lib-dynamodb';
 import { ulid } from 'ulid';
-
-import {
-  getDocClient,
-  META_SK,
-  TABLE_NAME,
-  tenantKeys,
-  tenantPK,
-  type CreateTenantRequest,
-  type Tenant,
-  type TenantStatus,
-  type UpdateTenantRequest,
-} from '@automabase/automata-core';
 
 /**
  * DynamoDB item structure for Tenant
@@ -78,10 +77,13 @@ export async function createTenant(request: CreateTenantRequest): Promise<Tenant
   const docClient = getDocClient();
   const now = new Date().toISOString();
 
+  // Generate tenantId if not provided
+  const tenantId = request.tenantId || ulid();
+
   const item: TenantItem = {
-    pk: tenantPK(request.tenantId),
+    pk: tenantPK(tenantId),
     sk: META_SK,
-    tenantId: request.tenantId,
+    tenantId,
     ownerSubjectId: request.ownerSubjectId,
     jwksUri: request.jwksUri,
     name: request.name,
@@ -222,4 +224,3 @@ export async function updateTenantStatus(
     throw error;
   }
 }
-
