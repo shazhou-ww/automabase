@@ -6,6 +6,7 @@ import type { APIGatewayProxyEvent } from 'aws-lambda';
 import {
   extractBearerToken,
   verifyAutomabaseJwtWithTenantLookup,
+  verifyRequestSignatureAndReplay,
   AuthError,
   type VerifiedAutomabaseToken,
   type TenantConfig,
@@ -56,6 +57,13 @@ export async function authenticate(
 
   try {
     const verified = await verifyAutomabaseJwtWithTenantLookup(token, getTenantConfig);
+    
+    // Verify request signature and replay protection (Phase 2)
+    const signatureCheck = await verifyRequestSignatureAndReplay(event, verified);
+    if (!signatureCheck.valid) {
+      return { error: signatureCheck.error || new AuthError('Signature verification failed', 'INVALID_SIGNATURE') };
+    }
+
     const permissions = new PermissionChecker(verified.scopes);
 
     return {

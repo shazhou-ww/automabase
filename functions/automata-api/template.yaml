@@ -14,9 +14,12 @@ AutomataApiFunction:
       Variables:
         NODE_ENV: !Ref Environment
         AUTOMABASE_TABLE: !Ref AutomabaseTable
+        REQUEST_ID_TABLE: !Ref RequestIdTable
     Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref AutomabaseTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref RequestIdTable
     Events:
       # Realm routes
       CreateAutomata:

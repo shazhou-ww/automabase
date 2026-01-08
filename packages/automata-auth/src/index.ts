@@ -58,3 +58,22 @@ export {
   type DescriptorSignaturePayload,
   type DescriptorSignatureResult,
 } from './utils/descriptor-signature';
+
+// Re-export request signature verification functions
+export {
+  buildCanonicalRequest,
+  extractSignedHeaders,
+  verifyRequestSignature,
+  verifyRequestSignatureFromEvent,
+} from './utils/request-signature';
+
+// Re-export replay protection functions
+export {
+  validateRequestTimestamp,
+  validateRequestIdFormat,
+} from './utils/replay-protection';
+
+// Re-export signature middleware
+export {
+  verifyRequestSignatureAndReplay,
+} from './utils/signature-middleware';

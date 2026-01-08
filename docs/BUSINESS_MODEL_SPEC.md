@@ -761,15 +761,15 @@ wss://api.automabase.com/v1/ws?token={jwt}
 
 ### Phase 2: 增强安全
 
-- [ ] **请求签名**
-  - [ ] 实现 Canonical Request 构造
-  - [ ] 实现 Ed25519 签名验证
-  - [ ] 实现签名中间件
+- [x] **请求签名**
+  - [x] 实现 Canonical Request 构造
+  - [x] 实现 Ed25519 签名验证
+  - [x] 实现签名中间件
 
-- [ ] **防重放**
-  - [ ] 创建 Request ID 去重表
-  - [ ] 实现 Request ID 验证
-  - [ ] 实现 Timestamp 验证
+- [x] **防重放**
+  - [x] 创建 Request ID 去重表
+  - [x] 实现 Request ID 验证
+  - [x] 实现 Timestamp 验证
 
 ### Phase 3: 高级功能
 

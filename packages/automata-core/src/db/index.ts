@@ -70,3 +70,9 @@ export {
   listEvents,
   listEventsByType,
 } from './event-repository';
+
+// Request ID repository
+export {
+  checkAndRecordRequestId,
+  hasRequestId,
+} from './request-id-repository';
