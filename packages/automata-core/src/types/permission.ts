@@ -19,10 +19,12 @@ export type AccessLevel = 'read' | 'write' | 'readwrite';
 export interface Permission {
   /** Resource type: tenant, realm, or automata */
   resourceType: ResourceType;
-  /** Resource ID (ULID) */
+  /** Resource ID (ULID) or '*' for wildcard */
   resourceId: string;
   /** Access level */
   accessLevel: AccessLevel;
+  /** Whether this is a wildcard permission */
+  isWildcard: boolean;
 }
 
 /**
@@ -55,8 +57,9 @@ export function parsePermission(permStr: string): Permission | null {
     return null;
   }
 
-  // Validate resource ID format (ULID: 26 uppercase alphanumeric chars)
-  if (!/^[0-9A-Z]{26}$/.test(resourceId)) {
+  // Validate resource ID format (ULID: 26 uppercase alphanumeric chars) or wildcard '*'
+  const isWildcard = resourceId === '*';
+  if (!isWildcard && !/^[0-9A-Z]{26}$/.test(resourceId)) {
     return null;
   }
 
@@ -64,6 +67,7 @@ export function parsePermission(permStr: string): Permission | null {
     resourceType: resourceType as ResourceType,
     resourceId,
     accessLevel: accessLevel as AccessLevel,
+    isWildcard,
   };
 }
 
@@ -101,6 +105,13 @@ export class PermissionChecker {
     requiredLevel: AccessLevel
   ): boolean {
     for (const perm of this.permissions) {
+      // Wildcard match
+      if (perm.resourceType === resourceType && perm.isWildcard) {
+        if (this.levelSatisfies(perm.accessLevel, requiredLevel)) {
+          return true;
+        }
+      }
+
       // Direct match on resource type and ID
       if (perm.resourceType === resourceType && perm.resourceId === resourceId) {
         if (this.levelSatisfies(perm.accessLevel, requiredLevel)) {
@@ -114,6 +125,12 @@ export class PermissionChecker {
         // This requires knowing the automata's realmId (passed via realmAutomataMap or looked up)
         const automatasInRealm = this.realmToAutomata.get(perm.resourceId);
         if (automatasInRealm?.includes(resourceId)) {
+          if (this.levelSatisfies(perm.accessLevel, requiredLevel)) {
+            return true;
+          }
+        }
+        // Wildcard realm permission applies to all realms
+        if (perm.isWildcard) {
           if (this.levelSatisfies(perm.accessLevel, requiredLevel)) {
             return true;
           }

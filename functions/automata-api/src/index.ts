@@ -14,6 +14,11 @@ import {
   handleListEvents,
   handleGetEvent,
 } from './handlers/event-handlers';
+import {
+  handleBatchSendEventsToAutomata,
+  handleBatchSendEventsToRealm,
+  handleBatchGetStates,
+} from './handlers/batch-handlers';
 import { unauthorized, badRequest, methodNotAllowed, internalError } from './utils/response-helpers';
 
 /**
@@ -62,6 +67,11 @@ const routes = [
   { pattern: /^\/automatas\/([^/]+)\/events$/, method: 'POST', handler: 'sendEvent', params: ['automataId'] },
   { pattern: /^\/automatas\/([^/]+)\/events$/, method: 'GET', handler: 'listEvents', params: ['automataId'] },
   { pattern: /^\/automatas\/([^/]+)\/events\/([^/]+)$/, method: 'GET', handler: 'getEvent', params: ['automataId', 'version'] },
+  
+  // Batch routes
+  { pattern: /^\/automatas\/([^/]+)\/events\/batch$/, method: 'POST', handler: 'batchSendEventsToAutomata', params: ['automataId'] },
+  { pattern: /^\/realms\/([^/]+)\/events\/batch$/, method: 'POST', handler: 'batchSendEventsToRealm', params: ['realmId'] },
+  { pattern: /^\/automatas\/batch\/states$/, method: 'POST', handler: 'batchGetStates' },
 ];
 
 /**
@@ -134,6 +144,14 @@ export const handler = async (
         return await handleListEvents(event, auth);
       case 'getEvent':
         return await handleGetEvent(event, auth);
+
+      // Batch handlers
+      case 'batchSendEventsToAutomata':
+        return await handleBatchSendEventsToAutomata(event, auth);
+      case 'batchSendEventsToRealm':
+        return await handleBatchSendEventsToRealm(event, auth);
+      case 'batchGetStates':
+        return await handleBatchGetStates(event, auth);
 
       default:
         return badRequest(`Unknown handler: ${matched.handler}`);

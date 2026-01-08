@@ -37,6 +37,14 @@ export type {
   ListEventsParams,
   ListEventsResponse,
   EventResponse,
+  BatchSendEventsToAutomataRequest,
+  BatchSendEventsToRealmRequest,
+  BatchEventResult,
+  BatchSendEventsToAutomataResponse,
+  BatchSendEventsToRealmResponse,
+  BatchGetStatesRequest,
+  BatchStateResult,
+  BatchGetStatesResponse,
 } from './event';
 export { createEventId, parseEventId } from './event';
 
