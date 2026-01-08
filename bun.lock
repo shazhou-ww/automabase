@@ -60,6 +60,13 @@
         "vitest": "^1.2.0",
       },
     },
+    "e2e": {
+      "name": "@automabase/e2e",
+      "version": "0.1.0",
+      "devDependencies": {
+        "vitest": "^1.6.1",
+      },
+    },
     "functions/automata-api": {
       "name": "@automabase/function-automata-api",
       "version": "1.0.0",
@@ -94,8 +101,6 @@
       "dependencies": {
         "@automabase/automata-core": "workspace:*",
         "@automabase/platform-auth": "workspace:*",
-        "@automabase/tenant-admin": "workspace:*",
-        "@aws-sdk/lib-dynamodb": "^3.800.0",
       },
       "devDependencies": {
         "@types/aws-lambda": "^8.10.159",
@@ -221,6 +226,8 @@
     "@automabase/automata-core": ["@automabase/automata-core@workspace:packages/automata-core"],
 
     "@automabase/automata-server": ["@automabase/automata-server@workspace:packages/automata-server"],
+
+    "@automabase/e2e": ["@automabase/e2e@workspace:e2e"],
 
     "@automabase/function-automata-api": ["@automabase/function-automata-api@workspace:functions/automata-api"],
 

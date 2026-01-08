@@ -8,7 +8,8 @@
     "packages/*",
     "apps/*",
     "webapps/*",
-    "services/*"
+    "services/*",
+    "e2e"
   ],
   "packageManager": "bun@1.3.5",
   "engines": {
@@ -20,6 +21,7 @@
     "create:webapp": "bun scripts/create.ts webapp",
     "create:service": "bun scripts/create.ts service",
     "test": "turbo run test",
+    "test:e2e": "cd e2e && bun run test",
     "typecheck": "turbo run typecheck",
     "lint:ts": "biome check . && biome format .",
     "lint:ts:fix": "biome check --write . && biome format --write .",
