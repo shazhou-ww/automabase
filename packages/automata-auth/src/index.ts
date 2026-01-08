@@ -1,6 +1,7 @@
 /**
  * Automata Auth - JWT verification utilities
  * Supports Auth0 and other OAuth providers using JWKS
+ * Also supports Automabase native JWT format (Section 4.1 of BUSINESS_MODEL_SPEC.md)
  */
 
 // Re-export all types
@@ -9,16 +10,26 @@ export type {
   TenantConfig,
   TenantRegistrationRequest,
   VerifiedToken,
+  // New Automabase types
+  AutomabaseJwtClaims,
+  VerifiedAutomabaseToken,
 } from './types/auth-types';
 
 // Re-export error class
 export { AuthError } from './errors/auth-error';
 
-// Re-export JWT verification functions
+// Re-export JWT verification functions (legacy OAuth/Auth0 support)
 export {
   verifyJwt,
   createJwtVerifier,
 } from './utils/jwt-verifier';
+
+// Re-export Automabase JWT verification functions
+export {
+  decodeAutomabaseToken,
+  verifyAutomabaseJwt,
+  verifyAutomabaseJwtWithTenantLookup,
+} from './utils/automabase-jwt';
 
 // Re-export JWKS cache utilities
 export { clearJwksCache } from './utils/jwks-cache';

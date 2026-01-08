@@ -77,8 +77,15 @@ export async function verifyDescriptorSignature(
     // Verify the JWT signature and decode payload
     const verifiedToken = await verifyJwtWithTenantConfig(signature, getTenantConfig);
 
-    // Extract the descriptor signature payload
-    const payload = verifiedToken as DescriptorSignaturePayload;
+    // Extract the descriptor signature payload from the raw JWT payload
+    const rawPayload = verifiedToken.payload as Record<string, unknown>;
+    const payload: DescriptorSignaturePayload = {
+      iss: rawPayload.iss as string,
+      sub: rawPayload.sub as string,
+      exp: rawPayload.exp as number,
+      iat: rawPayload.iat as number,
+      descriptor: rawPayload.descriptor as AutomataDescriptor,
+    };
 
     // Verify payload structure
     if (!payload.iss || !payload.sub || !payload.exp || !payload.descriptor) {
@@ -161,7 +168,7 @@ export async function signDescriptor(
   expiresInSeconds: number = 3600 // 1 hour default
 ): Promise<string> {
   // Parse the private key
-  let key: jose.KeyLike;
+  let key: jose.KeyLike | Uint8Array;
   if (typeof privateKey === 'string') {
     // Assume PEM format
     key = await jose.importPKCS8(privateKey, 'RS256');
@@ -173,22 +180,25 @@ export async function signDescriptor(
   // Compute descriptor hash
   const descriptorHash = computeDescriptorHash(descriptor);
 
-  // Create JWT payload
-  const payload: DescriptorSignaturePayload = {
+  const now = Math.floor(Date.now() / 1000);
+  const exp = now + expiresInSeconds;
+
+  // Create JWT payload as a plain object for jose.SignJWT
+  const payloadForJwt: jose.JWTPayload & { descriptor: AutomataDescriptor } = {
     iss: tenantId,
     sub: descriptorHash,
-    exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
-    iat: Math.floor(Date.now() / 1000),
+    exp,
+    iat: now,
     descriptor,
   };
 
   // Sign the JWT
-  const jwt = new jose.SignJWT(payload)
+  const jwt = new jose.SignJWT(payloadForJwt)
     .setProtectedHeader({ alg: 'RS256', typ: 'JWT' })
-    .setIssuedAt(payload.iat)
+    .setIssuedAt(now)
     .setIssuer(tenantId)
     .setSubject(descriptorHash)
-    .setExpirationTime(payload.exp);
+    .setExpirationTime(exp);
 
   return await jwt.sign(key);
 }
@@ -204,7 +214,7 @@ export async function signDescriptor(
 export function createDescriptorSignature(
   descriptor: AutomataDescriptor,
   tenantId: string,
-  privateKey: string,
+  _privateKey: string, // Unused in mock implementation
   expiresInSeconds: number = 3600 // 1 hour default
 ): string {
   // This is a mock implementation for testing only

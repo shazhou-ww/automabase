@@ -1,7 +1,7 @@
 {
-  "name": "@automabase/function-automata-tracker",
+  "name": "@automabase/function-automata-tracker-exp",
   "version": "1.0.0",
-  "description": "Lambda function: automata-tracker - WebSocket API for real-time automata state tracking",
+  "description": "Lambda function: automata-tracker-exp - [EXPERIMENTAL] WebSocket API for real-time automata state tracking",
   "main": "src/index.ts",
   "scripts": {
     "test": "vitest run",
