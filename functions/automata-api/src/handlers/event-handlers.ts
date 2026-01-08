@@ -21,7 +21,7 @@ import type {
   AutomataEvent,
 } from '@automabase/automata-core';
 import type { AuthContext } from '../utils/auth-middleware';
-import { executeTransition } from '../utils/jsonata-runner';
+import { executeTransition } from '@automabase/automata-core';
 import { ok, created, badRequest, forbidden, notFound, conflict, internalError } from '../utils/response-helpers';
 
 /**

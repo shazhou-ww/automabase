@@ -20,6 +20,7 @@ import { getDocClient } from './client';
 import { TABLE_NAME, LSI, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from './constants';
 import { automataPK, eventSK, eventTypeSK, eventKeys, automataKeys } from './keys';
 import { versionIncrement } from '../utils/base62';
+import { shouldCreateSnapshot, createSnapshot } from './snapshot-repository';
 
 /**
  * DynamoDB item structure for Event
@@ -177,6 +178,18 @@ export async function createEventWithStateUpdate(
 
   try {
     await docClient.send(new TransactWriteCommand(params));
+    
+    // Create snapshot if needed (every 62 versions)
+    // Do this after transaction succeeds to avoid blocking
+    if (shouldCreateSnapshot(newVersion)) {
+      try {
+        await createSnapshot(automataId, newVersion, newState);
+      } catch (snapshotError) {
+        // Log but don't fail the event creation if snapshot fails
+        console.error(`Failed to create snapshot for ${automataId} at version ${newVersion}:`, snapshotError);
+      }
+    }
+    
     return { success: true, newVersion };
   } catch (error) {
     if (error instanceof TransactionCanceledException) {

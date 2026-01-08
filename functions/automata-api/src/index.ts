@@ -19,6 +19,10 @@ import {
   handleBatchSendEventsToRealm,
   handleBatchGetStates,
 } from './handlers/batch-handlers';
+import {
+  handleGetHistoricalState,
+  handleListSnapshots,
+} from './handlers/history-handlers';
 import { unauthorized, badRequest, methodNotAllowed, internalError } from './utils/response-helpers';
 
 /**
@@ -72,6 +76,10 @@ const routes = [
   { pattern: /^\/automatas\/([^/]+)\/events\/batch$/, method: 'POST', handler: 'batchSendEventsToAutomata', params: ['automataId'] },
   { pattern: /^\/realms\/([^/]+)\/events\/batch$/, method: 'POST', handler: 'batchSendEventsToRealm', params: ['realmId'] },
   { pattern: /^\/automatas\/batch\/states$/, method: 'POST', handler: 'batchGetStates' },
+  
+  // History routes
+  { pattern: /^\/automatas\/([^/]+)\/history\/([^/]+)$/, method: 'GET', handler: 'getHistoricalState', params: ['automataId', 'version'] },
+  { pattern: /^\/automatas\/([^/]+)\/snapshots$/, method: 'GET', handler: 'listSnapshots', params: ['automataId'] },
 ];
 
 /**
@@ -152,6 +160,12 @@ export const handler = async (
         return await handleBatchSendEventsToRealm(event, auth);
       case 'batchGetStates':
         return await handleBatchGetStates(event, auth);
+
+      // History handlers
+      case 'getHistoricalState':
+        return await handleGetHistoricalState(event, auth);
+      case 'listSnapshots':
+        return await handleListSnapshots(event, auth);
 
       default:
         return badRequest(`Unknown handler: ${matched.handler}`);

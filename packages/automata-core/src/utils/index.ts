@@ -1,17 +1,17 @@
 /**
- * Utility exports for @automabase/automata-core
+ * Utilities exports for @automabase/automata-core
  */
 
-// Base62 version utilities
+export { executeTransition } from './jsonata-runner';
 export {
-  VERSION_LENGTH,
-  VERSION_ZERO as BASE62_VERSION_ZERO,
-  VERSION_MAX,
-  numberToVersion,
-  versionToNumber,
   versionIncrement,
   versionDecrement,
   versionCompare,
   isValidVersion,
+  versionToNumber,
+  numberToVersion,
   versionAdd,
+  VERSION_LENGTH,
+  VERSION_ZERO,
+  VERSION_MAX,
 } from './base62';

@@ -6,6 +6,7 @@ import type {
 import { handleConnect, handleDisconnect } from './handlers/connection-handlers';
 import { handleSubscribe, handleUnsubscribe } from './handlers/subscription-handlers';
 import { handleStreamEvent } from './handlers/stream-handlers';
+import { handleSendEvent } from './handlers/event-handlers';
 
 /**
  * Automata WebSocket Lambda Handler
@@ -58,6 +59,8 @@ export const handler = async (
             return handleSubscribe(wsEvent);
           case 'unsubscribe':
             return handleUnsubscribe(wsEvent);
+          case 'sendEvent':
+            return handleSendEvent(wsEvent);
           default:
             console.log('Unknown action:', action);
             return { statusCode: 400, body: `Unknown action: ${action}` };

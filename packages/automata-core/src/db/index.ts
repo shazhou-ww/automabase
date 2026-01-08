@@ -76,3 +76,13 @@ export {
   checkAndRecordRequestId,
   hasRequestId,
 } from './request-id-repository';
+
+// Snapshot repository
+export {
+  createSnapshot,
+  getSnapshot,
+  getLatestSnapshot,
+  listSnapshots,
+  shouldCreateSnapshot,
+  type Snapshot,
+} from './snapshot-repository';
