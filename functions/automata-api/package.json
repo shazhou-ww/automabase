@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@automabase/automata-auth": "workspace:*",
-    "ulid": "^2.3.0",
+    "@automabase/automata-core": "workspace:*",
     "jsonata": "^2.1.0"
   },
   "devDependencies": {

@@ -12,12 +12,14 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@automabase/automata-auth": "workspace:*"
+    "@automabase/automata-auth": "workspace:*",
+    "@automabase/automata-core": "workspace:*"
   },
   "devDependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.700.0",
     "@aws-sdk/client-dynamodb": "^3.700.0",
     "@aws-sdk/lib-dynamodb": "^3.700.0",
+    "@aws-sdk/util-dynamodb": "^3.700.0",
     "@types/aws-lambda": "^8.10.145"
   }
 }

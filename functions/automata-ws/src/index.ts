@@ -3,6 +3,9 @@ import type {
   APIGatewayProxyWebsocketEventV2,
   DynamoDBStreamEvent,
 } from 'aws-lambda';
+import { handleConnect, handleDisconnect } from './handlers/connection-handlers';
+import { handleSubscribe, handleUnsubscribe } from './handlers/subscription-handlers';
+import { handleStreamEvent } from './handlers/stream-handlers';
 
 /**
  * Automata WebSocket Lambda Handler
@@ -21,8 +24,7 @@ export const handler = async (
 
   // Check if this is a DynamoDB Stream event
   if ('Records' in event && event.Records?.[0]?.eventSource === 'aws:dynamodb') {
-    // TODO: Handle DynamoDB Stream events - push updates to subscribers
-    console.log('DynamoDB Stream event - not implemented yet');
+    await handleStreamEvent(event as DynamoDBStreamEvent);
     return;
   }
 
@@ -30,19 +32,39 @@ export const handler = async (
   const wsEvent = event as APIGatewayProxyWebsocketEventV2;
   const routeKey = wsEvent.requestContext.routeKey;
 
-  // TODO: Implement routing based on BUSINESS_MODEL_SPEC.md
+  console.log('Route:', routeKey);
 
   switch (routeKey) {
     case '$connect':
-      console.log('Connection event - not implemented yet');
-      return { statusCode: 200, body: 'Connected' };
+      return handleConnect(wsEvent);
 
     case '$disconnect':
-      console.log('Disconnection event - not implemented yet');
-      return { statusCode: 200, body: 'Disconnected' };
+      return handleDisconnect(wsEvent);
+
+    case 'subscribe':
+      return handleSubscribe(wsEvent);
+
+    case 'unsubscribe':
+      return handleUnsubscribe(wsEvent);
 
     default:
-      console.log(`Route ${routeKey} - not implemented yet`);
-      return { statusCode: 501, body: 'Not implemented' };
+      // Handle message body to determine action
+      try {
+        const body = JSON.parse(wsEvent.body ?? '{}');
+        const action = body.action;
+
+        switch (action) {
+          case 'subscribe':
+            return handleSubscribe(wsEvent);
+          case 'unsubscribe':
+            return handleUnsubscribe(wsEvent);
+          default:
+            console.log('Unknown action:', action);
+            return { statusCode: 400, body: `Unknown action: ${action}` };
+        }
+      } catch {
+        console.log('Invalid message format');
+        return { statusCode: 400, body: 'Invalid message format' };
+      }
   }
 };

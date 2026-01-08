@@ -1,4 +1,8 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+import { AuthError } from '@automabase/automata-auth';
+import { authenticate } from './utils/auth-middleware';
+import { handleGetTenant, handleUpdateTenant } from './handlers/tenant-handlers';
+import { unauthorized, methodNotAllowed, internalError } from './utils/response-helpers';
 
 /**
  * Tenant API Lambda Handler
@@ -11,45 +15,42 @@ export const handler = async (
   event: APIGatewayProxyEvent,
   context: Context
 ): Promise<APIGatewayProxyResult> => {
-  console.log('Event:', JSON.stringify(event, null, 2));
+  console.log('Request:', {
+    method: event.httpMethod,
+    path: event.path,
+    requestId: context.awsRequestId,
+  });
 
   const { httpMethod } = event;
 
-  // TODO: Implement handlers based on BUSINESS_MODEL_SPEC.md
-  // - Extract tenantId from JWT iss claim
-  // - Verify tenant:xxx:read or tenant:xxx:readwrite permission
+  // Authenticate request
+  const authResult = await authenticate(event);
 
-  switch (httpMethod) {
-    case 'GET':
-      // TODO: Implement GET /tenant
-      return {
-        statusCode: 501,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: 'GET /tenant: Not implemented yet',
-          requestId: context.awsRequestId,
-        }),
-      };
+  if ('error' in authResult) {
+    const error = authResult.error;
+    console.error('Authentication failed:', error.message);
 
-    case 'PATCH':
-      // TODO: Implement PATCH /tenant
-      return {
-        statusCode: 501,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: 'PATCH /tenant: Not implemented yet',
-          requestId: context.awsRequestId,
-        }),
-      };
+    if (error instanceof AuthError) {
+      return unauthorized(error.message);
+    }
+    return internalError('Authentication failed', context.awsRequestId);
+  }
 
-    default:
-      return {
-        statusCode: 405,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `Method ${httpMethod} not allowed`,
-          requestId: context.awsRequestId,
-        }),
-      };
+  const auth = authResult.context;
+
+  try {
+    switch (httpMethod) {
+      case 'GET':
+        return await handleGetTenant(event, auth);
+
+      case 'PATCH':
+        return await handleUpdateTenant(event, auth);
+
+      default:
+        return methodNotAllowed(httpMethod);
+    }
+  } catch (error) {
+    console.error('Unhandled error:', error);
+    return internalError('Internal server error', context.awsRequestId);
   }
 };

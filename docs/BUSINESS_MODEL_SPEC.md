@@ -729,35 +729,35 @@ wss://api.automabase.com/v1/ws?token={jwt}
 
 ### Phase 1: 核心功能 (MVP)
 
-- [ ] **数据模型**
-  - [ ] 定义 TypeScript 类型（基于本规范）
-  - [ ] 实现 DynamoDB 表操作工具
-  - [ ] 实现 Base62 版本号工具
+- [x] **数据模型**
+  - [x] 定义 TypeScript 类型（基于本规范）
+  - [x] 实现 DynamoDB 表操作工具
+  - [x] 实现 Base62 版本号工具
 
-- [ ] **认证授权**
-  - [ ] 实现 JWT 验证（支持动态 JWKS）
-  - [ ] 实现权限字解析和验证
-  - [ ] 实现 Tenant 配置管理
+- [x] **认证授权**
+  - [x] 实现 JWT 验证（支持动态 JWKS）
+  - [x] 实现权限字解析和验证
+  - [x] 实现 Tenant 配置管理
 
-- [ ] **Tenant API** (`tenant-api`)
-  - [ ] GET /tenant
-  - [ ] PATCH /tenant
+- [x] **Tenant API** (`tenant-api`)
+  - [x] GET /tenant
+  - [x] PATCH /tenant
 
-- [ ] **Automata API** (`automata-api`)
-  - [ ] POST /realms/{realmId}/automatas
-  - [ ] GET /realms
-  - [ ] GET /realms/{realmId}/automatas
-  - [ ] GET /automatas/{automataId}/state
-  - [ ] GET /automatas/{automataId}/descriptor
-  - [ ] PATCH /automatas/{automataId}
-  - [ ] POST /automatas/{automataId}/events
-  - [ ] GET /automatas/{automataId}/events
-  - [ ] GET /automatas/{automataId}/events/{version}
+- [x] **Automata API** (`automata-api`)
+  - [x] POST /realms/{realmId}/automatas
+  - [x] GET /realms
+  - [x] GET /realms/{realmId}/automatas
+  - [x] GET /automatas/{automataId}/state
+  - [x] GET /automatas/{automataId}/descriptor
+  - [x] PATCH /automatas/{automataId}
+  - [x] POST /automatas/{automataId}/events
+  - [x] GET /automatas/{automataId}/events
+  - [x] GET /automatas/{automataId}/events/{version}
 
-- [ ] **WebSocket** (`automata-ws`)
-  - [ ] 连接管理
-  - [ ] 订阅/取消订阅
-  - [ ] 状态推送（只读）
+- [x] **WebSocket** (`automata-ws`)
+  - [x] 连接管理
+  - [x] 订阅/取消订阅
+  - [x] 状态推送（只读）
 
 ### Phase 2: 增强安全
 

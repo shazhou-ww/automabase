@@ -1,5 +1,5 @@
 import * as jose from 'jose';
-import type { VerifiedToken, TenantConfig } from '../types/auth-types';
+import type { VerifiedToken, TenantConfig, JwtConfig } from '../types/auth-types';
 import { AuthError } from '../errors/auth-error';
 import { verifyJwt } from './jwt-verifier';
 
