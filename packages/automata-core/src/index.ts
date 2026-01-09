@@ -1,18 +1,8 @@
 /**
- * @automabase/automata-core
- *
- * Core types and utilities for Automabase platform
- * - Business model types (Tenant, Automata, Event, Realm)
- * - Permission system
- * - JWT types
- * - DynamoDB operations
- * - Base62 versioning utilities
+ * Shared package: automata-core
  */
 
-// Re-export database operations
-export * from './db';
-// Re-export all types
-export * from './types';
+export const example = (): string => {
+  return 'Hello from automata-core';
+};
 
-// Re-export utilities
-export * from './utils';

@@ -1,12 +1,9 @@
-/**
- * Tests for @automabase/automata-server
- */
+import { describe, it, expect } from 'vitest';
+import { example } from './index';
 
-import { describe, expect, it } from 'vitest';
-
-describe('AutomataServerSDK', () => {
-  it('should export AutomataServerSDK', async () => {
-    const mod = await import('./index');
-    expect(mod.AutomataServerSDK).toBeDefined();
+describe('example', () => {
+  it('should return a greeting', () => {
+    expect(example()).toContain('automata-server');
   });
 });
+

@@ -1,7 +1,7 @@
 {
   "name": "@automabase/automata-auth",
   "version": "1.0.0",
-  "description": "JWT authentication utilities for automata - JWKS validation for Auth0 and other OAuth providers",
+  "description": "Shared package: automata-auth",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
@@ -11,13 +11,10 @@
     "lint:fix": "biome check --write src",
     "clean": "echo 'No dist to clean'"
   },
-  "dependencies": {
-    "@automabase/automata-core": "workspace:*",
-    "jose": "^5.2.0"
-  },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0"
   }
 }
+

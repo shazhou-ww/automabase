@@ -1,28 +1,30 @@
-import { describe, expect, it } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { handler } from './index';
+import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
 
-/**
- * WebSocket handler tests
- *
- * Note: These tests require mocking DynamoDB and API Gateway Management API
- * Full integration tests should be done with LocalStack or SAM Local
- */
+describe('handler', () => {
+  it('should return 200 with message', async () => {
+    const event = {} as APIGatewayProxyEvent;
+    const context = {
+      callbackWaitsForEmptyEventLoop: true,
+      functionName: 'test-function',
+      functionVersion: '1',
+      invokedFunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:test',
+      memoryLimitInMB: '128',
+      awsRequestId: 'test-request-id',
+      logGroupName: '/aws/lambda/test',
+      logStreamName: '2024/01/01/[$LATEST]test',
+      getRemainingTimeInMillis: () => 30000,
+      done: () => {},
+      fail: () => {},
+      succeed: () => {}
+    } as Context;
 
-describe('automata-ws handler', () => {
-  it.todo('should handle $connect event with valid JWT');
+    const result = await handler(event, context);
 
-  it.todo('should reject $connect event without token');
-
-  it.todo('should handle $disconnect event');
-
-  it.todo('should handle subscribe action');
-
-  it.todo('should handle unsubscribe action');
-
-  it.todo('should broadcast state updates from DynamoDB stream');
-
-  // Basic sanity test
-  it('should export handler function', async () => {
-    const { handler } = await import('./index');
-    expect(typeof handler).toBe('function');
+    expect(result.statusCode).toBe(200);
+    const body = JSON.parse(result.body);
+    expect(body.message).toContain('automata-ws');
   });
 });
+

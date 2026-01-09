@@ -58,7 +58,8 @@ Resources:
         - AttributeName: sk
           KeyType: RANGE
       GlobalSecondaryIndexes:
-        - IndexName: gsi1-tenant-realm-index
+        # GSI1: OAuth lookup, Account's Automatas, App's Blueprints
+        - IndexName: gsi1-multipurpose-index
           KeySchema:
             - AttributeName: gsi1pk
               KeyType: HASH
@@ -66,7 +67,8 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-        - IndexName: gsi2-subject-index
+        # GSI2: App's Automatas (for stats and auditing)
+        - IndexName: gsi2-app-automata-index
           KeySchema:
             - AttributeName: gsi2pk
               KeyType: HASH

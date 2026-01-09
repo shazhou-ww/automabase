@@ -1,0 +1,26 @@
+{
+  "name": "@automabase/automata-core",
+  "version": "1.0.0",
+  "description": "Core types and utilities for Automabase - business models, DynamoDB operations, and versioning",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src",
+    "lint:fix": "biome check --write src",
+    "clean": "echo 'No dist to clean'"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.723.0",
+    "@aws-sdk/lib-dynamodb": "^3.723.0",
+    "@types/json-schema": "^7.0.15",
+    "jsonata": "^2.1.0",
+    "ulid": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}

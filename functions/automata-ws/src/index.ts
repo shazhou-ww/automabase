@@ -1,73 +1,18 @@
-import type {
-  APIGatewayProxyResultV2,
-  APIGatewayProxyWebsocketEventV2,
-  DynamoDBStreamEvent,
-} from 'aws-lambda';
-import { handleConnect, handleDisconnect } from './handlers/connection-handlers';
-import { handleSendEvent } from './handlers/event-handlers';
-import { handleStreamEvent } from './handlers/stream-handlers';
-import { handleSubscribe, handleUnsubscribe } from './handlers/subscription-handlers';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 
-/**
- * Automata WebSocket Lambda Handler
- *
- * Handles:
- * - $connect: WebSocket connection with JWT validation
- * - $disconnect: Connection cleanup
- * - subscribe: Subscribe to automata state updates
- * - unsubscribe: Unsubscribe from automata
- * - DynamoDB Stream: Push state updates to subscribers
- */
 export const handler = async (
-  event: APIGatewayProxyWebsocketEventV2 | DynamoDBStreamEvent
-): Promise<APIGatewayProxyResultV2 | undefined> => {
+  event: APIGatewayProxyEvent,
+  context: Context
+): Promise<APIGatewayProxyResult> => {
   console.log('Event:', JSON.stringify(event, null, 2));
+  console.log('Context:', JSON.stringify(context, null, 2));
 
-  // Check if this is a DynamoDB Stream event
-  if ('Records' in event && event.Records?.[0]?.eventSource === 'aws:dynamodb') {
-    await handleStreamEvent(event as DynamoDBStreamEvent);
-    return;
-  }
-
-  // WebSocket event
-  const wsEvent = event as APIGatewayProxyWebsocketEventV2;
-  const routeKey = wsEvent.requestContext.routeKey;
-
-  console.log('Route:', routeKey);
-
-  switch (routeKey) {
-    case '$connect':
-      return handleConnect(wsEvent);
-
-    case '$disconnect':
-      return handleDisconnect(wsEvent);
-
-    case 'subscribe':
-      return handleSubscribe(wsEvent);
-
-    case 'unsubscribe':
-      return handleUnsubscribe(wsEvent);
-
-    default:
-      // Handle message body to determine action
-      try {
-        const body = JSON.parse(wsEvent.body ?? '{}');
-        const action = body.action;
-
-        switch (action) {
-          case 'subscribe':
-            return handleSubscribe(wsEvent);
-          case 'unsubscribe':
-            return handleUnsubscribe(wsEvent);
-          case 'sendEvent':
-            return handleSendEvent(wsEvent);
-          default:
-            console.log('Unknown action:', action);
-            return { statusCode: 400, body: `Unknown action: ${action}` };
-        }
-      } catch {
-        console.log('Invalid message format');
-        return { statusCode: 400, body: 'Invalid message format' };
-      }
-  }
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      message: 'Hello from automata-ws',
+      requestId: context.awsRequestId
+    })
+  };
 };
+

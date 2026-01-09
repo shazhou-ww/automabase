@@ -5,67 +5,17 @@
 AutomataApiFunction:
   Type: AWS::Serverless::Function
   Properties:
+    # Points directly to the pre-built dist directory (built by esbuild)
     CodeUri: functions/automata-api/dist
     Handler: index.handler
     Runtime: nodejs24.x
-    Timeout: 30
-    MemorySize: 512
     Environment:
       Variables:
-        NODE_ENV: !Ref Environment
-        AUTOMABASE_TABLE: !Ref AutomabaseTable
-        REQUEST_ID_TABLE: !Ref RequestIdTable
-    Policies:
-      - DynamoDBCrudPolicy:
-          TableName: !Ref AutomabaseTable
-      - DynamoDBCrudPolicy:
-          TableName: !Ref RequestIdTable
+        NODE_ENV: ${Env:NODE_ENV,prod}
     Events:
-      # Realm routes
-      CreateAutomata:
+      Api:
         Type: Api
         Properties:
-          Path: /realms/{realmId}/automatas
-          Method: POST
-      ListRealms:
-        Type: Api
-        Properties:
-          Path: /realms
+          Path: /automata-api
           Method: GET
-      ListAutomatasInRealm:
-        Type: Api
-        Properties:
-          Path: /realms/{realmId}/automatas
-          Method: GET
-      # Automata routes
-      GetAutomataState:
-        Type: Api
-        Properties:
-          Path: /automatas/{automataId}/state
-          Method: GET
-      GetAutomataDescriptor:
-        Type: Api
-        Properties:
-          Path: /automatas/{automataId}/descriptor
-          Method: GET
-      UpdateAutomata:
-        Type: Api
-        Properties:
-          Path: /automatas/{automataId}
-          Method: PATCH
-      # Event routes
-      SendEvent:
-        Type: Api
-        Properties:
-          Path: /automatas/{automataId}/events
-          Method: POST
-      ListEvents:
-        Type: Api
-        Properties:
-          Path: /automatas/{automataId}/events
-          Method: GET
-      GetEvent:
-        Type: Api
-        Properties:
-          Path: /automatas/{automataId}/events/{version}
-          Method: GET
+
