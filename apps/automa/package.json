@@ -15,10 +15,9 @@
     "lint:fix": "biome check --write src"
   },
   "dependencies": {
-    "commander": "^13.0.0",
-    "cli-table3": "^0.6.5",
     "@inquirer/prompts": "^7.2.1",
-    "chalk": "^5.4.1"
+    "chalk": "^5.4.1",
+    "commander": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",

@@ -3,7 +3,6 @@
  */
 
 import chalk from 'chalk';
-import Table from 'cli-table3';
 
 export type OutputFormat = 'json' | 'table';
 
@@ -43,27 +42,52 @@ export function printJson(data: unknown): void {
 }
 
 /**
- * Print table output
+ * Simple table implementation (avoids cli-table3 Bun compatibility issues)
  */
 export function printTable(
   headers: string[],
   rows: string[][],
-  options?: { compact?: boolean }
+  _options?: { compact?: boolean }
 ): void {
-  const table = new Table({
-    head: headers.map((h) => chalk.bold(h)),
-    style: {
-      head: [],
-      border: [],
-    },
-    ...(options?.compact ? { chars: { mid: '', 'mid-mid': '', middle: ' ' } } : {}),
-  });
+  // Calculate column widths
+  const columnWidths: number[] = headers.map((h) => stripAnsi(h).length);
 
   for (const row of rows) {
-    table.push(row);
+    for (let i = 0; i < row.length; i++) {
+      const len = stripAnsi(row[i] || '').length;
+      if (len > (columnWidths[i] || 0)) {
+        columnWidths[i] = len;
+      }
+    }
   }
 
-  console.log(table.toString());
+  // Print header
+  const headerLine = headers.map((h, i) => chalk.bold(padRight(h, columnWidths[i]))).join('  ');
+  console.log(headerLine);
+  console.log(columnWidths.map((w) => '-'.repeat(w)).join('  '));
+
+  // Print rows
+  for (const row of rows) {
+    const line = row.map((cell, i) => padRight(cell || '', columnWidths[i])).join('  ');
+    console.log(line);
+  }
+}
+
+/**
+ * Strip ANSI escape codes for width calculation
+ */
+function stripAnsi(str: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape codes use control characters
+  return str.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
+}
+
+/**
+ * Pad string to the right
+ */
+function padRight(str: string, width: number): string {
+  const visibleLength = stripAnsi(str).length;
+  const padding = Math.max(0, width - visibleLength);
+  return str + ' '.repeat(padding);
 }
 
 /**
