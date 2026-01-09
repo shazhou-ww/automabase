@@ -14,38 +14,11 @@ Globals:
 Parameters:
   Environment:
     Type: String
-    Default: prod
+    Default: dev
     AllowedValues:
       - dev
       - staging
       - prod
-  
-  GoogleClientId:
-    Type: String
-    Description: Google OAuth Client ID
-    Default: ''
-  
-  GoogleClientSecret:
-    Type: String
-    Description: Google OAuth Client Secret
-    NoEcho: true
-    Default: ''
-  
-  GitHubClientId:
-    Type: String
-    Description: GitHub OAuth Client ID
-    Default: ''
-  
-  GitHubClientSecret:
-    Type: String
-    Description: GitHub OAuth Client Secret
-    NoEcho: true
-    Default: ''
-
-Conditions:
-  IsProd: !Equals [!Ref Environment, 'prod']
-  HasGoogleCredentials: !Not [!Equals [!Ref GoogleClientId, '']]
-  HasGitHubCredentials: !Not [!Equals [!Ref GitHubClientId, '']]
 
 Resources:
   # Function resources will be merged from functions/*/template.yaml
@@ -85,6 +58,7 @@ Resources:
         Environment: !Ref Environment
         ManagedBy: CloudFormation
   
+  # 基础 Client (仅 Cognito 原生认证)
   UserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
@@ -94,20 +68,15 @@ Resources:
       ExplicitAuthFlows:
         - ALLOW_USER_SRP_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
+      # 只使用 Cognito 原生认证，外部 IdP 需要单独配置
       SupportedIdentityProviders:
         - COGNITO
-        - Google
-        - GitHub
       CallbackURLs:
-        - !If
-          - IsProd
-          - 'https://app.automabase.com/callback'
-          - 'http://localhost:3000/callback'
+        - 'http://localhost:3000/callback'
+        - 'https://app.automabase.com/callback'
       LogoutURLs:
-        - !If
-          - IsProd
-          - 'https://app.automabase.com/logout'
-          - 'http://localhost:3000/logout'
+        - 'http://localhost:3000/logout'
+        - 'https://app.automabase.com/logout'
       AllowedOAuthFlows:
         - code
       AllowedOAuthScopes:
@@ -123,43 +92,45 @@ Resources:
       Domain: !Sub 'automabase-${Environment}-${AWS::AccountId}'
       UserPoolId: !Ref UserPool
   
-  # Google Identity Provider (条件创建)
-  GoogleIdentityProvider:
-    Type: AWS::Cognito::UserPoolIdentityProvider
-    Condition: HasGoogleCredentials
-    Properties:
-      UserPoolId: !Ref UserPool
-      ProviderName: Google
-      ProviderType: Google
-      ProviderDetails:
-        client_id: !Ref GoogleClientId
-        client_secret: !Ref GoogleClientSecret
-        authorize_scopes: 'email profile openid'
-      AttributeMapping:
-        email: email
-        name: name
-        picture: picture
-        username: sub
+  # ============================================================
+  # External Identity Providers (可选，需手动配置)
+  # ============================================================
+  # 要启用 Google/GitHub 登录，请:
+  # 1. 在 Google Cloud Console / GitHub Settings 创建 OAuth App
+  # 2. 取消下面的注释并填入 client_id/client_secret
+  # 3. 在 UserPoolClient 的 SupportedIdentityProviders 中添加 'Google' 或 'GitHub'
   
-  # GitHub Identity Provider (条件创建)
-  GitHubIdentityProvider:
-    Type: AWS::Cognito::UserPoolIdentityProvider
-    Condition: HasGitHubCredentials
-    Properties:
-      UserPoolId: !Ref UserPool
-      ProviderName: GitHub
-      ProviderType: OIDC
-      ProviderDetails:
-        client_id: !Ref GitHubClientId
-        client_secret: !Ref GitHubClientSecret
-        authorize_scopes: 'openid user:email'
-        oidc_issuer: 'https://github.com'
-        attributes_request_method: GET
-      AttributeMapping:
-        email: email
-        name: name
-        picture: avatar_url
-        username: sub
+  # GoogleIdentityProvider:
+  #   Type: AWS::Cognito::UserPoolIdentityProvider
+  #   Properties:
+  #     UserPoolId: !Ref UserPool
+  #     ProviderName: Google
+  #     ProviderType: Google
+  #     ProviderDetails:
+  #       client_id: !Ref GoogleClientId
+  #       client_secret: !Ref GoogleClientSecret
+  #       authorize_scopes: 'email profile openid'
+  #     AttributeMapping:
+  #       email: email
+  #       name: name
+  #       picture: picture
+  #       username: sub
+  
+  # GitHubIdentityProvider:
+  #   Type: AWS::Cognito::UserPoolIdentityProvider
+  #   Properties:
+  #     UserPoolId: !Ref UserPool
+  #     ProviderName: SignInWithApple  # GitHub 需要使用 OIDC 配置
+  #     ProviderType: OIDC
+  #     ProviderDetails:
+  #       client_id: !Ref GitHubClientId
+  #       client_secret: !Ref GitHubClientSecret
+  #       authorize_scopes: 'openid user:email'
+  #       oidc_issuer: 'https://github.com'
+  #     AttributeMapping:
+  #       email: email
+  #       name: name
+  #       username: sub
   
   # ============================================================
   # DynamoDB Tables
