@@ -16,6 +16,7 @@
     "node": ">=24.0.0"
   },
   "scripts": {
+    "automa": "bun apps/automa/src/index.ts",
     "create:function": "bun scripts/create.ts function",
     "create:package": "bun scripts/create.ts package",
     "create:webapp": "bun scripts/create.ts webapp",
