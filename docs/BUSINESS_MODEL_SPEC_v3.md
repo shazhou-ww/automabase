@@ -1582,10 +1582,10 @@ const incrementEvents = await query({
 
 ## 七、实施路线图
 
-### Phase 0: 准备工作
+### Phase 0: 准备工作 ✅
 
-- [ ] 完成 v3.0 业务模型设计评审
-- [ ] **迁移现有代码到 v2 目录**
+- [x] 完成 v3.0 业务模型设计评审
+- [x] **迁移现有代码到 v2 目录**
   ```bash
   # 创建 v2 目录结构
   mkdir -p v2
@@ -1596,24 +1596,23 @@ const incrementEvents = await query({
   mv packages v2/
   mv e2e v2/
   ```
-- [ ] **使用脚手架创建新的项目结构**
+- [x] **使用脚手架创建新的项目结构**
   ```bash
   # 创建核心包
   bun run create:package automata-core
   bun run create:package automata-auth
+  bun run create:package automata-server
   bun run create:package automata-client
   
   # 创建 Lambda 函数
-  bun run create:function account-api
   bun run create:function automata-api
   bun run create:function automata-ws
-  bun run create:function stats-api
   
   # 创建示例应用（可选）
   bun run create:webapp sample-app
   ```
-- [ ] 更新 monorepo 配置（turbo.json, tsconfig.json）
-- [ ] 更新 SAM 模板（template.yaml）
+- [x] 更新 monorepo 配置（package.json workspaces）
+- [x] 更新 SAM 模板（template.yaml GSI 设计）
 
 ### Phase 1: 核心功能 (MVP)
 
