@@ -1671,10 +1671,12 @@ const incrementEvents = await query({
 
 ### Phase 1: 核心功能 (MVP)
 
-- [ ] **Account 管理**
-  - [ ] OAuth 集成（Google/GitHub）
-  - [ ] Account CRUD
-  - [ ] 公钥管理
+- [x] **Account 管理** ✅
+  - [x] AWS Cognito 集成（Google/GitHub IdP）
+  - [x] Account 类型定义与 DynamoDB Repository
+  - [x] Account API 端点 (GET/POST/PATCH)
+  - [x] Cognito JWT 验证
+  - [x] Base62 编码与 MurmurHash 工具函数
 
 - [ ] **Blueprint 管理（隐式实体）**
   - [ ] Blueprint 去重存储
