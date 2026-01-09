@@ -12,6 +12,7 @@
     "clean": "echo 'No dist to clean'"
   },
   "devDependencies": {
+    "@types/murmurhash3js-revisited": "^3.0.3",
     "@types/node": "^20.11.0",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0"
