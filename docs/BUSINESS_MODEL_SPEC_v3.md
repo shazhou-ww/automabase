@@ -1678,19 +1678,22 @@ const incrementEvents = await query({
   - [x] Cognito JWT 验证
   - [x] Base62 编码与 MurmurHash 工具函数
 
-- [ ] **Blueprint 管理（隐式实体）**
-  - [ ] Blueprint 去重存储
-  - [ ] Blueprint 签名验证
-  - [ ] Blueprint 复用逻辑
+- [x] **Blueprint 管理（隐式实体）** ✅
+  - [x] Blueprint 类型定义与 Repository
+  - [x] Blueprint 去重存储（xxHash64 内容哈希）
+  - [x] Blueprint 签名验证（Ed25519）
+  - [x] Blueprint 复用逻辑
 
-- [ ] **Automata 核心**
-  - [ ] Automata CRUD（引用 blueprintId）
-  - [ ] Event 处理
-  - [ ] 状态转换（JSONata）
+- [x] **Automata 核心** ✅
+  - [x] Automata 类型定义与 Repository（ULID ID）
+  - [x] Automata CRUD API 端点
+  - [x] Event 类型定义与 Repository
+  - [x] Event API 端点（发送、查询）
+  - [x] 状态转换引擎（JSONata）
 
-- [ ] **Builtin Blueprints**
-  - [ ] AppRegistry Blueprint
-  - [ ] Builtin hash 验证
+- [x] **Builtin Blueprints** ✅
+  - [x] AppRegistry Blueprint 定义
+  - [x] Builtin hash 验证逻辑
 
 ### Phase 2: 增强安全
 
