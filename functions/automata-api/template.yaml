@@ -22,6 +22,7 @@ AutomataApiFunction:
       - DynamoDBCrudPolicy:
           TableName: !Ref RequestIdTable
     Events:
+      # Account API
       AccountsMe:
         Type: Api
         Properties:
@@ -36,4 +37,33 @@ AutomataApiFunction:
         Type: Api
         Properties:
           Path: /v1/accounts/{accountId}
+          Method: ANY
+
+      # Automata API
+      Automatas:
+        Type: Api
+        Properties:
+          Path: /v1/automatas
+          Method: ANY
+      AutomataById:
+        Type: Api
+        Properties:
+          Path: /v1/automatas/{automataId}
+          Method: ANY
+      AutomataState:
+        Type: Api
+        Properties:
+          Path: /v1/automatas/{automataId}/state
+          Method: ANY
+
+      # Event API
+      AutomataEvents:
+        Type: Api
+        Properties:
+          Path: /v1/automatas/{automataId}/events
+          Method: ANY
+      AutomataEventById:
+        Type: Api
+        Properties:
+          Path: /v1/automatas/{automataId}/events/{baseVersion}
           Method: ANY

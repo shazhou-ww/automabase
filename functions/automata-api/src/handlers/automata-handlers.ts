@@ -1,0 +1,341 @@
+/**
+ * Automata API Handlers
+ */
+
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import {
+  getAutomataById,
+  getAutomatasByAccount,
+  createAutomata,
+  updateAutomata,
+  getBlueprintById,
+  validateAndGetBlueprint,
+  BlueprintValidationError,
+  type BlueprintContent,
+  type Automata,
+} from '@automabase/automata-core';
+import {
+  verifyAndExtractContextWithDevMode,
+  JwtVerificationError,
+  type JwtVerifierConfig,
+  type LocalDevConfig,
+} from '@automabase/automata-auth';
+
+/**
+ * 获取 JWT 验证配置
+ */
+function getJwtConfig(): JwtVerifierConfig {
+  return {
+    userPoolId: process.env.COGNITO_USER_POOL_ID || '',
+    region: process.env.AWS_REGION || 'ap-northeast-1',
+    clientId: process.env.COGNITO_CLIENT_ID,
+  };
+}
+
+/**
+ * 获取本地开发模式配置
+ */
+function getLocalDevConfig(): LocalDevConfig {
+  return {
+    enabled: process.env.LOCAL_DEV_MODE === 'true',
+  };
+}
+
+/**
+ * 创建成功响应
+ */
+function success(data: unknown, statusCode = 200): APIGatewayProxyResult {
+  return {
+    statusCode,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    },
+    body: JSON.stringify(data),
+  };
+}
+
+/**
+ * 创建错误响应
+ */
+function error(message: string, statusCode = 400, code?: string): APIGatewayProxyResult {
+  return {
+    statusCode,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    },
+    body: JSON.stringify({ error: message, code }),
+  };
+}
+
+/**
+ * 从 OAuth 获取 accountId（辅助函数）
+ */
+async function getAccountIdFromAuth(
+  event: APIGatewayProxyEvent
+): Promise<{ accountId: string } | APIGatewayProxyResult> {
+  const token = event.headers.Authorization || event.headers.authorization;
+  const authContext = await verifyAndExtractContextWithDevMode(
+    token,
+    getJwtConfig(),
+    getLocalDevConfig()
+  );
+
+  // 在本地开发模式下使用 mock accountId
+  if (authContext.accountId) {
+    return { accountId: authContext.accountId };
+  }
+
+  // 如果没有 accountId，需要先注册
+  return error('Account not registered. Please call POST /v1/accounts first.', 403, 'NOT_REGISTERED');
+}
+
+/**
+ * POST /automatas - 创建 Automata
+ *
+ * Body: {
+ *   blueprint: BlueprintContent,
+ *   blueprintSignature?: string,
+ *   initialEvent?: { eventType: string, eventData: unknown }
+ * }
+ */
+export async function createAutomataHandler(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const authResult = await getAccountIdFromAuth(event);
+    if ('statusCode' in authResult) return authResult;
+    const { accountId } = authResult;
+
+    // 解析请求体
+    const body = JSON.parse(event.body || '{}');
+    const { blueprint, blueprintSignature } = body as {
+      blueprint: BlueprintContent;
+      blueprintSignature?: string;
+    };
+
+    if (!blueprint) {
+      return error('blueprint is required', 400);
+    }
+
+    if (!blueprint.appId || !blueprint.name) {
+      return error('blueprint.appId and blueprint.name are required', 400);
+    }
+
+    // 验证并获取/创建 Blueprint
+    const blueprintId = await validateAndGetBlueprint(
+      blueprint,
+      blueprintSignature || null,
+      accountId
+    );
+
+    // 创建 Automata
+    const automata = await createAutomata({
+      ownerAccountId: accountId,
+      blueprintId,
+      initialState: blueprint.initialState,
+    });
+
+    return success(
+      {
+        automataId: automata.automataId,
+        blueprintId: automata.blueprintId,
+        currentState: automata.currentState,
+        version: automata.version,
+        createdAt: automata.createdAt,
+      },
+      201
+    );
+  } catch (err) {
+    if (err instanceof JwtVerificationError) {
+      return error(err.message, 401, err.code);
+    }
+    if (err instanceof BlueprintValidationError) {
+      return error(err.message, 400, err.code);
+    }
+    console.error('Error creating automata:', err);
+    return error('Internal server error', 500);
+  }
+}
+
+/**
+ * GET /automatas - 列出当前用户的 Automatas
+ */
+export async function listAutomatasHandler(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const authResult = await getAccountIdFromAuth(event);
+    if ('statusCode' in authResult) return authResult;
+    const { accountId } = authResult;
+
+    const limit = parseInt(event.queryStringParameters?.limit || '100', 10);
+    const cursor = event.queryStringParameters?.cursor;
+
+    const { automatas, nextCursor } = await getAutomatasByAccount(accountId, {
+      limit: Math.min(limit, 100),
+      cursor,
+    });
+
+    return success({
+      automatas: automatas.map((a) => ({
+        automataId: a.automataId,
+        blueprintId: a.blueprintId,
+        version: a.version,
+        status: a.status,
+        createdAt: a.createdAt,
+        updatedAt: a.updatedAt,
+      })),
+      nextCursor,
+    });
+  } catch (err) {
+    if (err instanceof JwtVerificationError) {
+      return error(err.message, 401, err.code);
+    }
+    console.error('Error listing automatas:', err);
+    return error('Internal server error', 500);
+  }
+}
+
+/**
+ * GET /automatas/{automataId} - 获取 Automata 详情
+ */
+export async function getAutomataHandler(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const authResult = await getAccountIdFromAuth(event);
+    if ('statusCode' in authResult) return authResult;
+    const { accountId } = authResult;
+
+    const automataId = event.pathParameters?.automataId;
+    if (!automataId) {
+      return error('automataId is required', 400);
+    }
+
+    const automata = await getAutomataById(automataId);
+    if (!automata) {
+      return error('Automata not found', 404);
+    }
+
+    // 检查权限
+    if (automata.ownerAccountId !== accountId) {
+      return error('Access denied', 403);
+    }
+
+    // 获取 Blueprint 详情
+    const blueprint = await getBlueprintById(automata.blueprintId);
+
+    return success({
+      automataId: automata.automataId,
+      ownerAccountId: automata.ownerAccountId,
+      blueprintId: automata.blueprintId,
+      blueprint: blueprint?.content || null,
+      currentState: automata.currentState,
+      version: automata.version,
+      status: automata.status,
+      createdAt: automata.createdAt,
+      updatedAt: automata.updatedAt,
+    });
+  } catch (err) {
+    if (err instanceof JwtVerificationError) {
+      return error(err.message, 401, err.code);
+    }
+    console.error('Error getting automata:', err);
+    return error('Internal server error', 500);
+  }
+}
+
+/**
+ * GET /automatas/{automataId}/state - 获取 Automata 当前状态
+ */
+export async function getAutomataStateHandler(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const authResult = await getAccountIdFromAuth(event);
+    if ('statusCode' in authResult) return authResult;
+    const { accountId } = authResult;
+
+    const automataId = event.pathParameters?.automataId;
+    if (!automataId) {
+      return error('automataId is required', 400);
+    }
+
+    const automata = await getAutomataById(automataId);
+    if (!automata) {
+      return error('Automata not found', 404);
+    }
+
+    // 检查权限
+    if (automata.ownerAccountId !== accountId) {
+      return error('Access denied', 403);
+    }
+
+    return success({
+      automataId: automata.automataId,
+      currentState: automata.currentState,
+      version: automata.version,
+      status: automata.status,
+      updatedAt: automata.updatedAt,
+    });
+  } catch (err) {
+    if (err instanceof JwtVerificationError) {
+      return error(err.message, 401, err.code);
+    }
+    console.error('Error getting automata state:', err);
+    return error('Internal server error', 500);
+  }
+}
+
+/**
+ * PATCH /automatas/{automataId} - 更新 Automata（归档等）
+ */
+export async function updateAutomataHandler(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const authResult = await getAccountIdFromAuth(event);
+    if ('statusCode' in authResult) return authResult;
+    const { accountId } = authResult;
+
+    const automataId = event.pathParameters?.automataId;
+    if (!automataId) {
+      return error('automataId is required', 400);
+    }
+
+    const automata = await getAutomataById(automataId);
+    if (!automata) {
+      return error('Automata not found', 404);
+    }
+
+    // 检查权限
+    if (automata.ownerAccountId !== accountId) {
+      return error('Access denied', 403);
+    }
+
+    // 解析请求体
+    const body = JSON.parse(event.body || '{}');
+    const { status } = body as { status?: 'active' | 'archived' };
+
+    if (status && !['active', 'archived'].includes(status)) {
+      return error('Invalid status. Must be "active" or "archived"', 400);
+    }
+
+    const updated = await updateAutomata(automataId, { status });
+
+    return success({
+      automataId: updated?.automataId,
+      status: updated?.status,
+      updatedAt: updated?.updatedAt,
+    });
+  } catch (err) {
+    if (err instanceof JwtVerificationError) {
+      return error(err.message, 401, err.code);
+    }
+    console.error('Error updating automata:', err);
+    return error('Internal server error', 500);
+  }
+}
+

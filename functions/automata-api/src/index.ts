@@ -5,6 +5,18 @@ import {
   updateCurrentAccount,
   getAccount,
 } from './handlers/account-handlers';
+import {
+  createAutomataHandler,
+  listAutomatasHandler,
+  getAutomataHandler,
+  getAutomataStateHandler,
+  updateAutomataHandler,
+} from './handlers/automata-handlers';
+import {
+  sendEventHandler,
+  listEventsHandler,
+  getEventHandler,
+} from './handlers/event-handlers';
 
 /**
  * 路由定义
@@ -23,6 +35,18 @@ const routes: Route[] = [
   { method: 'POST', pathPattern: /^\/v1\/accounts$/, handler: createOrGetAccount },
   { method: 'PATCH', pathPattern: /^\/v1\/accounts\/me$/, handler: updateCurrentAccount },
   { method: 'GET', pathPattern: /^\/v1\/accounts\/[^/]+$/, handler: getAccount },
+
+  // Automata API
+  { method: 'POST', pathPattern: /^\/v1\/automatas$/, handler: createAutomataHandler },
+  { method: 'GET', pathPattern: /^\/v1\/automatas$/, handler: listAutomatasHandler },
+  { method: 'GET', pathPattern: /^\/v1\/automatas\/[^/]+\/state$/, handler: getAutomataStateHandler },
+  { method: 'GET', pathPattern: /^\/v1\/automatas\/[^/]+$/, handler: getAutomataHandler },
+  { method: 'PATCH', pathPattern: /^\/v1\/automatas\/[^/]+$/, handler: updateAutomataHandler },
+
+  // Event API
+  { method: 'POST', pathPattern: /^\/v1\/automatas\/[^/]+\/events$/, handler: sendEventHandler },
+  { method: 'GET', pathPattern: /^\/v1\/automatas\/[^/]+\/events$/, handler: listEventsHandler },
+  { method: 'GET', pathPattern: /^\/v1\/automatas\/[^/]+\/events\/[^/]+$/, handler: getEventHandler },
 ];
 
 /**
