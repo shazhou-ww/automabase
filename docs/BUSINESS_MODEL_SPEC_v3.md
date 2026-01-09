@@ -1697,14 +1697,15 @@ const incrementEvents = await query({
 
 ### Phase 2: 增强安全
 
-- [ ] **请求签名**
-  - [ ] Canonical Request 构造
-  - [ ] Ed25519 签名验证
-  - [ ] 签名中间件
+- [x] **请求签名** ✅
+  - [x] Canonical Request 构造
+  - [x] Ed25519 签名验证
+  - [x] 签名验证中间件
 
-- [ ] **防重放**
-  - [ ] Request ID 去重表
-  - [ ] Timestamp 验证
+- [x] **防重放** ✅
+  - [x] Request ID 去重表（DynamoDB）
+  - [x] Timestamp 验证（5 分钟窗口）
+  - [x] 统一安全中间件集成
 
 ### Phase 3: 高级功能
 

@@ -9,3 +9,6 @@ export * from './types';
 
 // Utilities
 export * from './utils';
+
+// Middleware
+export * from './middleware/security';
