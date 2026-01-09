@@ -20,7 +20,7 @@ export function ok<T>(body: T): APIGatewayProxyResult {
       'Content-Type': 'application/json',
       ...CORS_HEADERS,
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ success: true, data: body }),
   };
 }
 
@@ -34,7 +34,7 @@ export function created<T>(body: T): APIGatewayProxyResult {
       'Content-Type': 'application/json',
       ...CORS_HEADERS,
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ success: true, data: body }),
   };
 }
 
@@ -60,8 +60,8 @@ export function badRequest(message: string): APIGatewayProxyResult {
       ...CORS_HEADERS,
     },
     body: JSON.stringify({
-      error: 'Bad Request',
-      message,
+      success: false,
+      error: message,
     }),
   };
 }
@@ -77,8 +77,8 @@ export function notFound(message: string): APIGatewayProxyResult {
       ...CORS_HEADERS,
     },
     body: JSON.stringify({
-      error: 'Not Found',
-      message,
+      success: false,
+      error: message,
     }),
   };
 }
@@ -94,8 +94,8 @@ export function conflict(message: string): APIGatewayProxyResult {
       ...CORS_HEADERS,
     },
     body: JSON.stringify({
-      error: 'Conflict',
-      message,
+      success: false,
+      error: message,
     }),
   };
 }
@@ -111,8 +111,8 @@ export function methodNotAllowed(method: string): APIGatewayProxyResult {
       ...CORS_HEADERS,
     },
     body: JSON.stringify({
-      error: 'Method Not Allowed',
-      message: `Method ${method} not allowed`,
+      success: false,
+      error: `Method ${method} not allowed`,
     }),
   };
 }
@@ -128,8 +128,8 @@ export function internalError(message: string, requestId?: string): APIGatewayPr
       ...CORS_HEADERS,
     },
     body: JSON.stringify({
-      error: 'Internal Server Error',
-      message,
+      success: false,
+      error: message,
       ...(requestId ? { requestId } : {}),
     }),
   };

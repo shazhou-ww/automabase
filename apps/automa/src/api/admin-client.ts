@@ -4,6 +4,7 @@
  */
 
 import { getAdminKey, getAdminUrl } from '../config/config-manager';
+import { verbose } from '../utils/output';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -57,16 +58,32 @@ export class AdminApiClient {
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
+    const url = `${this.baseUrl}${path}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Admin-Key': this.apiKey,
+    };
+
+    // Debug logging (only in verbose mode)
+    verbose(`Request: ${method} ${url}`);
+    verbose(`Headers: X-Admin-Key=${headers['X-Admin-Key'].substring(0, 20)}...`);
+
+    const response = await fetch(url, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Admin-Key': this.apiKey,
-      },
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     });
 
-    const result = (await response.json()) as ApiResponse<T>;
+    const responseText = await response.text();
+    verbose(`Response: ${response.status} ${response.statusText}`);
+    verbose(`Body: ${responseText.substring(0, 200)}${responseText.length > 200 ? '...' : ''}`);
+
+    let result: ApiResponse<T>;
+    try {
+      result = JSON.parse(responseText) as ApiResponse<T>;
+    } catch {
+      throw new Error(`Invalid JSON response: ${responseText}`);
+    }
 
     if (!response.ok || !result.success) {
       throw new Error(result.error || `Request failed: ${response.status}`);

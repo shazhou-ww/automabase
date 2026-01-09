@@ -34,11 +34,15 @@ export const handler = async (
   event: APIGatewayProxyEvent,
   context: Context
 ): Promise<APIGatewayProxyResult> => {
-  console.log('Request:', {
+  console.log('[DEBUG] Request received:', {
     method: event.httpMethod,
     path: event.path,
     resource: event.resource,
     requestId: context.awsRequestId,
+    headers: event.headers,
+    hasAdminKey: !!event.headers?.['X-Admin-Key'] || !!event.headers?.['x-admin-key'],
+    localAdminKeySet: !!process.env.LOCAL_ADMIN_API_KEY,
+    localAdminKeyPrefix: process.env.LOCAL_ADMIN_API_KEY?.substring(0, 20) + '...',
   });
 
   // Handle CORS preflight

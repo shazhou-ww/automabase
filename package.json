@@ -17,6 +17,7 @@
   },
   "scripts": {
     "automa": "bun apps/automa/src/index.ts",
+    "keygen": "bun scripts/keygen.ts",
     "create:function": "bun scripts/create.ts function",
     "create:package": "bun scripts/create.ts package",
     "create:webapp": "bun scripts/create.ts webapp",
@@ -31,7 +32,7 @@
     "lint": "bun run lint:ts && bun run lint:md",
     "lint:fix": "bun run lint:ts:fix && bun run lint:md:fix",
     "build": "turbo run build",
-    "build:functions": "turbo run build --filter='./functions/*'",
+    "build:functions": "turbo run build --filter='./functions/*' && bun scripts/copy-function-manifests.ts",
     "sam:merge": "bun scripts/merge-templates.ts",
     "sam:build": "bun run build:functions && bun run sam:merge && sam build --template-file merged-template.yaml",
     "sam:validate": "bun run sam:merge && sam validate --template-file merged-template.yaml",
