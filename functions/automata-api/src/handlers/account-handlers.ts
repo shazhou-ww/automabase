@@ -5,6 +5,7 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
   getAccountById,
+  getAccountByOAuth,
   updateAccount,
   getOrCreateAccountByOAuth,
   validateBase64PublicKey,
@@ -81,12 +82,27 @@ export async function getCurrentAccount(
       getLocalDevConfig()
     );
     
-    // 如果用户已经有 accountId，直接查询
+    // 如果用户已经有 accountId（来自 JWT custom claim），直接查询
     if (authContext.accountId) {
       const account = await getAccountById(authContext.accountId);
       if (account) {
         return success({ account, registered: true });
       }
+    }
+    
+    // 尝试通过 OAuth 信息查找已存在的账户
+    // 如果没有外部 IdP，使用 'cognito' 作为 provider
+    const oauthProvider: OAuthProvider = (authContext.identityProvider?.name?.toLowerCase() as OAuthProvider) || 'cognito';
+    const oauthSubject = authContext.identityProvider?.userId || authContext.cognitoUserId;
+    
+    // 同时尝试查询可能遗留的 'google' provider（兼容旧数据）
+    let existingAccount = await getAccountByOAuth(oauthProvider, oauthSubject);
+    if (!existingAccount && oauthProvider === 'cognito') {
+      // 兼容旧逻辑：之前可能用 'google' 作为默认 provider
+      existingAccount = await getAccountByOAuth('google', oauthSubject);
+    }
+    if (existingAccount) {
+      return success({ account: existingAccount, registered: true });
     }
     
     // 用户已通过 Cognito 认证，但尚未在 Automabase 注册
@@ -138,8 +154,8 @@ export async function createOrGetAccount(
       return error('Invalid publicKey format (expected 32-byte Ed25519 key in Base64URL)', 400);
     }
     
-    // 确定 OAuth 信息
-    const oauthProvider: OAuthProvider = authContext.identityProvider?.name?.toLowerCase() as OAuthProvider || 'google';
+    // 确定 OAuth 信息（如果没有外部 IdP，使用 'cognito'）
+    const oauthProvider: OAuthProvider = (authContext.identityProvider?.name?.toLowerCase() as OAuthProvider) || 'cognito';
     const oauthSubject = authContext.identityProvider?.userId || authContext.cognitoUserId;
     
     // 创建或获取账户
@@ -180,7 +196,20 @@ export async function updateCurrentAccount(
       getLocalDevConfig()
     );
     
-    if (!authContext.accountId) {
+    // 查找账户：优先使用 accountId，否则通过 OAuth 信息查找
+    let accountId = authContext.accountId;
+    if (!accountId) {
+      const oauthProvider: OAuthProvider = (authContext.identityProvider?.name?.toLowerCase() as OAuthProvider) || 'cognito';
+      const oauthSubject = authContext.identityProvider?.userId || authContext.cognitoUserId;
+      let existingAccount = await getAccountByOAuth(oauthProvider, oauthSubject);
+      // 兼容旧数据：之前可能用 'google' 作为默认 provider
+      if (!existingAccount && oauthProvider === 'cognito') {
+        existingAccount = await getAccountByOAuth('google', oauthSubject);
+      }
+      accountId = existingAccount?.accountId;
+    }
+    
+    if (!accountId) {
       return error('Account not registered', 404);
     }
     
@@ -198,7 +227,7 @@ export async function updateCurrentAccount(
       input.avatarUrl = body.avatarUrl;
     }
     
-    const account = await updateAccount(authContext.accountId, input);
+    const account = await updateAccount(accountId, input);
     
     return success({ account });
   } catch (err) {

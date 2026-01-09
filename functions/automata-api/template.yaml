@@ -1,6 +1,6 @@
 # SAM Template for automata-api function
-# This file will be merged into the root template.yaml during local testing
-# Note: Run 'bun run build:functions' before 'bun run sam:local'
+# This file will be merged into the root template.yaml during deployment
+# Note: Run 'bun run build:functions' before 'bun run sam:build'
 
 AutomataApiFunction:
   Type: AWS::Serverless::Function
@@ -11,11 +11,16 @@ AutomataApiFunction:
     Runtime: nodejs24.x
     Environment:
       Variables:
-        NODE_ENV: ${Env:NODE_ENV,prod}
-        LOCAL_DEV_MODE: ${Env:LOCAL_DEV_MODE,false}
-        DYNAMODB_TABLE_NAME: ${Env:DYNAMODB_TABLE_NAME,automabase-dev}
-        COGNITO_USER_POOL_ID: ${Env:COGNITO_USER_POOL_ID,}
-        COGNITO_CLIENT_ID: ${Env:COGNITO_CLIENT_ID,}
+        NODE_ENV: !Ref Environment
+        LOCAL_DEV_MODE: 'false'
+        DYNAMODB_TABLE_NAME: !Ref AutomabaseTable
+        COGNITO_USER_POOL_ID: !Ref UserPool
+        COGNITO_CLIENT_ID: !Ref UserPoolClient
+    Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref AutomabaseTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref RequestIdTable
     Events:
       AccountsMe:
         Type: Api
