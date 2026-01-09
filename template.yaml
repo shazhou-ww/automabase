@@ -30,6 +30,8 @@ Resources:
   
   UserPool:
     Type: AWS::Cognito::UserPool
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       UserPoolName: !Sub 'automabase-users-${Environment}'
       AutoVerifiedAttributes:
