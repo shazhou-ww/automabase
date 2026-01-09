@@ -44,6 +44,18 @@
         "vitest": "^1.6.1",
       },
     },
+    "e2e": {
+      "name": "@automabase/e2e",
+      "version": "1.0.0",
+      "dependencies": {
+        "@noble/ed25519": "^2.2.3",
+      },
+      "devDependencies": {
+        "@types/node": "^20.11.0",
+        "typescript": "^5.3.3",
+        "vitest": "^1.2.0",
+      },
+    },
     "functions/automata-api": {
       "name": "@automabase/function-automata-api",
       "version": "1.0.0",
@@ -120,6 +132,8 @@
     "@automabase/automata-core": ["@automabase/automata-core@workspace:packages/automata-core"],
 
     "@automabase/automata-server": ["@automabase/automata-server@workspace:packages/automata-server"],
+
+    "@automabase/e2e": ["@automabase/e2e@workspace:e2e"],
 
     "@automabase/function-automata-api": ["@automabase/function-automata-api@workspace:functions/automata-api"],
 

@@ -1,0 +1,21 @@
+{
+  "name": "@automabase/e2e",
+  "version": "1.0.0",
+  "description": "E2E tests for Automabase API",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:local": "API_BASE_URL=http://localhost:3000 vitest run",
+    "test:prod": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^2.2.3"
+  }
+}
+
