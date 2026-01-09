@@ -780,33 +780,88 @@ function isBuiltinBlueprint(blueprintId: string): boolean {
 
 ### 4.1 认证体系
 
-#### 统一 OAuth 认证
+#### AWS Cognito 集成
 
-平台提供统一的 OAuth 认证服务，支持多种 OAuth Provider（如 Google、GitHub）。
+平台使用 **AWS Cognito User Pool** 作为统一认证服务：
 
-用户登录后获得 JWT Token，包含以下 Claims：
+```
+用户登录流程:
+┌─────────────────────────────────────────────────────────────┐
+│  User → Cognito Hosted UI → Google/GitHub IdP              │
+│       ← Cognito JWT (id_token, access_token)               │
+└─────────────────────────────────────────────────────────────┘
+
+首次注册流程:
+┌─────────────────────────────────────────────────────────────┐
+│  1. 用户用 Cognito JWT 调用 POST /accounts                  │
+│  2. 请求 body 包含用户生成的 Ed25519 publicKey              │
+│  3. 后端验证 JWT，用 Cognito sub 创建 Account               │
+│  4. accountId = Base62(MurmurHash128(publicKey))           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Cognito 优势**：
+
+| 特性 | 说明 |
+|------|------|
+| **托管 OAuth** | 无需自己实现 OAuth 流程 |
+| **多 IdP 支持** | Google, GitHub, Facebook, SAML 等 |
+| **JWT 发放** | 自动发放并签名 JWT |
+| **AWS 集成** | 与 API Gateway Authorizer 无缝集成 |
+
+#### Cognito JWT Claims
 
 ```json
 {
-  "iss": "https://auth.automabase.com",
-  "sub": "google:123456789",
-  "aud": "automabase:api",
+  "iss": "https://cognito-idp.{region}.amazonaws.com/{userPoolId}",
+  "sub": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "aud": "{clientId}",
   "exp": 1735689600,
   "iat": 1735686000,
-  "account_id": "7kj8m9nX2pQ...",
-  "spk": "base64url-encoded-session-public-key"
+  "token_use": "id",
+  "email": "user@example.com",
+  "name": "User Name",
+  "picture": "https://...",
+  "identities": [
+    {
+      "providerName": "Google",
+      "userId": "123456789"
+    }
+  ]
 }
 ```
 
 | Claim | 说明 |
 |-------|------|
-| `iss` | 平台 OAuth 服务 |
-| `sub` | OAuth Provider 的 subject（如 `google:123456789`） |
-| `aud` | API Audience |
-| `exp` | 过期时间 (Unix timestamp) |
-| `iat` | 签发时间 (Unix timestamp) |
-| `account_id` | Automabase Account ID |
-| `spk` | Session Public Key (Ed25519, 32 bytes, Base64URL) |
+| `sub` | Cognito 用户 ID (UUID) |
+| `email` | 用户邮箱 |
+| `name` | 显示名称 |
+| `picture` | 头像 URL |
+| `identities` | 外部 IdP 身份信息 |
+
+#### 数据来源分离
+
+| 来源 | 字段 |
+|------|------|
+| **Cognito JWT** | `sub` (oauthSubject), `email`, `name`, `picture` |
+| **用户提供** | `publicKey` (Ed25519, 用于请求签名) |
+| **系统生成** | `accountId` = Base62(MurmurHash128(publicKey)) |
+
+#### 自定义 Claims（Post-Authentication Lambda）
+
+首次登录后，通过 Post-Authentication Lambda 将 `accountId` 注入到 JWT：
+
+```json
+{
+  "custom:account_id": "7kj8m9nX2pQ...",
+  "custom:spk": "base64url-encoded-session-public-key"
+}
+```
+
+| Custom Claim | 说明 |
+|--------------|------|
+| `custom:account_id` | Automabase Account ID |
+| `custom:spk` | Session Public Key (Ed25519, 32 bytes, Base64URL) |
 
 ### 4.2 请求签名机制
 

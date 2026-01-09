@@ -19,12 +19,151 @@ Parameters:
       - dev
       - staging
       - prod
+  
+  GoogleClientId:
+    Type: String
+    Description: Google OAuth Client ID
+    Default: ''
+  
+  GoogleClientSecret:
+    Type: String
+    Description: Google OAuth Client Secret
+    NoEcho: true
+    Default: ''
+  
+  GitHubClientId:
+    Type: String
+    Description: GitHub OAuth Client ID
+    Default: ''
+  
+  GitHubClientSecret:
+    Type: String
+    Description: GitHub OAuth Client Secret
+    NoEcho: true
+    Default: ''
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, 'prod']
+  HasGoogleCredentials: !Not [!Equals [!Ref GoogleClientId, '']]
+  HasGitHubCredentials: !Not [!Equals [!Ref GitHubClientId, '']]
 
 Resources:
   # Function resources will be merged from functions/*/template.yaml
   # Run 'bun run sam:merge' to generate the merged template
   
+  # ============================================================
+  # Cognito User Pool
+  # ============================================================
+  
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub 'automabase-users-${Environment}'
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+      Schema:
+        - Name: email
+          Required: true
+          Mutable: true
+        - Name: name
+          Required: false
+          Mutable: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          RequireUppercase: true
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      UserPoolTags:
+        Environment: !Ref Environment
+        ManagedBy: CloudFormation
+  
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub 'automabase-client-${Environment}'
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      SupportedIdentityProviders:
+        - COGNITO
+        - Google
+        - GitHub
+      CallbackURLs:
+        - !If
+          - IsProd
+          - 'https://app.automabase.com/callback'
+          - 'http://localhost:3000/callback'
+      LogoutURLs:
+        - !If
+          - IsProd
+          - 'https://app.automabase.com/logout'
+          - 'http://localhost:3000/logout'
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+      PreventUserExistenceErrors: ENABLED
+  
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub 'automabase-${Environment}-${AWS::AccountId}'
+      UserPoolId: !Ref UserPool
+  
+  # Google Identity Provider (条件创建)
+  GoogleIdentityProvider:
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    Condition: HasGoogleCredentials
+    Properties:
+      UserPoolId: !Ref UserPool
+      ProviderName: Google
+      ProviderType: Google
+      ProviderDetails:
+        client_id: !Ref GoogleClientId
+        client_secret: !Ref GoogleClientSecret
+        authorize_scopes: 'email profile openid'
+      AttributeMapping:
+        email: email
+        name: name
+        picture: picture
+        username: sub
+  
+  # GitHub Identity Provider (条件创建)
+  GitHubIdentityProvider:
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    Condition: HasGitHubCredentials
+    Properties:
+      UserPoolId: !Ref UserPool
+      ProviderName: GitHub
+      ProviderType: OIDC
+      ProviderDetails:
+        client_id: !Ref GitHubClientId
+        client_secret: !Ref GitHubClientSecret
+        authorize_scopes: 'openid user:email'
+        oidc_issuer: 'https://github.com'
+        attributes_request_method: GET
+      AttributeMapping:
+        email: email
+        name: name
+        picture: avatar_url
+        username: sub
+  
+  # ============================================================
   # DynamoDB Tables
+  # ============================================================
   AutomabaseTable:
     Type: AWS::DynamoDB::Table
     DeletionPolicy: Retain
@@ -112,7 +251,33 @@ Resources:
       SSESpecification:
         SSEEnabled: true
 
-# Outputs:
-#   ApiGatewayApi:
-#     Description: API Gateway endpoint URL
-#     Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
+Outputs:
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolId'
+  
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref UserPoolClient
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolClientId'
+  
+  UserPoolDomainUrl:
+    Description: Cognito Hosted UI URL
+    Value: !Sub 'https://${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com'
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolDomainUrl'
+  
+  AutomabaseTableName:
+    Description: DynamoDB Table Name
+    Value: !Ref AutomabaseTable
+    Export:
+      Name: !Sub '${AWS::StackName}-TableName'
+  
+  RequestIdTableName:
+    Description: Request ID Table Name
+    Value: !Ref RequestIdTable
+    Export:
+      Name: !Sub '${AWS::StackName}-RequestIdTableName'

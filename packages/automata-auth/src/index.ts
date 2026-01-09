@@ -1,8 +1,11 @@
 /**
- * Shared package: automata-auth
+ * @automabase/automata-auth
+ * 
+ * Authentication and authorization for Automabase v3
  */
 
-export const example = (): string => {
-  return 'Hello from automata-auth';
-};
+// Types
+export * from './types';
 
+// Utilities
+export * from './utils';
