@@ -12,10 +12,23 @@ AutomataApiFunction:
     Environment:
       Variables:
         NODE_ENV: ${Env:NODE_ENV,prod}
+        LOCAL_DEV_MODE: ${Env:LOCAL_DEV_MODE,false}
+        DYNAMODB_TABLE_NAME: ${Env:DYNAMODB_TABLE_NAME,automabase-dev}
+        COGNITO_USER_POOL_ID: ${Env:COGNITO_USER_POOL_ID,}
+        COGNITO_CLIENT_ID: ${Env:COGNITO_CLIENT_ID,}
     Events:
-      Api:
+      AccountsMe:
         Type: Api
         Properties:
-          Path: /automata-api
-          Method: GET
-
+          Path: /v1/accounts/me
+          Method: ANY
+      Accounts:
+        Type: Api
+        Properties:
+          Path: /v1/accounts
+          Method: ANY
+      AccountById:
+        Type: Api
+        Properties:
+          Path: /v1/accounts/{accountId}
+          Method: ANY

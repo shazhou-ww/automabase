@@ -123,6 +123,61 @@ export async function verifyAndExtractContext(
 }
 
 /**
+ * 本地开发模式配置
+ */
+export interface LocalDevConfig {
+  /** 是否启用本地开发模式 */
+  enabled: boolean;
+  /** Mock 用户信息 */
+  mockUser?: Partial<AuthContext>;
+}
+
+/**
+ * 默认 Mock 用户
+ */
+const DEFAULT_MOCK_USER: AuthContext = {
+  cognitoUserId: 'local-dev-user',
+  accountId: undefined,
+  email: 'dev@localhost',
+  displayName: 'Local Dev User',
+  avatarUrl: undefined,
+  sessionPublicKey: undefined,
+  identityProvider: {
+    name: 'local',
+    userId: 'local-dev-user',
+  },
+};
+
+/**
+ * 验证 JWT 并提取用户上下文（支持本地开发模式）
+ * 
+ * 当 LOCAL_DEV_MODE=true 时，跳过 JWT 验证并返回 mock 用户
+ */
+export async function verifyAndExtractContextWithDevMode(
+  token: string | undefined,
+  config: JwtVerifierConfig,
+  localDev: LocalDevConfig
+): Promise<AuthContext> {
+  // 本地开发模式：跳过验证
+  if (localDev.enabled) {
+    console.log('[LOCAL_DEV_MODE] Skipping JWT verification, using mock user');
+    return { ...DEFAULT_MOCK_USER, ...localDev.mockUser };
+  }
+  
+  // 正常验证流程
+  if (!token) {
+    throw new JwtVerificationError(
+      'Missing Authorization header',
+      'MISSING_AUTH_HEADER'
+    );
+  }
+  
+  const actualToken = token.startsWith('Bearer ') ? token.slice(7) : token;
+  const claims = await verifyIdToken(actualToken, config);
+  return extractAuthContext(claims);
+}
+
+/**
  * 从 Authorization header 提取 Bearer token
  */
 export function extractBearerToken(authorizationHeader: string | undefined): string {

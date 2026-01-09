@@ -13,10 +13,10 @@ import {
   type OAuthProvider,
 } from '@automabase/automata-core';
 import {
-  extractBearerToken,
-  verifyAndExtractContext,
+  verifyAndExtractContextWithDevMode,
   JwtVerificationError,
   type JwtVerifierConfig,
+  type LocalDevConfig,
 } from '@automabase/automata-auth';
 
 /**
@@ -27,6 +27,15 @@ function getJwtConfig(): JwtVerifierConfig {
     userPoolId: process.env.COGNITO_USER_POOL_ID || '',
     region: process.env.AWS_REGION || 'ap-northeast-1',
     clientId: process.env.COGNITO_CLIENT_ID,
+  };
+}
+
+/**
+ * 获取本地开发模式配置
+ */
+function getLocalDevConfig(): LocalDevConfig {
+  return {
+    enabled: process.env.LOCAL_DEV_MODE === 'true',
   };
 }
 
@@ -65,8 +74,12 @@ export async function getCurrentAccount(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
-    const token = extractBearerToken(event.headers.Authorization || event.headers.authorization);
-    const authContext = await verifyAndExtractContext(token, getJwtConfig());
+    const token = event.headers.Authorization || event.headers.authorization;
+    const authContext = await verifyAndExtractContextWithDevMode(
+      token,
+      getJwtConfig(),
+      getLocalDevConfig()
+    );
     
     // 如果用户已经有 accountId，直接查询
     if (authContext.accountId) {
@@ -105,8 +118,12 @@ export async function createOrGetAccount(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
-    const token = extractBearerToken(event.headers.Authorization || event.headers.authorization);
-    const authContext = await verifyAndExtractContext(token, getJwtConfig());
+    const token = event.headers.Authorization || event.headers.authorization;
+    const authContext = await verifyAndExtractContextWithDevMode(
+      token,
+      getJwtConfig(),
+      getLocalDevConfig()
+    );
     
     // 解析请求体
     const body = JSON.parse(event.body || '{}');
@@ -156,8 +173,12 @@ export async function updateCurrentAccount(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
-    const token = extractBearerToken(event.headers.Authorization || event.headers.authorization);
-    const authContext = await verifyAndExtractContext(token, getJwtConfig());
+    const token = event.headers.Authorization || event.headers.authorization;
+    const authContext = await verifyAndExtractContextWithDevMode(
+      token,
+      getJwtConfig(),
+      getLocalDevConfig()
+    );
     
     if (!authContext.accountId) {
       return error('Account not registered', 404);
@@ -196,8 +217,12 @@ export async function getAccount(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
-    const token = extractBearerToken(event.headers.Authorization || event.headers.authorization);
-    await verifyAndExtractContext(token, getJwtConfig());
+    const token = event.headers.Authorization || event.headers.authorization;
+    await verifyAndExtractContextWithDevMode(
+      token,
+      getJwtConfig(),
+      getLocalDevConfig()
+    );
     
     const accountId = event.pathParameters?.accountId;
     if (!accountId) {
