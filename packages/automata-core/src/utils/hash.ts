@@ -1,12 +1,23 @@
 /**
  * Hash utilities for Automabase
- * 
+ *
  * - MurmurHash3-128: 用于 Account ID 生成
- * - xxHash64: 用于 Blueprint ID 生成（未来实现）
+ * - xxHash64: 用于 Blueprint ID 生成
  */
 
 import murmurhash3 from 'murmurhash3js-revisited';
 import { encodeBase62Buffer } from './base62';
+
+// xxhash-wasm 需要异步初始化
+let xxhashInstance: { h64ToString: (input: string) => string } | null = null;
+
+async function getXxhash() {
+  if (!xxhashInstance) {
+    const xxhash = await import('xxhash-wasm');
+    xxhashInstance = await xxhash.default();
+  }
+  return xxhashInstance;
+}
 
 /**
  * 使用 MurmurHash3-128 生成 Account ID
@@ -50,5 +61,57 @@ export function validateBase64PublicKey(publicKeyBase64: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * 规范化 JSON 对象（稳定排序的 JSON 字符串）
+ * 用于生成可重复的 hash
+ */
+export function canonicalize(obj: unknown): string {
+  return JSON.stringify(obj, (_, value) => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // 对对象的键进行排序
+      return Object.keys(value)
+        .sort()
+        .reduce(
+          (sorted, key) => {
+            sorted[key] = value[key];
+            return sorted;
+          },
+          {} as Record<string, unknown>
+        );
+    }
+    return value;
+  });
+}
+
+/**
+ * 使用 xxHash64 计算 Blueprint 内容的 hash
+ *
+ * @param content - Blueprint 内容对象
+ * @returns Base62 编码的 hash (约 11 字符)
+ */
+export async function computeBlueprintHash(content: unknown): Promise<string> {
+  const canonical = canonicalize(content);
+  const xxhash = await getXxhash();
+  const hashHex = xxhash.h64ToString(canonical);
+
+  // 将 16 字符的十六进制字符串转换为 Buffer
+  const hashBuffer = Buffer.from(hashHex, 'hex');
+
+  return encodeBase62Buffer(hashBuffer);
+}
+
+/**
+ * 计算 Blueprint ID
+ * 格式: {appId}:{name}:{hash}
+ */
+export async function computeBlueprintId(content: {
+  appId: string;
+  name: string;
+  [key: string]: unknown;
+}): Promise<string> {
+  const hash = await computeBlueprintHash(content);
+  return `${content.appId}:${content.name}:${hash}`;
 }
 

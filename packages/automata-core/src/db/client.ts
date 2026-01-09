@@ -52,32 +52,39 @@ export function getTableName(): string {
  * DynamoDB Key 生成工具
  */
 export const Keys = {
+  // Common
+  metaSk: () => '#META',
+
   // Account
   accountPk: (accountId: string) => `ACCOUNT#${accountId}`,
   accountSk: () => '#META',
   oauthGsi1pk: (provider: string, subject: string) => `OAUTH#${provider}#${subject}`,
-  
+
   // Automata
   automataPk: (automataId: string) => `AUTOMATA#${automataId}`,
   automataSk: () => '#META',
-  
+
   // Event
   eventSk: (version: string) => `EVT#${version}`,
-  
+  eventTypeLsi1sk: (eventType: string, version: string) => `EVTYPE#${eventType}#${version}`,
+
   // Snapshot
   snapshotSk: (version: string) => `SNAP#${version}`,
-  
+
   // Blueprint
   blueprintPk: (blueprintId: string) => `BLUEPRINT#${blueprintId}`,
   blueprintSk: () => '#META',
-  
+
   // Stats
   statsPk: (statsId: string) => `STATS#${statsId}`,
   statsSk: () => '#META',
-  
-  // GSI
+
+  // GSI1: 多用途索引
   accountGsi1sk: () => '#META',
   appGsi1pk: (appId: string) => `APP#${appId}`,
   accountAutomataGsi1pk: (accountId: string) => `ACCOUNT#${accountId}`,
+
+  // GSI2: App 维度索引
+  appGsi2pk: (appId: string) => `APP#${appId}`,
 } as const;
 
