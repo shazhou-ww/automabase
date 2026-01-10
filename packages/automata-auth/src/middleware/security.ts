@@ -149,8 +149,11 @@ export function createSecurityConfig(options: {
   userPoolId: string;
   clientId: string;
   requestIdTableName: string;
-  isLocalDev?: boolean;
+  localJwtPublicKey?: string;
+  localJwtIssuer?: string;
 }): SecurityConfig {
+  const useLocalJwt = !!options.localJwtPublicKey;
+
   const config: SecurityConfig = {
     jwt: {
       userPoolId: options.userPoolId,
@@ -164,10 +167,12 @@ export function createSecurityConfig(options: {
     },
   };
 
-  if (options.isLocalDev) {
+  // 如果配置了 LOCAL_JWT_PUBLIC_KEY，则使用本地 JWT 验证
+  if (useLocalJwt) {
     config.localDev = {
       enabled: true,
-      defaultAccountId: 'local-dev-account',
+      localPublicKey: options.localJwtPublicKey,
+      localIssuer: options.localJwtIssuer || 'local-dev',
     };
     config.skipSignatureVerification = true;
     config.skipAntiReplay = true;

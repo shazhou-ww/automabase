@@ -98,7 +98,22 @@ bun run test
 Authorization: Bearer {jwt-token}
 ```
 
-在本地开发模式 (`LOCAL_DEV_MODE=true`)，可以跳过 JWT 验证。
+#### 本地开发模式
+
+本地开发使用 Ed25519 密钥对进行真正的 JWT 验证，行为与线上环境一致：
+
+- 如果配置了 `LOCAL_JWT_PUBLIC_KEY`，则使用本地 JWT 验证（bypass Cognito）
+- 如果没有配置，则使用正常的 Cognito 验证
+
+**配置步骤：**
+
+```bash
+# 1. 生成密钥对并更新 env.json（SAM Local 和 E2E 测试都会从这里读取）
+bun run keygen
+
+# 2. 重启 SAM Local
+bun run sam:local
+```
 
 ### Account API
 

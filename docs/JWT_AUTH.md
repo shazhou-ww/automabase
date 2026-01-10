@@ -283,7 +283,65 @@ wss://api.automabase.com/?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## 本地测试指南
 
-### 前置要求
+### 简化的本地 JWT 认证（推荐）
+
+对于本地开发和 E2E 测试，推荐使用简化的 Ed25519 本地 JWT 认证，无需启动 JWKS 服务器：
+
+#### 步骤 1: 生成密钥对
+
+```bash
+# 生成 Ed25519 密钥对并自动配置到 env.json
+bun run keygen
+```
+
+这会：
+- 生成 Ed25519 密钥对
+- 将 `LOCAL_JWT_PUBLIC_KEY` 配置到各 Lambda 函数环境变量
+- 将 `LOCAL_JWT_PRIVATE_KEY` 配置到 E2ETests 配置
+
+#### 步骤 2: 在代码中签发本地 JWT
+
+```typescript
+import { signLocalJwt, generateLocalKeyPair } from '@automabase/automata-auth';
+
+// 使用环境变量中的私钥签发 token
+const token = await signLocalJwt(
+  {
+    sub: 'test-user',
+    email: 'test@example.com',
+    name: 'Test User',
+    accountId: 'my-account-id',
+  },
+  {
+    privateKey: process.env.LOCAL_JWT_PRIVATE_KEY!,
+    issuer: 'local-dev',
+    expiresIn: '1h',
+  }
+);
+```
+
+#### 步骤 3: 启动本地 API
+
+```bash
+# 确保 env.json 已配置
+bun run sam:local
+```
+
+服务端会自动使用 `LOCAL_JWT_PUBLIC_KEY` 验证 token。
+
+#### 环境变量说明
+
+| 变量 | 说明 |
+|-----|------|
+| `LOCAL_JWT_PUBLIC_KEY` | Ed25519 公钥 (PEM 格式)，用于验证 token。设置后自动使用本地 JWT 验证 |
+| `LOCAL_JWT_PRIVATE_KEY` | Ed25519 私钥 (PEM 格式)，用于签发 token（E2E 测试用） |
+| `LOCAL_JWT_ISSUER` | JWT issuer，默认 `local-dev` |
+
+### 使用外部 JWKS 服务器（高级）
+
+如需模拟生产环境的 JWKS 验证流程：
+
+#### 前置要求
 
 - Bun 1.0+
 - Node.js 24.x（用于生成密钥）

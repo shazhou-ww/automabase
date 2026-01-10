@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient, generateKeyPair, ApiClient } from './client';
-import { getTestToken, APP_REGISTRY_BLUEPRINT } from './helpers';
+import { getTestTokenAsync, APP_REGISTRY_BLUEPRINT } from './helpers';
 
 describe('Automata API', () => {
   let client: ApiClient;
@@ -14,7 +14,7 @@ describe('Automata API', () => {
 
   beforeAll(async () => {
     client = createClient();
-    const token = getTestToken();
+    const token = await getTestTokenAsync();
     keyPair = await generateKeyPair();
 
     client.setToken(token).setPrivateKey(keyPair.privateKey);
@@ -53,16 +53,14 @@ describe('Automata API', () => {
       expect(response.status).toBe(400);
     });
 
-    it('should return 401 without auth (in non-local mode)', async () => {
-      // Note: In LOCAL_DEV_MODE, requests without auth still get mock user
-      // This test is for production behavior
+    it('should return 401 without auth', async () => {
+      // Requests without auth should return 401
       const noAuthClient = createClient();
       noAuthClient.setAccountId(accountId);
       const response = await noAuthClient.createAutomata(APP_REGISTRY_BLUEPRINT);
 
-      // In local dev mode, this will succeed (200/201)
-      // In production, this should be 401
-      expect([200, 201, 401]).toContain(response.status);
+      // Should be 401 Unauthorized
+      expect(response.status).toBe(401);
     });
   });
 

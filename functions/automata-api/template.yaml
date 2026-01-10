@@ -12,7 +12,6 @@ AutomataApiFunction:
     Environment:
       Variables:
         NODE_ENV: !Ref Environment
-        LOCAL_DEV_MODE: 'false'
         DYNAMODB_TABLE_NAME: !Ref AutomabaseTable
         COGNITO_USER_POOL_ID: !Ref UserPool
         COGNITO_CLIENT_ID: !Ref UserPoolClient

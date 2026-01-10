@@ -35,11 +35,18 @@ function getJwtConfig(): JwtVerifierConfig {
 }
 
 /**
- * 获取本地开发模式配置
+ * 获取本地 JWT 配置
+ * 
+ * 如果设置了 LOCAL_JWT_PUBLIC_KEY，则使用本地 JWT 验证（bypass Cognito）
+ * 否则使用正常的 Cognito 验证
  */
 function getLocalDevConfig(): LocalDevConfig {
+  const localPublicKey = process.env.LOCAL_JWT_PUBLIC_KEY;
+
   return {
-    enabled: process.env.LOCAL_DEV_MODE === 'true',
+    enabled: !!localPublicKey,
+    localPublicKey,
+    localIssuer: process.env.LOCAL_JWT_ISSUER || 'local-dev',
   };
 }
 

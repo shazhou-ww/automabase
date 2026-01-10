@@ -1,27 +1,33 @@
 #!/usr/bin/env bun
 /**
- * Generate admin API key for local SAM development
+ * Generate JWT keys for local development
  *
  * Usage: bun run keygen
+ *
+ * Generates Ed25519 key pair and updates env.json:
+ * - LOCAL_JWT_PUBLIC_KEY in function configs (for SAM Local)
+ * - LOCAL_JWT_PRIVATE_KEY in E2ETests section (for E2E tests)
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { randomBytes } from 'node:crypto';
+import { generateKeyPairSync } from 'node:crypto';
 import { resolve } from 'node:path';
+
+/**
+ * Generate Ed25519 key pair for local JWT
+ */
+function generateLocalKeyPair(): { privateKey: string; publicKey: string } {
+  const { privateKey, publicKey } = generateKeyPairSync('ed25519', {
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+  });
+  return { privateKey, publicKey };
+}
 
 const ENV_JSON_PATH = resolve(import.meta.dirname, '..', 'env.json');
 const ENV_JSON_EXAMPLE_PATH = resolve(import.meta.dirname, '..', 'env.json.example');
 
-/**
- * Generate a random API key in the format: admin-id:secret
- */
-function generateApiKey(): string {
-  const adminId = `admin-${randomBytes(4).toString('hex')}`;
-  const secret = randomBytes(32).toString('base64url');
-  return `${adminId}:${secret}`;
-}
-
-function main(): void {
+async function main(): Promise<void> {
   let envConfig: Record<string, unknown>;
 
   // Check if env.json exists
@@ -39,26 +45,44 @@ function main(): void {
     process.exit(1);
   }
 
-  // Check if TenantAdminApiFunction exists
-  const tenantAdminConfig = envConfig.TenantAdminApiFunction as
-    | Record<string, unknown>
-    | undefined;
+  // Generate Ed25519 key pair for local JWT
+  console.log(`🔐 Generating Ed25519 key pair for local JWT...`);
+  const keyPair = generateLocalKeyPair();
 
-  if (!tenantAdminConfig) {
-    console.error('❌ TenantAdminApiFunction section not found in env.json');
-    process.exit(1);
+  // Update function configs with public key (for SAM Local)
+  const functionsToUpdate = ['AutomataApiFunction', 'AutomataWsFunction'];
+
+  for (const funcName of functionsToUpdate) {
+    let funcConfig = envConfig[funcName] as Record<string, unknown> | undefined;
+    if (!funcConfig) {
+      funcConfig = {};
+      envConfig[funcName] = funcConfig;
+    }
+    funcConfig.LOCAL_JWT_PUBLIC_KEY = keyPair.publicKey;
+    funcConfig.LOCAL_JWT_ISSUER = 'local-dev';
+    console.log(`  ✅ Updated ${funcName}`);
   }
 
-  // Generate new key
-  const newKey = generateApiKey();
-  tenantAdminConfig.LOCAL_ADMIN_API_KEY = newKey;
+  // Store private key in E2ETests section (for E2E tests to read)
+  let e2eConfig = envConfig['E2ETests'] as Record<string, unknown> | undefined;
+  if (!e2eConfig) {
+    e2eConfig = {};
+    envConfig['E2ETests'] = e2eConfig;
+  }
+  e2eConfig.LOCAL_JWT_PRIVATE_KEY = keyPair.privateKey;
+  e2eConfig.LOCAL_JWT_PUBLIC_KEY = keyPair.publicKey;
+  e2eConfig.LOCAL_JWT_ISSUER = 'local-dev';
+  console.log(`  ✅ Updated E2ETests`);
 
   // Write back to env.json
   writeFileSync(ENV_JSON_PATH, JSON.stringify(envConfig, null, 2) + '\n');
 
-  console.log(`✅ Generated new admin API key`);
-  console.log(`🔑 Key: ${newKey}`);
-  console.log(`💾 Saved to: env.json`);
+  console.log(`\n💾 Saved to: env.json`);
+  console.log(`\n✅ Done! Both SAM Local and E2E tests will read keys from env.json.`);
+  console.log(`⚠️  Remember to restart SAM Local to pick up the new keys!`);
 }
 
-main();
+main().catch((error) => {
+  console.error('❌ Error:', error.message);
+  process.exit(1);
+});

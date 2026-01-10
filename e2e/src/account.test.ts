@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient, generateKeyPair, ApiClient } from './client';
-import { getTestToken } from './helpers';
+import { getTestTokenAsync } from './helpers';
 import { config } from './config';
 
 describe('Account API', () => {
@@ -14,7 +14,7 @@ describe('Account API', () => {
 
   beforeAll(async () => {
     client = createClient();
-    token = getTestToken();
+    token = await getTestTokenAsync();
     keyPair = await generateKeyPair();
     client.setToken(token);
     client.setPrivateKey(keyPair.privateKey);
@@ -35,9 +35,8 @@ describe('Account API', () => {
       const noAuthClient = createClient();
       const response = await noAuthClient.getMe();
 
-      // In local dev mode, requests without token succeed with mock user
-      // In production, they should return 401
-      expect([200, 401]).toContain(response.status);
+      // With JWT verification enabled, requests without token must return 401
+      expect(response.status).toBe(401);
     });
   });
 

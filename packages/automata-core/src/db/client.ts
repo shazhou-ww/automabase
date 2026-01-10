@@ -13,8 +13,7 @@ const REGION = process.env.AWS_REGION || 'ap-northeast-1';
 
 // Check if running locally (SAM Local or LocalStack)
 const isLocal = process.env.AWS_SAM_LOCAL === 'true' || 
-                process.env.LOCALSTACK === 'true' ||
-                process.env.LOCAL_DEV_MODE === 'true';
+                process.env.LOCALSTACK === 'true';
 
 // Local endpoint configuration
 // Use DYNAMODB_ENDPOINT env var, or default to host.docker.internal for SAM Local

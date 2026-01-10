@@ -9,7 +9,7 @@
 export type AccountStatus = 'active' | 'suspended' | 'deleted';
 
 /** OAuth Provider */
-export type OAuthProvider = 'google' | 'github';
+export type OAuthProvider = 'google' | 'github' | 'cognito';
 
 /**
  * Account 实体

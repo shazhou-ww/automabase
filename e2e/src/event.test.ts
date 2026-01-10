@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient, generateKeyPair, ApiClient } from './client';
-import { getTestToken, APP_REGISTRY_BLUEPRINT } from './helpers';
+import { getTestTokenAsync, APP_REGISTRY_BLUEPRINT } from './helpers';
 
 describe('Event API', () => {
   let client: ApiClient;
@@ -14,7 +14,7 @@ describe('Event API', () => {
 
   beforeAll(async () => {
     client = createClient();
-    const token = getTestToken();
+    const token = await getTestTokenAsync();
     keyPair = await generateKeyPair();
 
     client.setToken(token).setPrivateKey(keyPair.privateKey);
