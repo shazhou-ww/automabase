@@ -7,10 +7,10 @@
  * Usage: bun scripts/setup-local-db.ts
  */
 
-import { $ } from 'bun';
-import { readFileSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { $ } from 'bun';
 
 const __dirname = (import.meta as { dir?: string }).dir || dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
@@ -193,7 +193,8 @@ async function ensureTables(): Promise<void> {
  */
 async function listTables(): Promise<string[]> {
   try {
-    const result = await $`aws dynamodb list-tables --endpoint-url ${DYNAMODB_ENDPOINT} --output json`.quiet();
+    const result =
+      await $`aws dynamodb list-tables --endpoint-url ${DYNAMODB_ENDPOINT} --output json`.quiet();
     const data = JSON.parse(result.text());
     return data.TableNames || [];
   } catch {

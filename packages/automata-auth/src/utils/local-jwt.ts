@@ -5,7 +5,15 @@
  * 使用 Ed25519 (EdDSA) 算法，与 Cognito 的 RS256 不同但同样安全
  */
 
-import { SignJWT, jwtVerify, importPKCS8, importSPKI, exportPKCS8, exportSPKI, generateKeyPair } from 'jose';
+import {
+  exportPKCS8,
+  exportSPKI,
+  generateKeyPair,
+  importPKCS8,
+  importSPKI,
+  jwtVerify,
+  SignJWT,
+} from 'jose';
 import type { AuthContext } from '../types/cognito';
 
 /**
@@ -144,7 +152,8 @@ export async function verifyLocalJwt(
     spk: payload['custom:spk'] as string | undefined,
     idp: (payload.identities as Array<{ providerName: string; userId: string }> | undefined)?.[0]
       ? {
-          name: (payload.identities as Array<{ providerName: string; userId: string }>)[0].providerName,
+          name: (payload.identities as Array<{ providerName: string; userId: string }>)[0]
+            .providerName,
           userId: (payload.identities as Array<{ providerName: string; userId: string }>)[0].userId,
         }
       : undefined,
@@ -155,7 +164,7 @@ export async function verifyLocalJwt(
 
 /**
  * 从本地 JWT 提取 AuthContext
- * 
+ *
  * 支持两种格式：
  * 1. LocalJwtPayload 格式（使用 accountId, spk, idp）
  * 2. 原始 JWT claims 格式（使用 custom:account_id, custom:spk, identities）
@@ -164,19 +173,23 @@ export function extractAuthContextFromLocalJwt(
   payload: LocalJwtPayload | Record<string, unknown>
 ): AuthContext {
   // 支持两种格式的 accountId
-  const accountId = (payload as LocalJwtPayload).accountId 
-    || (payload as Record<string, unknown>)['custom:account_id'] as string | undefined;
-  
+  const accountId =
+    (payload as LocalJwtPayload).accountId ||
+    ((payload as Record<string, unknown>)['custom:account_id'] as string | undefined);
+
   // 支持两种格式的 spk
-  const spk = (payload as LocalJwtPayload).spk 
-    || (payload as Record<string, unknown>)['custom:spk'] as string | undefined;
-  
+  const spk =
+    (payload as LocalJwtPayload).spk ||
+    ((payload as Record<string, unknown>)['custom:spk'] as string | undefined);
+
   // 支持两种格式的 identities
   let idp: { name: string; userId: string } | undefined;
   if ((payload as LocalJwtPayload).idp) {
     idp = (payload as LocalJwtPayload).idp;
   } else {
-    const identities = (payload as Record<string, unknown>).identities as Array<{ providerName: string; userId: string }> | undefined;
+    const identities = (payload as Record<string, unknown>).identities as
+      | Array<{ providerName: string; userId: string }>
+      | undefined;
     if (identities?.[0]) {
       idp = {
         name: identities[0].providerName,

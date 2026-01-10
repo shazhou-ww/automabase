@@ -2,9 +2,9 @@
  * Automata API E2E Tests
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { createClient, generateKeyPair, ApiClient } from './client';
-import { getTestTokenAsync, APP_REGISTRY_BLUEPRINT } from './helpers';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { type ApiClient, createClient, generateKeyPair } from './client';
+import { APP_REGISTRY_BLUEPRINT, getTestTokenAsync } from './helpers';
 
 describe('Automata API', () => {
   let client: ApiClient;
@@ -21,7 +21,8 @@ describe('Automata API', () => {
 
     // Ensure account exists and get accountId
     const accountResponse = await client.createAccount(keyPair.publicKey);
-    accountId = (accountResponse.data as any).account.accountId;
+    const accountData = accountResponse.data.account as Record<string, unknown>;
+    accountId = accountData.accountId as string;
     client.setAccountId(accountId);
   });
 
@@ -35,12 +36,13 @@ describe('Automata API', () => {
       expect(response.data).toHaveProperty('currentState');
 
       // Verify initial state
-      expect((response.data as any).currentState).toEqual({
+      const data = response.data as Record<string, unknown>;
+      expect(data.currentState).toEqual({
         name: 'Untitled App',
         status: 'draft',
       });
 
-      createdAutomataId = (response.data as any).automataId;
+      createdAutomataId = data.automataId as string;
     });
 
     it('should return 400 without blueprint', async () => {
@@ -95,13 +97,13 @@ describe('Automata API', () => {
       // Ensure we have an automata
       if (!createdAutomataId) {
         const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
-        createdAutomataId = (createResponse.data as any).automataId;
+        createdAutomataId = (createResponse.data as Record<string, unknown>).automataId as string;
       }
 
       const response = await client.getAutomata(createdAutomataId);
 
       expect(response.status).toBe(200);
-      expect((response.data as any).automataId).toBe(createdAutomataId);
+      expect((response.data as Record<string, unknown>).automataId).toBe(createdAutomataId);
     });
 
     it('should return 404 for non-existent automata', async () => {
@@ -123,7 +125,7 @@ describe('Automata API', () => {
     it('should get current state only', async () => {
       if (!createdAutomataId) {
         const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
-        createdAutomataId = (createResponse.data as any).automataId;
+        createdAutomataId = (createResponse.data as Record<string, unknown>).automataId as string;
       }
 
       const response = await client.getAutomataState(createdAutomataId);
@@ -137,31 +139,31 @@ describe('Automata API', () => {
     it('should archive automata', async () => {
       // Create a new automata to archive
       const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
-      const automataId = (createResponse.data as any).automataId;
+      const automataId = (createResponse.data as Record<string, unknown>).automataId as string;
 
       const response = await client.updateAutomata(automataId, { status: 'archived' });
 
       expect(response.status).toBe(200);
-      expect((response.data as any).status).toBe('archived');
+      expect((response.data as Record<string, unknown>).status).toBe('archived');
     });
 
     it('should activate archived automata', async () => {
       // Create and archive
       const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
-      const automataId = (createResponse.data as any).automataId;
+      const automataId = (createResponse.data as Record<string, unknown>).automataId as string;
       await client.updateAutomata(automataId, { status: 'archived' });
 
       // Activate
       const response = await client.updateAutomata(automataId, { status: 'active' });
 
       expect(response.status).toBe(200);
-      expect((response.data as any).status).toBe('active');
+      expect((response.data as Record<string, unknown>).status).toBe('active');
     });
 
     it('should return 400 for invalid status', async () => {
       if (!createdAutomataId) {
         const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
-        createdAutomataId = (createResponse.data as any).automataId;
+        createdAutomataId = (createResponse.data as Record<string, unknown>).automataId as string;
       }
 
       const response = await client.updateAutomata(createdAutomataId, { status: 'invalid' });
@@ -170,4 +172,3 @@ describe('Automata API', () => {
     });
   });
 });
-

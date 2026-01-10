@@ -215,11 +215,15 @@ export class ApiClient {
   }
 
   // Account API
-  async getMe(): Promise<ApiResponse<{ registered: boolean; account?: unknown; cognitoUser?: unknown }>> {
+  async getMe(): Promise<
+    ApiResponse<{ registered: boolean; account?: unknown; cognitoUser?: unknown }>
+  > {
     return this.request({ method: 'GET', path: '/v1/accounts/me' });
   }
 
-  async createAccount(publicKey: string): Promise<ApiResponse<{ account: unknown; isNew: boolean }>> {
+  async createAccount(
+    publicKey: string
+  ): Promise<ApiResponse<{ account: unknown; isNew: boolean }>> {
     return this.request({
       method: 'POST',
       path: '/v1/accounts',
@@ -227,7 +231,10 @@ export class ApiClient {
     });
   }
 
-  async updateAccount(updates: { displayName?: string; avatarUrl?: string }): Promise<ApiResponse<{ account: unknown }>> {
+  async updateAccount(updates: {
+    displayName?: string;
+    avatarUrl?: string;
+  }): Promise<ApiResponse<{ account: unknown }>> {
     return this.request({
       method: 'PATCH',
       path: '/v1/accounts/me',
@@ -240,7 +247,11 @@ export class ApiClient {
   }
 
   // Automata API - now requires accountId in path
-  async createAutomata(blueprint: unknown, blueprintSignature?: string, accountId?: string): Promise<ApiResponse<unknown>> {
+  async createAutomata(
+    blueprint: unknown,
+    blueprintSignature?: string,
+    accountId?: string
+  ): Promise<ApiResponse<unknown>> {
     const targetAccountId = accountId || this.accountId;
     if (!targetAccountId) {
       throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
@@ -252,7 +263,11 @@ export class ApiClient {
     });
   }
 
-  async listAutomatas(options?: { limit?: number; cursor?: string; accountId?: string }): Promise<ApiResponse<{ automatas: unknown[]; nextCursor?: string }>> {
+  async listAutomatas(options?: {
+    limit?: number;
+    cursor?: string;
+    accountId?: string;
+  }): Promise<ApiResponse<{ automatas: unknown[]; nextCursor?: string }>> {
     const targetAccountId = options?.accountId || this.accountId;
     if (!targetAccountId) {
       throw new Error('accountId is required. Call setAccountId() or pass accountId in options.');
@@ -271,18 +286,31 @@ export class ApiClient {
     if (!targetAccountId) {
       throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
     }
-    return this.request({ method: 'GET', path: `/v1/accounts/${targetAccountId}/automatas/${automataId}` });
+    return this.request({
+      method: 'GET',
+      path: `/v1/accounts/${targetAccountId}/automatas/${automataId}`,
+    });
   }
 
-  async getAutomataState(automataId: string, accountId?: string): Promise<ApiResponse<{ state: unknown }>> {
+  async getAutomataState(
+    automataId: string,
+    accountId?: string
+  ): Promise<ApiResponse<{ state: unknown }>> {
     const targetAccountId = accountId || this.accountId;
     if (!targetAccountId) {
       throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
     }
-    return this.request({ method: 'GET', path: `/v1/accounts/${targetAccountId}/automatas/${automataId}/state` });
+    return this.request({
+      method: 'GET',
+      path: `/v1/accounts/${targetAccountId}/automatas/${automataId}/state`,
+    });
   }
 
-  async updateAutomata(automataId: string, updates: { status?: string }, accountId?: string): Promise<ApiResponse<unknown>> {
+  async updateAutomata(
+    automataId: string,
+    updates: { status?: string },
+    accountId?: string
+  ): Promise<ApiResponse<unknown>> {
     const targetAccountId = accountId || this.accountId;
     if (!targetAccountId) {
       throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
@@ -295,7 +323,12 @@ export class ApiClient {
   }
 
   // Event API - now requires accountId in path
-  async sendEvent(automataId: string, eventType: string, eventData: unknown, accountId?: string): Promise<ApiResponse<unknown>> {
+  async sendEvent(
+    automataId: string,
+    eventType: string,
+    eventData: unknown,
+    accountId?: string
+  ): Promise<ApiResponse<unknown>> {
     const targetAccountId = accountId || this.accountId;
     if (!targetAccountId) {
       throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
@@ -309,7 +342,12 @@ export class ApiClient {
 
   async listEvents(
     automataId: string,
-    options?: { direction?: 'forward' | 'backward'; anchor?: string; limit?: number; accountId?: string }
+    options?: {
+      direction?: 'forward' | 'backward';
+      anchor?: string;
+      limit?: number;
+      accountId?: string;
+    }
   ): Promise<ApiResponse<{ events: unknown[]; nextAnchor?: string }>> {
     const targetAccountId = options?.accountId || this.accountId;
     if (!targetAccountId) {
@@ -325,12 +363,19 @@ export class ApiClient {
     return this.request({ method: 'GET', path });
   }
 
-  async getEvent(automataId: string, version: string, accountId?: string): Promise<ApiResponse<unknown>> {
+  async getEvent(
+    automataId: string,
+    version: string,
+    accountId?: string
+  ): Promise<ApiResponse<unknown>> {
     const targetAccountId = accountId || this.accountId;
     if (!targetAccountId) {
       throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
     }
-    return this.request({ method: 'GET', path: `/v1/accounts/${targetAccountId}/automatas/${automataId}/events/${version}` });
+    return this.request({
+      method: 'GET',
+      path: `/v1/accounts/${targetAccountId}/automatas/${automataId}/events/${version}`,
+    });
   }
 }
 
@@ -340,4 +385,3 @@ export class ApiClient {
 export function createClient(baseUrl?: string): ApiClient {
   return new ApiClient(baseUrl);
 }
-

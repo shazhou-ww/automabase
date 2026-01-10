@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  encodeBase62,
-  decodeBase62,
-  encodeBase62Padded,
-  incrementVersion,
   compareVersions,
-  INITIAL_VERSION,
+  decodeBase62,
+  encodeBase62,
+  encodeBase62Padded,
   generateAccountId,
   generateAccountIdFromBase64,
+  INITIAL_VERSION,
+  incrementVersion,
   validateBase64PublicKey,
 } from './index';
 
@@ -17,7 +17,7 @@ describe('Base62', () => {
     expect(encodeBase62(61n)).toBe('z');
     expect(encodeBase62(62n)).toBe('10');
     expect(encodeBase62(123456789n)).toBe('8M0kX');
-    
+
     expect(decodeBase62('0')).toBe(0n);
     expect(decodeBase62('z')).toBe(61n);
     expect(decodeBase62('10')).toBe(62n);
@@ -52,11 +52,11 @@ describe('Hash', () => {
     // 32-byte test public key
     const publicKey = new Uint8Array(32).fill(0x42);
     const accountId = generateAccountId(publicKey);
-    
+
     // Account ID should be ~22 characters
     expect(accountId.length).toBeGreaterThan(15);
     expect(accountId.length).toBeLessThan(25);
-    
+
     // Same input should produce same output
     expect(generateAccountId(publicKey)).toBe(accountId);
   });
@@ -65,7 +65,7 @@ describe('Hash', () => {
     // 32-byte test public key in base64url
     const publicKeyBase64 = 'QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE';
     const accountId = generateAccountIdFromBase64(publicKeyBase64);
-    
+
     expect(accountId.length).toBeGreaterThan(15);
     expect(accountId.length).toBeLessThan(25);
   });
@@ -73,10 +73,10 @@ describe('Hash', () => {
   it('should validate public key format', () => {
     // Valid 32-byte key
     expect(validateBase64PublicKey('QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE')).toBe(true);
-    
+
     // Invalid: wrong length
     expect(validateBase64PublicKey('QUFBQUFBQUFB')).toBe(false);
-    
+
     // Invalid: not base64
     expect(validateBase64PublicKey('not-valid-base64!!!')).toBe(false);
   });

@@ -21,17 +21,17 @@ async function getXxhash() {
 
 /**
  * 使用 MurmurHash3-128 生成 Account ID
- * 
+ *
  * @param publicKey - Ed25519 公钥 (32 bytes)
  * @returns Base62 编码的 Account ID (约 22 字符)
  */
 export function generateAccountId(publicKey: Uint8Array | Buffer): string {
   // MurmurHash3 x64 128-bit
   const hashResult = murmurhash3.x64.hash128(Buffer.from(publicKey));
-  
+
   // hashResult 是 32 字符的十六进制字符串
   const hashBuffer = Buffer.from(hashResult, 'hex');
-  
+
   return encodeBase62Buffer(hashBuffer);
 }
 
@@ -113,4 +113,3 @@ export async function computeBlueprintId(content: {
   const hash = await computeBlueprintHash(content);
   return `${content.appId}:${content.name}:${hash}`;
 }
-

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { validateTimestamp, AntiReplayError } from './anti-replay';
+import { describe, expect, it } from 'vitest';
+import { AntiReplayError, validateTimestamp } from './anti-replay';
 
 describe('anti-replay', () => {
   describe('validateTimestamp', () => {
@@ -50,4 +50,3 @@ describe('anti-replay', () => {
     });
   });
 });
-

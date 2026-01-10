@@ -4,17 +4,17 @@
  * 管理 Automata 的 CRUD 操作
  */
 
-import { GetCommand, PutCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { ulid } from 'ulid';
-import { docClient, getTableName, Keys } from './client';
-import { parseBlueprintId } from '../types/blueprint';
-import { INITIAL_VERSION } from '../utils/base62';
 import type {
   Automata,
   AutomataItem,
   CreateAutomataInput,
   UpdateAutomataInput,
 } from '../types/automata';
+import { parseBlueprintId } from '../types/blueprint';
+import { INITIAL_VERSION } from '../utils/base62';
+import { docClient, getTableName, Keys } from './client';
 
 /**
  * 将 DynamoDB Item 转换为 Automata
@@ -231,4 +231,3 @@ export async function getAutomatasByApp(
 
   return { automatas, nextCursor };
 }
-

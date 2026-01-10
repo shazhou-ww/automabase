@@ -1,6 +1,6 @@
 /**
  * Cognito JWT Verifier
- * 
+ *
  * 使用 jose 库验证 Cognito JWT
  */
 
@@ -13,10 +13,10 @@ import type { AuthContext, CognitoIdTokenClaims } from '../types/cognito';
 export interface JwtVerifierConfig {
   /** Cognito User Pool ID */
   userPoolId: string;
-  
+
   /** AWS Region */
   region: string;
-  
+
   /** Client ID (可选，用于验证 aud claim) */
   clientId?: string;
 }
@@ -25,7 +25,10 @@ export interface JwtVerifierConfig {
  * JWT 验证错误
  */
 export class JwtVerificationError extends Error {
-  constructor(message: string, public readonly code: string) {
+  constructor(
+    message: string,
+    public readonly code: string
+  ) {
     super(message);
     this.name = 'JwtVerificationError';
   }
@@ -39,12 +42,13 @@ const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
  */
 function getJwks(config: JwtVerifierConfig): ReturnType<typeof createRemoteJWKSet> {
   const issuer = `https://cognito-idp.${config.region}.amazonaws.com/${config.userPoolId}`;
-  
+
   if (!jwksCache.has(issuer)) {
     const jwksUrl = new URL(`${issuer}/.well-known/jwks.json`);
     jwksCache.set(issuer, createRemoteJWKSet(jwksUrl));
   }
-  
+
+  // biome-ignore lint/style/noNonNullAssertion: jwksCache.has(issuer) guarantees the value exists
   return jwksCache.get(issuer)!;
 }
 
@@ -57,32 +61,26 @@ export async function verifyIdToken(
 ): Promise<CognitoIdTokenClaims> {
   const issuer = `https://cognito-idp.${config.region}.amazonaws.com/${config.userPoolId}`;
   const jwks = getJwks(config);
-  
+
   try {
     const { payload } = await jwtVerify(token, jwks, {
       issuer,
       audience: config.clientId,
     });
-    
+
     // 验证 token_use
     if (payload.token_use !== 'id') {
-      throw new JwtVerificationError(
-        'Invalid token_use: expected "id"',
-        'INVALID_TOKEN_USE'
-      );
+      throw new JwtVerificationError('Invalid token_use: expected "id"', 'INVALID_TOKEN_USE');
     }
-    
+
     return payload as unknown as CognitoIdTokenClaims;
   } catch (error) {
     if (error instanceof JwtVerificationError) {
       throw error;
     }
-    
+
     const message = error instanceof Error ? error.message : 'Unknown error';
-    throw new JwtVerificationError(
-      `JWT verification failed: ${message}`,
-      'VERIFICATION_FAILED'
-    );
+    throw new JwtVerificationError(`JWT verification failed: ${message}`, 'VERIFICATION_FAILED');
   }
 }
 
@@ -99,7 +97,7 @@ export function extractAuthContext(claims: CognitoIdTokenClaims): AuthContext {
       userId: identity.userId,
     };
   }
-  
+
   return {
     cognitoUserId: claims.sub,
     accountId: claims['custom:account_id'],
@@ -124,7 +122,7 @@ export async function verifyAndExtractContext(
 
 /**
  * 本地 JWT 验证配置
- * 
+ *
  * 如果提供了 localPublicKey，则使用本地 JWT 验证（bypass Cognito）
  */
 export interface LocalDevConfig {
@@ -138,7 +136,7 @@ export interface LocalDevConfig {
   localIssuer?: string;
 }
 
-import { verifyLocalJwt, extractAuthContextFromLocalJwt } from './local-jwt';
+import { extractAuthContextFromLocalJwt, verifyLocalJwt } from './local-jwt';
 
 /**
  * 验证 JWT 并提取用户上下文（支持本地 JWT 模式）
@@ -154,10 +152,7 @@ export async function verifyAndExtractContextWithDevMode(
   // 本地 JWT 模式（配置了 localPublicKey）
   if (localDev.enabled && localDev.localPublicKey) {
     if (!token) {
-      throw new JwtVerificationError(
-        'Missing Authorization header',
-        'MISSING_AUTH_HEADER'
-      );
+      throw new JwtVerificationError('Missing Authorization header', 'MISSING_AUTH_HEADER');
     }
 
     const actualToken = token.startsWith('Bearer ') ? token.slice(7) : token;
@@ -181,12 +176,9 @@ export async function verifyAndExtractContextWithDevMode(
 
   // 正常验证流程
   if (!token) {
-    throw new JwtVerificationError(
-      'Missing Authorization header',
-      'MISSING_AUTH_HEADER'
-    );
+    throw new JwtVerificationError('Missing Authorization header', 'MISSING_AUTH_HEADER');
   }
-  
+
   const actualToken = token.startsWith('Bearer ') ? token.slice(7) : token;
   const claims = await verifyIdToken(actualToken, config);
   return extractAuthContext(claims);
@@ -197,20 +189,13 @@ export async function verifyAndExtractContextWithDevMode(
  */
 export function extractBearerToken(authorizationHeader: string | undefined): string {
   if (!authorizationHeader) {
-    throw new JwtVerificationError(
-      'Missing Authorization header',
-      'MISSING_AUTH_HEADER'
-    );
+    throw new JwtVerificationError('Missing Authorization header', 'MISSING_AUTH_HEADER');
   }
-  
+
   const parts = authorizationHeader.split(' ');
   if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
-    throw new JwtVerificationError(
-      'Invalid Authorization header format',
-      'INVALID_AUTH_FORMAT'
-    );
+    throw new JwtVerificationError('Invalid Authorization header format', 'INVALID_AUTH_FORMAT');
   }
-  
+
   return parts[1];
 }
-

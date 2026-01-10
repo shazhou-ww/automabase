@@ -35,11 +35,12 @@ export function getConfig(): E2EConfig {
     apiBaseUrl,
     userPoolId: process.env.COGNITO_USER_POOL_ID || 'ap-southeast-2_2cTIVAhYG',
     clientId: process.env.COGNITO_CLIENT_ID || '6rjt3vskji08mdscm6pqloppmn',
-    cognitoUrl: process.env.COGNITO_URL || 'https://automabase-dev-914369185440.auth.ap-southeast-2.amazoncognito.com',
+    cognitoUrl:
+      process.env.COGNITO_URL ||
+      'https://automabase-dev-914369185440.auth.ap-southeast-2.amazoncognito.com',
     region: process.env.AWS_REGION || 'ap-southeast-2',
     isLocal,
   };
 }
 
 export const config = getConfig();
-

@@ -1,6 +1,6 @@
 /**
  * Base62 encoding/decoding utilities
- * 
+ *
  * 字符集: 0-9, A-Z, a-z (62 个字符)
  * 用于版本号、ID 等的紧凑表示
  */
@@ -13,15 +13,15 @@ const BASE = BigInt(62);
  */
 export function encodeBase62(num: bigint): string {
   if (num === 0n) return '0';
-  
+
   let result = '';
   let n = num < 0n ? -num : num;
-  
+
   while (n > 0n) {
     result = CHARSET[Number(n % BASE)] + result;
     n = n / BASE;
   }
-  
+
   return num < 0n ? `-${result}` : result;
 }
 
@@ -31,7 +31,7 @@ export function encodeBase62(num: bigint): string {
 export function decodeBase62(str: string): bigint {
   const isNegative = str.startsWith('-');
   const chars = isNegative ? str.slice(1) : str;
-  
+
   let result = 0n;
   for (const char of chars) {
     const index = CHARSET.indexOf(char);
@@ -40,7 +40,7 @@ export function decodeBase62(str: string): bigint {
     }
     result = result * BASE + BigInt(index);
   }
-  
+
   return isNegative ? -result : result;
 }
 
@@ -76,7 +76,7 @@ export function encodeBase62Padded(num: bigint | number, length: number): string
 
 /**
  * 递增 Base62 版本号
- * 
+ *
  * @example
  * incrementVersion('000000') // '000001'
  * incrementVersion('00000z') // '000010'
@@ -88,7 +88,7 @@ export function incrementVersion(version: string): string {
 
 /**
  * 比较两个 Base62 版本号
- * 
+ *
  * @returns -1 if a < b, 0 if a === b, 1 if a > b
  */
 export function compareVersions(a: string, b: string): -1 | 0 | 1 {
@@ -108,4 +108,3 @@ export const INITIAL_VERSION = '000000';
  * 最大版本号
  */
 export const MAX_VERSION = 'zzzzzz';
-

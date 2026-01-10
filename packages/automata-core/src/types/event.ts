@@ -112,4 +112,3 @@ export function parseEventId(eventId: string): {
     baseVersion: parts[2],
   };
 }
-

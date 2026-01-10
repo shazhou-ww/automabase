@@ -12,8 +12,7 @@ const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || 'automabase-dev';
 const REGION = process.env.AWS_REGION || 'ap-northeast-1';
 
 // Check if running locally (SAM Local or LocalStack)
-const isLocal = process.env.AWS_SAM_LOCAL === 'true' || 
-                process.env.LOCALSTACK === 'true';
+const isLocal = process.env.AWS_SAM_LOCAL === 'true' || process.env.LOCALSTACK === 'true';
 
 // Local endpoint configuration
 // Use DYNAMODB_ENDPOINT env var, or default to host.docker.internal for SAM Local
@@ -100,4 +99,3 @@ export const Keys = {
   // GSI2: App 维度索引
   appGsi2pk: (appId: string) => `APP#${appId}`,
 } as const;
-

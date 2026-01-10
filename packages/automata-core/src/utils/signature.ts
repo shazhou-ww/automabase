@@ -106,4 +106,3 @@ export function generateEd25519KeyPair(): {
     privateKey: fullPrivateKey.toString('base64url'),
   };
 }
-

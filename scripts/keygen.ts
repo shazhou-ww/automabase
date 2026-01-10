@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 /**
  * Generate JWT keys for local development
  *
@@ -9,8 +10,8 @@
  * - LOCAL_JWT_PRIVATE_KEY in E2ETests section (for E2E tests)
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { generateKeyPairSync } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
@@ -64,10 +65,10 @@ async function main(): Promise<void> {
   }
 
   // Store private key in E2ETests section (for E2E tests to read)
-  let e2eConfig = envConfig['E2ETests'] as Record<string, unknown> | undefined;
+  let e2eConfig = envConfig.E2ETests as Record<string, unknown> | undefined;
   if (!e2eConfig) {
     e2eConfig = {};
-    envConfig['E2ETests'] = e2eConfig;
+    envConfig.E2ETests = e2eConfig;
   }
   e2eConfig.LOCAL_JWT_PRIVATE_KEY = keyPair.privateKey;
   e2eConfig.LOCAL_JWT_PUBLIC_KEY = keyPair.publicKey;
@@ -75,7 +76,7 @@ async function main(): Promise<void> {
   console.log(`  ✅ Updated E2ETests`);
 
   // Write back to env.json
-  writeFileSync(ENV_JSON_PATH, JSON.stringify(envConfig, null, 2) + '\n');
+  writeFileSync(ENV_JSON_PATH, `${JSON.stringify(envConfig, null, 2)}\n`);
 
   console.log(`\n💾 Saved to: env.json`);
   console.log(`\n✅ Done! Both SAM Local and E2E tests will read keys from env.json.`);

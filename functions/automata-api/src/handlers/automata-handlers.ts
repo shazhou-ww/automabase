@@ -2,23 +2,23 @@
  * Automata API Handlers
  */
 
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
-  getAutomataById,
-  getAutomatasByAccount,
-  createAutomata,
-  updateAutomata,
-  getBlueprintById,
-  validateAndGetBlueprint,
-  BlueprintValidationError,
-  type BlueprintContent,
-} from '@automabase/automata-core';
-import {
-  verifyAndExtractContextWithDevMode,
   JwtVerificationError,
   type JwtVerifierConfig,
   type LocalDevConfig,
+  verifyAndExtractContextWithDevMode,
 } from '@automabase/automata-auth';
+import {
+  type BlueprintContent,
+  BlueprintValidationError,
+  createAutomata,
+  getAutomataById,
+  getAutomatasByAccount,
+  getBlueprintById,
+  updateAutomata,
+  validateAndGetBlueprint,
+} from '@automabase/automata-core';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 /**
  * 获取 JWT 验证配置
@@ -33,7 +33,7 @@ function getJwtConfig(): JwtVerifierConfig {
 
 /**
  * 获取本地 JWT 配置
- * 
+ *
  * 如果设置了 LOCAL_JWT_PUBLIC_KEY，则使用本地 JWT 验证（bypass Cognito）
  * 否则使用正常的 Cognito 验证
  */
@@ -77,7 +77,7 @@ function error(message: string, statusCode = 400, code?: string): APIGatewayProx
 
 /**
  * 验证 JWT 并检查用户是否有权访问指定的 accountId
- * 
+ *
  * 设计原则：JWT 只负责身份验证，accountId 从路径参数获取
  * - 验证 JWT token 有效性
  * - 检查用户是否有权访问该 accountId（目前：用户只能访问自己的 account）
@@ -381,4 +381,3 @@ export async function updateAutomataHandler(
     return error('Internal server error', 500);
   }
 }
-

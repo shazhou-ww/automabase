@@ -4,12 +4,10 @@
 
 // Account
 export * from './account';
-
-// Blueprint
-export * from './blueprint';
-
 // Automata
 export * from './automata';
+// Blueprint
+export * from './blueprint';
 
 // Event
 export * from './event';
@@ -18,4 +16,3 @@ export * from './event';
 export type Base62String = string;
 export type ISOTimestamp = string;
 export type ULID = string;
-

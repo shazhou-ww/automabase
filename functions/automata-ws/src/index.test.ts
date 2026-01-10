@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { handler } from './index';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
+import { describe, expect, it } from 'vitest';
+import { handler } from './index';
 
 describe('handler', () => {
   it('should return 200 with message', async () => {
@@ -17,7 +17,7 @@ describe('handler', () => {
       getRemainingTimeInMillis: () => 30000,
       done: () => {},
       fail: () => {},
-      succeed: () => {}
+      succeed: () => {},
     } as Context;
 
     const result = await handler(event, context);
@@ -27,4 +27,3 @@ describe('handler', () => {
     expect(body.message).toContain('automata-ws');
   });
 });
-

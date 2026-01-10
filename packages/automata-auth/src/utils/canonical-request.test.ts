@@ -1,11 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  canonicalizeQueryString,
-  canonicalizeHeaders,
-  hashBody,
-  buildCanonicalRequest,
-  hashCanonicalRequest,
   buildAndHashCanonicalRequest,
+  buildCanonicalRequest,
+  canonicalizeHeaders,
+  canonicalizeQueryString,
+  hashBody,
+  hashCanonicalRequest,
   type RequestInfo,
 } from './canonical-request';
 
@@ -56,15 +56,15 @@ describe('canonical-request', () => {
       expect(signedHeaders).toBe('content-type;host;x-request-id;x-request-timestamp');
       expect(canonical).toBe(
         'content-type:application/json\n' +
-        'host:api.example.com\n' +
-        'x-request-id:123\n' +
-        'x-request-timestamp:2024-01-01T00:00:00Z'
+          'host:api.example.com\n' +
+          'x-request-id:123\n' +
+          'x-request-timestamp:2024-01-01T00:00:00Z'
       );
     });
 
     it('should lowercase header names and trim values', () => {
       const { canonical } = canonicalizeHeaders({
-        'HOST': '  example.com  ',
+        HOST: '  example.com  ',
         'X-REQUEST-ID': '  abc  ',
       });
 
@@ -157,4 +157,3 @@ describe('canonical-request', () => {
     });
   });
 });
-

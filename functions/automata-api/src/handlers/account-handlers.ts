@@ -2,23 +2,23 @@
  * Account API Handlers
  */
 
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
-  getAccountById,
-  getAccountByOAuth,
-  updateAccount,
-  getOrCreateAccountByOAuth,
-  validateBase64PublicKey,
-  type CreateAccountInput,
-  type UpdateAccountInput,
-  type OAuthProvider,
-} from '@automabase/automata-core';
-import {
-  verifyAndExtractContextWithDevMode,
   JwtVerificationError,
   type JwtVerifierConfig,
   type LocalDevConfig,
+  verifyAndExtractContextWithDevMode,
 } from '@automabase/automata-auth';
+import {
+  type CreateAccountInput,
+  getAccountById,
+  getAccountByOAuth,
+  getOrCreateAccountByOAuth,
+  type OAuthProvider,
+  type UpdateAccountInput,
+  updateAccount,
+  validateBase64PublicKey,
+} from '@automabase/automata-core';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 /**
  * 获取 JWT 验证配置
@@ -33,7 +33,7 @@ function getJwtConfig(): JwtVerifierConfig {
 
 /**
  * 获取本地 JWT 配置
- * 
+ *
  * 如果设置了 LOCAL_JWT_PUBLIC_KEY，则使用本地 JWT 验证（bypass Cognito）
  * 否则使用正常的 Cognito 验证
  */
@@ -88,7 +88,7 @@ export async function getCurrentAccount(
       getJwtConfig(),
       getLocalDevConfig()
     );
-    
+
     // 如果用户已经有 accountId（来自 JWT custom claim），直接查询
     if (authContext.accountId) {
       const account = await getAccountById(authContext.accountId);
@@ -96,12 +96,13 @@ export async function getCurrentAccount(
         return success({ account, registered: true });
       }
     }
-    
+
     // 尝试通过 OAuth 信息查找已存在的账户
     // 如果没有外部 IdP，使用 'cognito' 作为 provider
-    const oauthProvider: OAuthProvider = (authContext.identityProvider?.name?.toLowerCase() as OAuthProvider) || 'cognito';
+    const oauthProvider: OAuthProvider =
+      (authContext.identityProvider?.name?.toLowerCase() as OAuthProvider) || 'cognito';
     const oauthSubject = authContext.identityProvider?.userId || authContext.cognitoUserId;
-    
+
     // 同时尝试查询可能遗留的 'google' provider（兼容旧数据）
     let existingAccount = await getAccountByOAuth(oauthProvider, oauthSubject);
     if (!existingAccount && oauthProvider === 'cognito') {
@@ -111,7 +112,7 @@ export async function getCurrentAccount(
     if (existingAccount) {
       return success({ account: existingAccount, registered: true });
     }
-    
+
     // 用户已通过 Cognito 认证，但尚未在 Automabase 注册
     return success({
       registered: false,
@@ -134,7 +135,7 @@ export async function getCurrentAccount(
 
 /**
  * POST /accounts - 创建或获取账户（首次注册）
- * 
+ *
  * Body: { publicKey: string }
  */
 export async function createOrGetAccount(
@@ -147,24 +148,25 @@ export async function createOrGetAccount(
       getJwtConfig(),
       getLocalDevConfig()
     );
-    
+
     // 解析请求体
     const body = JSON.parse(event.body || '{}');
     const { publicKey } = body;
-    
+
     if (!publicKey) {
       return error('publicKey is required', 400);
     }
-    
+
     // 验证公钥格式
     if (!validateBase64PublicKey(publicKey)) {
       return error('Invalid publicKey format (expected 32-byte Ed25519 key in Base64URL)', 400);
     }
-    
+
     // 确定 OAuth 信息（如果没有外部 IdP，使用 'cognito'）
-    const oauthProvider: OAuthProvider = (authContext.identityProvider?.name?.toLowerCase() as OAuthProvider) || 'cognito';
+    const oauthProvider: OAuthProvider =
+      (authContext.identityProvider?.name?.toLowerCase() as OAuthProvider) || 'cognito';
     const oauthSubject = authContext.identityProvider?.userId || authContext.cognitoUserId;
-    
+
     // 创建或获取账户
     const input: CreateAccountInput = {
       publicKey,
@@ -174,9 +176,9 @@ export async function createOrGetAccount(
       email: authContext.email,
       avatarUrl: authContext.avatarUrl,
     };
-    
+
     const { account, isNew } = await getOrCreateAccountByOAuth(input);
-    
+
     return success({ account, isNew }, isNew ? 201 : 200);
   } catch (err) {
     if (err instanceof JwtVerificationError) {
@@ -189,7 +191,7 @@ export async function createOrGetAccount(
 
 /**
  * PATCH /accounts/me - 更新当前用户
- * 
+ *
  * Body: { displayName?, email?, avatarUrl? }
  */
 export async function updateCurrentAccount(
@@ -202,11 +204,12 @@ export async function updateCurrentAccount(
       getJwtConfig(),
       getLocalDevConfig()
     );
-    
+
     // 查找账户：优先使用 accountId，否则通过 OAuth 信息查找
     let accountId = authContext.accountId;
     if (!accountId) {
-      const oauthProvider: OAuthProvider = (authContext.identityProvider?.name?.toLowerCase() as OAuthProvider) || 'cognito';
+      const oauthProvider: OAuthProvider =
+        (authContext.identityProvider?.name?.toLowerCase() as OAuthProvider) || 'cognito';
       const oauthSubject = authContext.identityProvider?.userId || authContext.cognitoUserId;
       let existingAccount = await getAccountByOAuth(oauthProvider, oauthSubject);
       // 兼容旧数据：之前可能用 'google' 作为默认 provider
@@ -215,15 +218,15 @@ export async function updateCurrentAccount(
       }
       accountId = existingAccount?.accountId;
     }
-    
+
     if (!accountId) {
       return error('Account not registered', 404);
     }
-    
+
     // 解析请求体
     const body = JSON.parse(event.body || '{}');
     const input: UpdateAccountInput = {};
-    
+
     if (body.displayName !== undefined) {
       input.displayName = body.displayName;
     }
@@ -233,9 +236,9 @@ export async function updateCurrentAccount(
     if (body.avatarUrl !== undefined) {
       input.avatarUrl = body.avatarUrl;
     }
-    
+
     const account = await updateAccount(accountId, input);
-    
+
     return success({ account });
   } catch (err) {
     if (err instanceof JwtVerificationError) {
@@ -249,27 +252,21 @@ export async function updateCurrentAccount(
 /**
  * GET /accounts/{accountId} - 获取指定用户（公开信息）
  */
-export async function getAccount(
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> {
+export async function getAccount(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const token = event.headers.Authorization || event.headers.authorization;
-    await verifyAndExtractContextWithDevMode(
-      token,
-      getJwtConfig(),
-      getLocalDevConfig()
-    );
-    
+    await verifyAndExtractContextWithDevMode(token, getJwtConfig(), getLocalDevConfig());
+
     const accountId = event.pathParameters?.accountId;
     if (!accountId) {
       return error('accountId is required', 400);
     }
-    
+
     const account = await getAccountById(accountId);
     if (!account) {
       return error('Account not found', 404);
     }
-    
+
     // 只返回公开信息
     return success({
       account: {
@@ -288,4 +285,3 @@ export async function getAccount(
     return error('Internal server error', 500);
   }
 }
-

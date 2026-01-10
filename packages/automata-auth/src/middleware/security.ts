@@ -5,10 +5,18 @@
  */
 
 import type { APIGatewayProxyEvent } from 'aws-lambda';
-import { verifyAndExtractContextWithDevMode, type JwtVerifierConfig, type LocalDevConfig, type AuthContext } from '../utils/jwt-verifier';
-import { buildAndHashCanonicalRequest, type RequestInfo } from '../utils/canonical-request';
-import { verifyRequestSignatureOrThrow, SignatureVerificationError } from '../utils/request-signature';
-import { validateAntiReplay, AntiReplayError, type AntiReplayConfig } from '../utils/anti-replay';
+import { type AntiReplayConfig, AntiReplayError, validateAntiReplay } from '../utils/anti-replay';
+import type { RequestInfo } from '../utils/canonical-request';
+import {
+  type AuthContext,
+  type JwtVerifierConfig,
+  type LocalDevConfig,
+  verifyAndExtractContextWithDevMode,
+} from '../utils/jwt-verifier';
+import {
+  SignatureVerificationError,
+  verifyRequestSignatureOrThrow,
+} from '../utils/request-signature';
 
 /**
  * 安全配置
@@ -88,11 +96,7 @@ export async function validateSecurity(
 ): Promise<SecurityResult> {
   // 1. JWT 验证
   const token = event.headers.Authorization || event.headers.authorization;
-  const authContext = await verifyAndExtractContextWithDevMode(
-    token,
-    config.jwt,
-    config.localDev
-  );
+  const authContext = await verifyAndExtractContextWithDevMode(token, config.jwt, config.localDev);
 
   // 2. 提取请求信息
   const requestInfo = extractRequestInfo(event);
@@ -128,14 +132,10 @@ export async function validateSecurity(
     // 4.2 防重放验证
     if (!config.skipAntiReplay && authContext.accountId) {
       const requestId = event.headers['X-Request-Id'] || event.headers['x-request-id'];
-      const timestamp = event.headers['X-Request-Timestamp'] || event.headers['x-request-timestamp'];
+      const timestamp =
+        event.headers['X-Request-Timestamp'] || event.headers['x-request-timestamp'];
 
-      await validateAntiReplay(
-        requestId,
-        timestamp,
-        authContext.accountId,
-        config.antiReplay
-      );
+      await validateAntiReplay(requestId, timestamp, authContext.accountId, config.antiReplay);
     }
   }
 
@@ -163,7 +163,7 @@ export function createSecurityConfig(options: {
     antiReplay: {
       tableName: options.requestIdTableName,
       windowSeconds: 300, // 5 分钟
-      ttlSeconds: 600,    // 10 分钟
+      ttlSeconds: 600, // 10 分钟
     },
   };
 
@@ -183,4 +183,3 @@ export function createSecurityConfig(options: {
 
 // 导出错误类型
 export { SignatureVerificationError, AntiReplayError };
-

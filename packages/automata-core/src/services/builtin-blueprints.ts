@@ -105,4 +105,3 @@ export async function getBuiltinBlueprintId(name: string): Promise<string> {
 export function isKnownBuiltinBlueprint(name: string): boolean {
   return name in BUILTIN_BLUEPRINTS;
 }
-

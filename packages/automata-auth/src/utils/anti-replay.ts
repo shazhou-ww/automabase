@@ -5,7 +5,7 @@
  */
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 
 /**
  * 防重放验证错误
@@ -64,14 +64,17 @@ function getDocClient(): DynamoDBDocumentClient {
  * @param timestamp - ISO 8601 格式的时间戳
  * @param windowSeconds - 时间窗口（秒）
  */
-export function validateTimestamp(timestamp: string | undefined, windowSeconds: number = 300): void {
+export function validateTimestamp(
+  timestamp: string | undefined,
+  windowSeconds: number = 300
+): void {
   if (!timestamp) {
     throw new AntiReplayError('Missing X-Request-Timestamp header', 'MISSING_TIMESTAMP');
   }
 
   const requestTime = new Date(timestamp).getTime();
 
-  if (isNaN(requestTime)) {
+  if (Number.isNaN(requestTime)) {
     throw new AntiReplayError('Invalid timestamp format', 'INVALID_TIMESTAMP');
   }
 
@@ -130,9 +133,12 @@ export async function validateAndRecordRequestId(
         ConditionExpression: 'attribute_not_exists(pk)',
       })
     );
-  } catch (error: any) {
-    if (error.name === 'ConditionalCheckFailedException') {
-      throw new AntiReplayError('Duplicate request ID (potential replay attack)', 'DUPLICATE_REQUEST_ID');
+  } catch (error) {
+    if (error instanceof Error && error.name === 'ConditionalCheckFailedException') {
+      throw new AntiReplayError(
+        'Duplicate request ID (potential replay attack)',
+        'DUPLICATE_REQUEST_ID'
+      );
     }
     throw error;
   }
@@ -154,20 +160,17 @@ export async function validateAntiReplay(
 ): Promise<void> {
   const windowSeconds = config.windowSeconds ?? 300;
 
-  // 1. 验证时间戳
+  // 1. 验证时间戳 - this also validates that timestamp is defined
   validateTimestamp(timestamp, windowSeconds);
 
-  // 2. 验证并记录 Request ID
-  await validateAndRecordRequestId(requestId, accountId, timestamp!, config);
+  // 2. 验证并记录 Request ID (timestamp is guaranteed to be defined after validateTimestamp)
+  await validateAndRecordRequestId(requestId, accountId, timestamp as string, config);
 }
 
 /**
  * 检查 Request ID 是否已存在（用于只读检查）
  */
-export async function isRequestIdUsed(
-  requestId: string,
-  tableName: string
-): Promise<boolean> {
+export async function isRequestIdUsed(requestId: string, tableName: string): Promise<boolean> {
   const result = await getDocClient().send(
     new GetCommand({
       TableName: tableName,
@@ -180,4 +183,3 @@ export async function isRequestIdUsed(
 
   return !!result.Item;
 }
-

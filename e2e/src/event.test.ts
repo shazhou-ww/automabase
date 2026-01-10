@@ -2,9 +2,9 @@
  * Event API E2E Tests
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { createClient, generateKeyPair, ApiClient } from './client';
-import { getTestTokenAsync, APP_REGISTRY_BLUEPRINT } from './helpers';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { type ApiClient, createClient, generateKeyPair } from './client';
+import { APP_REGISTRY_BLUEPRINT, getTestTokenAsync } from './helpers';
 
 describe('Event API', () => {
   let client: ApiClient;
@@ -21,12 +21,13 @@ describe('Event API', () => {
 
     // Ensure account exists and get accountId
     const accountResponse = await client.createAccount(keyPair.publicKey);
-    accountId = (accountResponse.data as any).account.accountId;
+    const accountData = accountResponse.data.account as Record<string, unknown>;
+    accountId = accountData.accountId as string;
     client.setAccountId(accountId);
 
     // Create an automata for event tests
     const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
-    automataId = (createResponse.data as any).automataId;
+    automataId = (createResponse.data as Record<string, unknown>).automataId as string;
   });
 
   describe('POST /v1/accounts/:accountId/automatas/:id/events', () => {
@@ -42,7 +43,8 @@ describe('Event API', () => {
       expect(response.data).toHaveProperty('newState');
 
       // Verify state was updated
-      const newState = (response.data as any).newState;
+      const data = response.data as Record<string, unknown>;
+      const newState = data.newState as Record<string, unknown>;
       expect(newState.name).toBe('My Test App');
       expect(newState.description).toBe('A test application');
       expect(newState.status).toBe('draft');
@@ -52,14 +54,18 @@ describe('Event API', () => {
       const response = await client.sendEvent(automataId, 'PUBLISH', {});
 
       expect(response.status).toBe(200);
-      expect((response.data as any).newState.status).toBe('published');
+      const data = response.data as Record<string, unknown>;
+      const newState = data.newState as Record<string, unknown>;
+      expect(newState.status).toBe('published');
     });
 
     it('should send UNPUBLISH event', async () => {
       const response = await client.sendEvent(automataId, 'UNPUBLISH', {});
 
       expect(response.status).toBe(200);
-      expect((response.data as any).newState.status).toBe('draft');
+      const data = response.data as Record<string, unknown>;
+      const newState = data.newState as Record<string, unknown>;
+      expect(newState.status).toBe('draft');
     });
 
     it('should return 400 without event type', async () => {
@@ -130,7 +136,7 @@ describe('Event API', () => {
     it('should get specific event by version', async () => {
       // First, list events to get a version
       const listResponse = await client.listEvents(automataId);
-      const events = listResponse.data.events as any[];
+      const events = listResponse.data.events as Record<string, unknown>[];
 
       if (events.length > 0) {
         const eventVersion = events[0].baseVersion;
@@ -152,7 +158,7 @@ describe('Event API', () => {
     it('should maintain consistent version increments', async () => {
       // Create a fresh automata
       const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
-      const freshAutomataId = (createResponse.data as any).automataId;
+      const freshAutomataId = (createResponse.data as Record<string, unknown>).automataId as string;
 
       // Send multiple events
       const event1 = await client.sendEvent(freshAutomataId, 'SET_INFO', { name: 'v1' });
@@ -160,20 +166,23 @@ describe('Event API', () => {
       const event3 = await client.sendEvent(freshAutomataId, 'SET_INFO', { name: 'v3' });
 
       // Verify version chain
-      expect((event1.data as any).baseVersion).toBe('000000');
-      expect((event1.data as any).newVersion).toBe('000001');
+      const e1Data = event1.data as Record<string, unknown>;
+      expect(e1Data.baseVersion).toBe('000000');
+      expect(e1Data.newVersion).toBe('000001');
 
-      expect((event2.data as any).baseVersion).toBe('000001');
-      expect((event2.data as any).newVersion).toBe('000002');
+      const e2Data = event2.data as Record<string, unknown>;
+      expect(e2Data.baseVersion).toBe('000001');
+      expect(e2Data.newVersion).toBe('000002');
 
-      expect((event3.data as any).baseVersion).toBe('000002');
-      expect((event3.data as any).newVersion).toBe('000003');
+      const e3Data = event3.data as Record<string, unknown>;
+      expect(e3Data.baseVersion).toBe('000002');
+      expect(e3Data.newVersion).toBe('000003');
     });
 
     it('should preserve state between events', async () => {
       // Create a fresh automata
       const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
-      const freshAutomataId = (createResponse.data as any).automataId;
+      const freshAutomataId = (createResponse.data as Record<string, unknown>).automataId as string;
 
       // Set name
       await client.sendEvent(freshAutomataId, 'SET_INFO', { name: 'MyApp' });
@@ -183,10 +192,12 @@ describe('Event API', () => {
         description: 'My description',
       });
 
-      const newState = (response.data as any).newState;
+      const newState = (response.data as Record<string, unknown>).newState as Record<
+        string,
+        unknown
+      >;
       expect(newState.name).toBe('MyApp');
       expect(newState.description).toBe('My description');
     });
   });
 });
-

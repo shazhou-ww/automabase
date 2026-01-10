@@ -68,9 +68,10 @@ export function canonicalizeQueryString(
  * 规范化请求头
  * 只包含需要签名的头，键名小写，值 trim
  */
-export function canonicalizeHeaders(
-  headers: Record<string, string | undefined>
-): { canonical: string; signedHeaders: string } {
+export function canonicalizeHeaders(headers: Record<string, string | undefined>): {
+  canonical: string;
+  signedHeaders: string;
+} {
   const normalizedHeaders: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(headers)) {
@@ -147,4 +148,3 @@ export function buildAndHashCanonicalRequest(request: RequestInfo): {
   const hashedRequest = hashCanonicalRequest(canonicalRequest);
   return { canonicalRequest, hashedRequest };
 }
-

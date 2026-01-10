@@ -4,15 +4,12 @@
  * 处理 Blueprint 的验证、去重存储和复用逻辑
  */
 
-import {
-  getBlueprintById,
-  createBlueprintIfNotExists,
-} from '../db/blueprint-repository';
-import { getAutomataById } from '../db/automata-repository';
 import { getAccountById } from '../db/account-repository';
-import { computeBlueprintId, computeBlueprintHash } from '../utils/hash';
+import { getAutomataById } from '../db/automata-repository';
+import { createBlueprintIfNotExists, getBlueprintById } from '../db/blueprint-repository';
+import type { Blueprint, BlueprintContent } from '../types/blueprint';
+import { computeBlueprintHash, computeBlueprintId } from '../utils/hash';
 import { verifyEd25519Signature } from '../utils/signature';
-import type { BlueprintContent, Blueprint } from '../types/blueprint';
 import { BUILTIN_BLUEPRINTS, getBuiltinBlueprintHash } from './builtin-blueprints';
 
 /**
@@ -144,4 +141,3 @@ async function validateBlueprintSignature(
 export async function getValidatedBlueprint(blueprintId: string): Promise<Blueprint | null> {
   return getBlueprintById(blueprintId);
 }
-

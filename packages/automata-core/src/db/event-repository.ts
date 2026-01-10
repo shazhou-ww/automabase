@@ -4,15 +4,15 @@
  * 管理 Event 的创建和查询
  */
 
-import { PutCommand, QueryCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
-import { docClient, getTableName, Keys } from './client';
+import { GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import type {
   AutomataEvent,
-  EventItem,
   CreateEventInput,
+  EventItem,
   QueryEventsInput,
   QueryEventsResult,
 } from '../types/event';
+import { docClient, getTableName, Keys } from './client';
 
 /**
  * 将 DynamoDB Item 转换为 Event
@@ -198,4 +198,3 @@ export async function getEventCount(automataId: string): Promise<number> {
 
   return result.Count || 0;
 }
-

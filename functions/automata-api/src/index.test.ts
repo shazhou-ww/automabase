@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
+import { describe, expect, it } from 'vitest';
 import { handler } from './index';
 
 const mockContext: Context = {
@@ -72,7 +72,7 @@ describe('handler', () => {
     });
 
     const result = await handler(event, mockContext);
-    
+
     expect(result.statusCode).toBe(200);
     expect(result.headers?.['Access-Control-Allow-Origin']).toBe('*');
     expect(result.headers?.['Access-Control-Allow-Methods']).toContain('GET');
@@ -85,7 +85,7 @@ describe('handler', () => {
     });
 
     const result = await handler(event, mockContext);
-    
+
     expect(result.statusCode).toBe(404);
     expect(JSON.parse(result.body)).toEqual({ error: 'Not found' });
   });
@@ -97,7 +97,7 @@ describe('handler', () => {
     });
 
     const result = await handler(event, mockContext);
-    
+
     expect(result.statusCode).toBe(401);
     expect(JSON.parse(result.body).error).toContain('Authorization');
   });

@@ -4,11 +4,11 @@
  * This file is run before all tests to set up the test environment.
  */
 
-import { config } from './config';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as ed from '@noble/ed25519';
+import { config } from './config';
 
 // Configure @noble/ed25519 to use Node.js crypto for SHA-512
 // This is required for Node.js/Bun environments
@@ -22,7 +22,7 @@ ed.etc.sha512Async = async (...m) => sha512(ed.etc.concatBytes(...m));
 // Load JWT keys from env.json for local testing
 function loadKeysFromEnvJson(): void {
   const envJsonPath = resolve(import.meta.dirname, '../../..', 'env.json');
-  
+
   if (!existsSync(envJsonPath)) {
     console.error('\n❌ env.json not found!');
     console.error('   Run "bun run keygen" first to generate JWT keys.\n');

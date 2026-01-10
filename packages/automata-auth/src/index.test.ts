@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  extractBearerToken,
-  extractAuthContext,
-  JwtVerificationError,
   type CognitoIdTokenClaims,
+  extractAuthContext,
+  extractAuthContextFromLocalJwt,
+  extractBearerToken,
   generateLocalKeyPair,
+  JwtVerificationError,
   signLocalJwt,
   verifyLocalJwt,
-  extractAuthContextFromLocalJwt,
 } from './index';
 
 describe('extractBearerToken', () => {
@@ -44,7 +44,7 @@ describe('extractAuthContext', () => {
     };
 
     const context = extractAuthContext(claims);
-    
+
     expect(context.cognitoUserId).toBe('user-123');
     expect(context.email).toBe('test@example.com');
     expect(context.displayName).toBe('Test User');
@@ -66,7 +66,7 @@ describe('extractAuthContext', () => {
     };
 
     const context = extractAuthContext(claims);
-    
+
     expect(context.accountId).toBe('account-abc');
     expect(context.sessionPublicKey).toBe('base64-public-key');
   });
@@ -80,13 +80,11 @@ describe('extractAuthContext', () => {
       iat: 1000000000,
       token_use: 'id',
       auth_time: 1000000000,
-      identities: [
-        { providerName: 'Google', userId: 'google-user-id' },
-      ],
+      identities: [{ providerName: 'Google', userId: 'google-user-id' }],
     };
 
     const context = extractAuthContext(claims);
-    
+
     expect(context.identityProvider).toEqual({
       name: 'Google',
       userId: 'google-user-id',
@@ -138,14 +136,9 @@ describe('Local JWT', () => {
   it('should reject token with wrong issuer', async () => {
     const { privateKey, publicKey } = await generateLocalKeyPair();
 
-    const token = await signLocalJwt(
-      { sub: 'test-user' },
-      { privateKey, issuer: 'issuer-a' }
-    );
+    const token = await signLocalJwt({ sub: 'test-user' }, { privateKey, issuer: 'issuer-a' });
 
-    await expect(
-      verifyLocalJwt(token, { publicKey, issuer: 'issuer-b' })
-    ).rejects.toThrow();
+    await expect(verifyLocalJwt(token, { publicKey, issuer: 'issuer-b' })).rejects.toThrow();
   });
 
   it('should reject token signed with different key', async () => {

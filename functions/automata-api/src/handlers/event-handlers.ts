@@ -2,26 +2,26 @@
  * Event API Handlers
  */
 
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
-  getAutomataById,
-  updateAutomata,
-  getBlueprintById,
-  createEvent,
-  queryEvents,
-  getEvent,
-  processEvent,
-  TransitionError,
-  incrementVersion,
-  generateEventId,
-  type QueryEventsInput,
-} from '@automabase/automata-core';
-import {
-  verifyAndExtractContextWithDevMode,
   JwtVerificationError,
   type JwtVerifierConfig,
   type LocalDevConfig,
+  verifyAndExtractContextWithDevMode,
 } from '@automabase/automata-auth';
+import {
+  createEvent,
+  generateEventId,
+  getAutomataById,
+  getBlueprintById,
+  getEvent,
+  incrementVersion,
+  processEvent,
+  type QueryEventsInput,
+  queryEvents,
+  TransitionError,
+  updateAutomata,
+} from '@automabase/automata-core';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 /**
  * 获取 JWT 验证配置
@@ -36,7 +36,7 @@ function getJwtConfig(): JwtVerifierConfig {
 
 /**
  * 获取本地 JWT 配置
- * 
+ *
  * 如果设置了 LOCAL_JWT_PUBLIC_KEY，则使用本地 JWT 验证（bypass Cognito）
  * 否则使用正常的 Cognito 验证
  */
@@ -80,7 +80,7 @@ function error(message: string, statusCode = 400, code?: string): APIGatewayProx
 
 /**
  * 验证 JWT 并检查用户是否有权访问指定的 accountId
- * 
+ *
  * 设计原则：JWT 只负责身份验证，accountId 从路径参数获取
  */
 async function verifyAccessToAccount(
@@ -173,12 +173,7 @@ export async function sendEventHandler(
     }
 
     // 执行状态转换
-    const newState = await processEvent(
-      blueprint,
-      automata.currentState,
-      eventType,
-      eventData
-    );
+    const newState = await processEvent(blueprint, automata.currentState, eventType, eventData);
 
     // 计算新版本号
     const baseVersion = automata.version;
@@ -254,7 +249,9 @@ export async function listEventsHandler(
     }
 
     // 解析查询参数
-    const direction = (event.queryStringParameters?.direction || 'forward') as 'forward' | 'backward';
+    const direction = (event.queryStringParameters?.direction || 'forward') as
+      | 'forward'
+      | 'backward';
     const anchor = event.queryStringParameters?.anchor;
     const limit = parseInt(event.queryStringParameters?.limit || '100', 10);
 
@@ -290,9 +287,7 @@ export async function listEventsHandler(
 /**
  * GET /accounts/{accountId}/automatas/{automataId}/events/{baseVersion} - 获取单个 Event
  */
-export async function getEventHandler(
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> {
+export async function getEventHandler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const accountId = getAccountIdFromPath(event);
     if (!accountId) {
@@ -340,4 +335,3 @@ export async function getEventHandler(
     return error('Internal server error', 500);
   }
 }
-

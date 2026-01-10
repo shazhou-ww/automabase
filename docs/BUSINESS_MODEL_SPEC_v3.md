@@ -1381,6 +1381,7 @@ wss://api.automabase.com/v1/ws?token={jwt}
 | Stats | `STATS#{statsId}` | `#META` | - | - | - | - |
 
 **说明**：
+
 - Automata 的 `appId` 从 `blueprintId` 解析得到（第一个 `:` 前的部分）
 - GSI2 用于按 App 查询所有 Automata（统计、审计）
 
@@ -1641,6 +1642,7 @@ const incrementEvents = await query({
 
 - [x] 完成 v3.0 业务模型设计评审
 - [x] **迁移现有代码到 v2 目录**
+
   ```bash
   # 创建 v2 目录结构
   mkdir -p v2
@@ -1651,7 +1653,9 @@ const incrementEvents = await query({
   mv packages v2/
   mv e2e v2/
   ```
+
 - [x] **使用脚手架创建新的项目结构**
+
   ```bash
   # 创建核心包
   bun run create:package automata-core
@@ -1666,6 +1670,7 @@ const incrementEvents = await query({
   # 创建示例应用（可选）
   bun run create:webapp sample-app
   ```
+
 - [x] 更新 monorepo 配置（package.json workspaces）
 - [x] 更新 SAM 模板（template.yaml GSI 设计）
 
@@ -1798,4 +1803,3 @@ function canAccess(account: Account, automata: Automata): boolean {
 1. 用户无需显式调用创建 API
 2. 系统自动管理生命周期
 3. 对用户透明，查询时自动关联
-

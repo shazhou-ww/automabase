@@ -103,4 +103,3 @@ export interface UpdateAutomataInput {
 export function isAppAutomata(automata: Automata): boolean {
   return automata.blueprintId.startsWith('SYSTEM:AppRegistry:');
 }
-

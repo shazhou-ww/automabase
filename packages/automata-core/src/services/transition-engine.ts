@@ -138,4 +138,3 @@ export async function processEvent(
 export function clearExpressionCache(): void {
   compiledExpressions.clear();
 }
-

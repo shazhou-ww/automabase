@@ -2,10 +2,10 @@
  * Account API E2E Tests
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { createClient, generateKeyPair, ApiClient } from './client';
-import { getTestTokenAsync } from './helpers';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { type ApiClient, createClient, generateKeyPair } from './client';
 import { config } from './config';
+import { getTestTokenAsync } from './helpers';
 
 describe('Account API', () => {
   let client: ApiClient;
@@ -93,7 +93,8 @@ describe('Account API', () => {
 
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('account');
-      expect((response.data.account as any).displayName).toBe(newName);
+      const account = response.data.account as Record<string, unknown>;
+      expect(account.displayName).toBe(newName);
     });
 
     it('should update avatar URL', async () => {
@@ -101,15 +102,14 @@ describe('Account API', () => {
       const response = await client.updateAccount({ avatarUrl: newAvatar });
 
       expect(response.status).toBe(200);
-      expect((response.data.account as any).avatarUrl).toBe(newAvatar);
+      const account = response.data.account as Record<string, unknown>;
+      expect(account.avatarUrl).toBe(newAvatar);
     });
 
     it('should return 404 for unregistered user', async () => {
       // Create a new client with fresh token but don't register
       const freshKeyPair = await generateKeyPair();
-      const freshClient = createClient()
-        .setToken(token)
-        .setPrivateKey(freshKeyPair.privateKey);
+      const _freshClient = createClient().setToken(token).setPrivateKey(freshKeyPair.privateKey);
 
       // This test only works if we have a way to get a truly fresh token
       // Skip if we're reusing the same token
@@ -124,13 +124,15 @@ describe('Account API', () => {
     it('should get account by ID', async () => {
       // Create account first
       const createResponse = await client.createAccount(keyPair.publicKey);
-      const accountId = (createResponse.data.account as any).accountId;
+      const createdAccount = createResponse.data.account as Record<string, unknown>;
+      const accountId = createdAccount.accountId as string;
 
       const response = await client.getAccount(accountId);
 
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('account');
-      expect((response.data.account as any).accountId).toBe(accountId);
+      const fetchedAccount = response.data.account as Record<string, unknown>;
+      expect(fetchedAccount.accountId).toBe(accountId);
     });
 
     it('should return 404 for non-existent account', async () => {
@@ -140,4 +142,3 @@ describe('Account API', () => {
     });
   });
 });
-

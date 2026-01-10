@@ -138,4 +138,3 @@ export async function verifyRequestSignatureOrThrow(
     throw new SignatureVerificationError('Invalid request signature', 'INVALID_SIGNATURE');
   }
 }
-

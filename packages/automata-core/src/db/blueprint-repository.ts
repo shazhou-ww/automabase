@@ -6,13 +6,9 @@
  */
 
 import { GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { docClient, getTableName, Keys } from './client';
+import type { Blueprint, BlueprintItem, CreateBlueprintInput } from '../types/blueprint';
 import { computeBlueprintId } from '../utils/hash';
-import type {
-  Blueprint,
-  BlueprintItem,
-  CreateBlueprintInput,
-} from '../types/blueprint';
+import { docClient, getTableName, Keys } from './client';
 
 /**
  * 将 DynamoDB Item 转换为 Blueprint
@@ -169,4 +165,3 @@ export async function getBlueprintsByApp(
 
   return { blueprints, nextCursor };
 }
-

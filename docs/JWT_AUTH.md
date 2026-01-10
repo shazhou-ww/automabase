@@ -295,6 +295,7 @@ bun run keygen
 ```
 
 这会：
+
 - 生成 Ed25519 密钥对
 - 将 `LOCAL_JWT_PUBLIC_KEY` 配置到各 Lambda 函数环境变量
 - 将 `LOCAL_JWT_PRIVATE_KEY` 配置到 E2ETests 配置

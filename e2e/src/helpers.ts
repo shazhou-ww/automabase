@@ -4,13 +4,13 @@
  * Common utilities for testing
  */
 
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import { config } from './config';
 
 /**
  * Generate a local Ed25519 key pair
  */
-async function generateLocalKeyPair(): Promise<{ privateKey: string; publicKey: string }> {
+async function _generateLocalKeyPair(): Promise<{ privateKey: string; publicKey: string }> {
   const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519', {
     privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     publicKeyEncoding: { type: 'spki', format: 'pem' },
@@ -22,13 +22,13 @@ async function generateLocalKeyPair(): Promise<{ privateKey: string; publicKey: 
  * Sign a JWT using Ed25519
  */
 function signLocalJwt(
-  payload: Record<string, any>,
+  payload: Record<string, unknown>,
   options: { privateKey: string; issuer: string; expiresIn: string }
 ): string {
   const header = { alg: 'EdDSA', typ: 'JWT' };
   const now = Math.floor(Date.now() / 1000);
   const exp = now + (options.expiresIn === '1h' ? 3600 : 3600);
-  
+
   const claims = {
     ...payload,
     iss: options.issuer,
@@ -39,24 +39,24 @@ function signLocalJwt(
   const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');
   const encodedPayload = Buffer.from(JSON.stringify(claims)).toString('base64url');
   const message = `${encodedHeader}.${encodedPayload}`;
-  
+
   const signature = crypto.sign(null, Buffer.from(message), {
     key: options.privateKey,
     format: 'pem',
   });
   const encodedSignature = signature.toString('base64url');
-  
+
   return `${message}.${encodedSignature}`;
 }
 
 /**
  * Get local JWT configuration from environment
- * 
+ *
  * Environment variables:
  * - LOCAL_JWT_PRIVATE_KEY: PEM-encoded Ed25519 private key
  * - LOCAL_JWT_PUBLIC_KEY: PEM-encoded Ed25519 public key (for verification on server)
  * - LOCAL_JWT_ISSUER: Optional issuer string (default: 'local-dev')
- * 
+ *
  * If keys are not provided, a temporary key pair will be generated for this test run.
  * Note: When using generated keys, the server must also use the same public key.
  */
@@ -86,7 +86,7 @@ function getLocalJwtKeys(): { privateKey: string; publicKey: string } {
 
 /**
  * Initialize key pair for E2E tests
- * 
+ *
  * Requires LOCAL_JWT_PRIVATE_KEY and LOCAL_JWT_PUBLIC_KEY environment variables.
  * Run `bun run keygen` to generate and configure keys.
  */
@@ -116,7 +116,7 @@ export async function initializeLocalJwtKeys(): Promise<{ privateKey: string; pu
 
 /**
  * Generate a properly signed local JWT token for testing
- * 
+ *
  * This creates a real JWT signed with Ed25519, compatible with the server's
  * local JWT verification when LOCAL_JWT_PUBLIC_KEY is configured.
  */
@@ -127,7 +127,7 @@ export async function generateLocalDevTokenAsync(options?: {
 }): Promise<string> {
   // Ensure keys are initialized
   await initializeLocalJwtKeys();
-  
+
   const keys = getLocalJwtKeys();
   const issuer = process.env.LOCAL_JWT_ISSUER || 'local-dev';
 
@@ -150,7 +150,7 @@ export async function generateLocalDevTokenAsync(options?: {
  * Generate a mock JWT token for local testing (legacy, uses cached token)
  * @deprecated Use generateLocalDevTokenAsync for properly signed tokens
  */
-export function generateLocalDevToken(accountId?: string): string {
+export function generateLocalDevToken(_accountId?: string): string {
   // For backward compatibility, generate a simple mock token
   // This only works when the server doesn't have LOCAL_JWT_PUBLIC_KEY set
   const payload = {
@@ -205,7 +205,7 @@ export async function getTestTokenAsync(): Promise<string> {
  *
  * For local testing: generates a mock token
  * For production: requires COGNITO_TOKEN environment variable
- * 
+ *
  * @deprecated Use getTestTokenAsync for properly signed tokens
  */
 export function getTestToken(): string {
@@ -315,4 +315,3 @@ export const APP_REGISTRY_BLUEPRINT = {
     },
   },
 };
-
