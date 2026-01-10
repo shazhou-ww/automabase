@@ -133,11 +133,17 @@ Content-Type: application/json
 {
   "blueprint": {
     "appId": "SYSTEM",
-    "name": "AppRegistry",
-    "stateSchema": { ... },
-    "eventSchemas": { ... },
-    "initialState": { ... },
-    "transition": "..."
+    "name": "MyApp",
+    "state": {
+      "schema": { "type": "object", "properties": { "count": { "type": "number" } } },
+      "initial": { "count": 0 }
+    },
+    "events": {
+      "INCREMENT": {
+        "schema": { "type": "object" },
+        "transition": "$merge([$.state, { \"count\": $.state.count + 1 }])"
+      }
+    }
   }
 }
 ```
@@ -210,22 +216,37 @@ Authorization: Bearer {token}
 
 Blueprint 是状态机的模板，定义了状态结构、事件类型和转换逻辑。
 
+### 数学对应
+
+Blueprint 结构对应有限状态机的数学定义 $M = (S, \Sigma, \delta, s_0)$：
+
+| 数学符号 | Blueprint 字段 | 说明 |
+|----------|----------------|------|
+| $S$ | `state.schema` | 状态集合（JSON Schema 定义） |
+| $s_0$ | `state.initial` | 初始状态 |
+| $\Sigma$ | `Object.keys(events)` | 事件字母表 |
+| $\delta$ | `events[type].transition` | 转换函数 |
+
 ### Blueprint 结构
 
 ```typescript
 interface BlueprintContent {
   // 归属
-  appId: string;                        // App 的 automataId，或 "SYSTEM"
-  name: string;                         // Blueprint 名称
-  
-  // 元信息
-  description?: string;                 // 描述
-  
-  // 核心状态机定义
-  stateSchema: JSONSchema;              // 状态的 JSON Schema
-  eventSchemas: Record<string, JSONSchema>;  // 事件类型 -> JSON Schema
-  initialState: unknown;                // 初始状态
-  transition: string;                   // JSONata 转换表达式
+  appId: string;           // App 的 automataId，或 "SYSTEM"
+  name: string;            // Blueprint 名称
+  description?: string;    // 描述（可选）
+
+  // 状态定义
+  state: {
+    schema: JSONSchema;    // 状态的 JSON Schema
+    initial: unknown;      // 初始状态
+  };
+
+  // 事件定义：每个事件包含 schema 和对应的 transition
+  events: Record<string, {
+    schema: JSONSchema;    // 事件数据的 JSON Schema
+    transition: string;    // JSONata 转换表达式
+  }>;
 }
 ```
 
@@ -236,38 +257,42 @@ interface BlueprintContent {
   "appId": "SYSTEM",
   "name": "Counter",
   "description": "A simple counter state machine",
-  
-  "stateSchema": {
-    "type": "object",
-    "properties": {
-      "count": { "type": "number" }
-    },
-    "required": ["count"]
-  },
-  
-  "eventSchemas": {
-    "INCREMENT": {
+
+  "state": {
+    "schema": {
       "type": "object",
       "properties": {
-        "amount": { "type": "number", "default": 1 }
-      }
+        "count": { "type": "number" }
+      },
+      "required": ["count"]
+    },
+    "initial": { "count": 0 }
+  },
+
+  "events": {
+    "INCREMENT": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "amount": { "type": "number", "default": 1 }
+        }
+      },
+      "transition": "$merge([$.state, { \"count\": $.state.count + ($.event.amount ? $.event.amount : 1) }])"
     },
     "DECREMENT": {
-      "type": "object",
-      "properties": {
-        "amount": { "type": "number", "default": 1 }
-      }
+      "schema": {
+        "type": "object",
+        "properties": {
+          "amount": { "type": "number", "default": 1 }
+        }
+      },
+      "transition": "$merge([$.state, { \"count\": $.state.count - ($.event.amount ? $.event.amount : 1) }])"
     },
     "RESET": {
-      "type": "object"
+      "schema": { "type": "object" },
+      "transition": "{ \"count\": 0 }"
     }
-  },
-  
-  "initialState": {
-    "count": 0
-  },
-  
-  "transition": "$event.type = 'INCREMENT' ? $merge([$state, { \"count\": $state.count + ($event.data.amount ? $event.data.amount : 1) }]) : $event.type = 'DECREMENT' ? $merge([$state, { \"count\": $state.count - ($event.data.amount ? $event.data.amount : 1) }]) : $event.type = 'RESET' ? { \"count\": 0 } : $state"
+  }
 }
 ```
 
@@ -277,32 +302,25 @@ interface BlueprintContent {
 
 Automabase 使用 [JSONata](https://jsonata.org/) 作为状态转换引擎。
 
-### 变量绑定
+### 输入数据结构
 
-在转换表达式中，以下变量会自动绑定：
+每个事件的 `transition` 表达式接收以下输入：
 
-| 变量 | 类型 | 说明 |
+| 路径 | 类型 | 说明 |
 |------|------|------|
-| `$state` | object | 当前状态 |
-| `$event.type` | string | 事件类型 |
-| `$event.data` | object | 事件数据 |
+| `$.state` | object | 当前状态 |
+| `$.event` | object | 事件数据（即 API 传入的 `eventData`） |
+
+> **设计说明**：使用 `$.state` 和 `$.event` 作为输入数据路径，保留 `$xxx` 命名空间给未来的扩展函数。
 
 ### 常用模式
 
-#### 1. 条件分支
-
-```jsonata
-$event.type = 'INCREMENT' ? (增加逻辑) :
-$event.type = 'DECREMENT' ? (减少逻辑) :
-$state
-```
-
-#### 2. 合并状态 (`$merge`)
+#### 1. 合并状态 (`$merge`)
 
 `$merge` 是 JSONata 的内置函数，用于合并多个对象：
 
 ```jsonata
-$merge([$state, { "name": "New Name" }])
+$merge([$.state, { "name": "New Name" }])
 ```
 
 等价于 JavaScript 的：
@@ -311,30 +329,51 @@ $merge([$state, { "name": "New Name" }])
 { ...state, name: "New Name" }
 ```
 
-#### 3. 部分更新
+#### 2. 使用事件数据更新状态
 
-只更新 `$event.data` 中提供的字段，保留其他字段：
+将 `$.event` 中的字段合并到状态：
 
 ```jsonata
-$merge([$state, $event.data])
+$merge([$.state, $.event])
 ```
 
-#### 4. 条件更新
+#### 3. 条件更新
 
 ```jsonata
-$event.type = 'SET_STATUS' ? 
-  $merge([$state, { "status": $event.data.status }]) :
-$state
+$.event.status ? $merge([$.state, { "status": $.event.status }]) : $.state
+```
+
+#### 4. 固定状态变更
+
+不需要事件数据，直接设置状态：
+
+```jsonata
+$merge([$.state, { "status": "published" }])
 ```
 
 ### 内置 Blueprint 示例：AppRegistry
 
-```jsonata
-$event.type = 'SET_INFO' ? $merge([$state, $event.data]) :
-$event.type = 'PUBLISH' ? $merge([$state, { "status": "published" }]) :
-$event.type = 'UNPUBLISH' ? $merge([$state, { "status": "draft" }]) :
-$event.type = 'ARCHIVE' ? $merge([$state, { "status": "archived" }]) :
-$state
+```json
+{
+  "events": {
+    "SET_INFO": {
+      "schema": { "type": "object", "properties": { "name": {}, "description": {} } },
+      "transition": "$merge([$.state, $.event])"
+    },
+    "PUBLISH": {
+      "schema": { "type": "object" },
+      "transition": "$merge([$.state, { \"status\": \"published\" }])"
+    },
+    "UNPUBLISH": {
+      "schema": { "type": "object" },
+      "transition": "$merge([$.state, { \"status\": \"draft\" }])"
+    },
+    "ARCHIVE": {
+      "schema": { "type": "object" },
+      "transition": "$merge([$.state, { \"status\": \"archived\" }])"
+    }
+  }
+}
 ```
 
 ### 高级用法
@@ -342,23 +381,21 @@ $state
 #### 数组操作
 
 ```jsonata
-$event.type = 'ADD_ITEM' ? 
-  $merge([$state, { "items": $append($state.items, $event.data.item) }]) :
-$event.type = 'REMOVE_ITEM' ? 
-  $merge([$state, { "items": $filter($state.items, function($v) { $v.id != $event.data.itemId }) }]) :
-$state
+// ADD_ITEM: 添加元素
+$merge([$.state, { "items": $append($.state.items, $.event.item) }])
+
+// REMOVE_ITEM: 删除元素
+$merge([$.state, { "items": $filter($.state.items, function($v) { $v.id != $.event.itemId }) }])
 ```
 
 #### 计算字段
 
 ```jsonata
-$event.type = 'UPDATE_TOTAL' ?
-  (
-    $items := $state.items;
-    $total := $sum($items.price);
-    $merge([$state, { "total": $total }])
-  ) :
-$state
+(
+  $items := $.state.items;
+  $total := $sum($items.price);
+  $merge([$.state, { "total": $total }])
+)
 ```
 
 ---

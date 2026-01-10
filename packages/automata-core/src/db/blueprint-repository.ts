@@ -11,7 +11,6 @@ import { computeBlueprintId } from '../utils/hash';
 import type {
   Blueprint,
   BlueprintItem,
-  BlueprintContent,
   CreateBlueprintInput,
 } from '../types/blueprint';
 
@@ -24,10 +23,8 @@ function itemToBlueprint(item: BlueprintItem): Blueprint {
     appId: item.appId,
     name: item.name,
     description: item.description,
-    stateSchema: item.stateSchema,
-    eventSchemas: item.eventSchemas,
-    initialState: item.initialState,
-    transition: item.transition,
+    state: item.state,
+    events: item.events,
     signature: item.signature,
     creatorAccountId: item.creatorAccountId,
     createdAt: item.createdAt,
@@ -78,10 +75,8 @@ export async function createBlueprintIfNotExists(input: CreateBlueprintInput): P
     appId: input.content.appId,
     name: input.content.name,
     description: input.content.description,
-    stateSchema: input.content.stateSchema,
-    eventSchemas: input.content.eventSchemas,
-    initialState: input.content.initialState,
-    transition: input.content.transition,
+    state: input.content.state,
+    events: input.content.events,
     signature: input.signature,
     creatorAccountId: input.creatorAccountId,
     createdAt: now,

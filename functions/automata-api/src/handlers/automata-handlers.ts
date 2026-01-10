@@ -12,7 +12,6 @@ import {
   validateAndGetBlueprint,
   BlueprintValidationError,
   type BlueprintContent,
-  type Automata,
 } from '@automabase/automata-core';
 import {
   verifyAndExtractContextWithDevMode,
@@ -155,7 +154,7 @@ export async function createAutomataHandler(
     const automata = await createAutomata({
       ownerAccountId: accountId,
       blueprintId,
-      initialState: blueprint.initialState,
+      initialState: blueprint.state.initial,
     });
 
     return success(
@@ -260,7 +259,7 @@ export async function getAutomataHandler(
       automataId: automata.automataId,
       ownerAccountId: automata.ownerAccountId,
       blueprintId: automata.blueprintId,
-      blueprint: blueprint?.content || null,
+      blueprint: blueprint || null,
       currentState: automata.currentState,
       version: automata.version,
       status: automata.status,

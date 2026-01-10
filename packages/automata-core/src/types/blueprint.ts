@@ -8,8 +8,36 @@
 import type { JSONSchema7 } from 'json-schema';
 
 /**
+ * 状态定义
+ */
+export interface StateDefinition {
+  /** 状态的 JSON Schema */
+  schema: JSONSchema7;
+
+  /** 初始状态 */
+  initial: unknown;
+}
+
+/**
+ * 事件定义
+ */
+export interface EventDefinition {
+  /** 事件数据的 JSON Schema */
+  schema: JSONSchema7;
+
+  /** JSONata 转换表达式: ($state, $data) => newState */
+  transition: string;
+}
+
+/**
  * Blueprint 内容结构
  * 这是用户提交的 Blueprint 定义，用于计算 hash 和签名验证
+ *
+ * 对应有限状态机数学定义 M = (S, Σ, δ, s₀):
+ * - S (状态集合) = state.schema
+ * - s₀ (初始状态) = state.initial
+ * - Σ (事件字母表) = Object.keys(events)
+ * - δ (转换函数) = events[type].transition
  */
 export interface BlueprintContent {
   /** 归属的 App ID，或 "SYSTEM" 表示系统内置 */
@@ -21,17 +49,11 @@ export interface BlueprintContent {
   /** 描述（可选） */
   description?: string;
 
-  /** 状态的 JSON Schema */
-  stateSchema: JSONSchema7;
+  /** 状态定义 */
+  state: StateDefinition;
 
-  /** 事件类型 -> JSON Schema 的映射 */
-  eventSchemas: Record<string, JSONSchema7>;
-
-  /** 初始状态 */
-  initialState: unknown;
-
-  /** JSONata 转换表达式 */
-  transition: string;
+  /** 事件定义：事件类型 -> { schema, transition } */
+  events: Record<string, EventDefinition>;
 }
 
 /**

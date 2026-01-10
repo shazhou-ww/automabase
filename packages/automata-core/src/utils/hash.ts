@@ -109,7 +109,6 @@ export async function computeBlueprintHash(content: unknown): Promise<string> {
 export async function computeBlueprintId(content: {
   appId: string;
   name: string;
-  [key: string]: unknown;
 }): Promise<string> {
   const hash = await computeBlueprintHash(content);
   return `${content.appId}:${content.name}:${hash}`;

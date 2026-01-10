@@ -15,45 +15,50 @@ export const APP_REGISTRY_BLUEPRINT: BlueprintContent = {
   name: 'AppRegistry',
   description: 'System builtin blueprint for app registration',
 
-  stateSchema: {
-    type: 'object',
-    properties: {
-      name: { type: 'string', maxLength: 100 },
-      description: { type: 'string', maxLength: 1000 },
-      iconUrl: { type: 'string', format: 'uri' },
-      websiteUrl: { type: 'string', format: 'uri' },
-      status: { enum: ['draft', 'published', 'archived'] },
-    },
-    required: ['name', 'status'],
-  },
-
-  eventSchemas: {
-    SET_INFO: {
+  state: {
+    schema: {
       type: 'object',
       properties: {
         name: { type: 'string', maxLength: 100 },
         description: { type: 'string', maxLength: 1000 },
         iconUrl: { type: 'string', format: 'uri' },
         websiteUrl: { type: 'string', format: 'uri' },
+        status: { enum: ['draft', 'published', 'archived'] },
       },
+      required: ['name', 'status'],
     },
-    PUBLISH: { type: 'object' },
-    UNPUBLISH: { type: 'object' },
-    ARCHIVE: { type: 'object' },
+    initial: {
+      name: 'Untitled App',
+      status: 'draft',
+    },
   },
 
-  initialState: {
-    name: 'Untitled App',
-    status: 'draft',
+  events: {
+    SET_INFO: {
+      schema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', maxLength: 100 },
+          description: { type: 'string', maxLength: 1000 },
+          iconUrl: { type: 'string', format: 'uri' },
+          websiteUrl: { type: 'string', format: 'uri' },
+        },
+      },
+      transition: '$merge([$.state, $.event])',
+    },
+    PUBLISH: {
+      schema: { type: 'object' },
+      transition: '$merge([$.state, { "status": "published" }])',
+    },
+    UNPUBLISH: {
+      schema: { type: 'object' },
+      transition: '$merge([$.state, { "status": "draft" }])',
+    },
+    ARCHIVE: {
+      schema: { type: 'object' },
+      transition: '$merge([$.state, { "status": "archived" }])',
+    },
   },
-
-  transition: `
-    $event.type = 'SET_INFO' ? $merge([$state, $event.data]) :
-    $event.type = 'PUBLISH' ? $merge([$state, { "status": "published" }]) :
-    $event.type = 'UNPUBLISH' ? $merge([$state, { "status": "draft" }]) :
-    $event.type = 'ARCHIVE' ? $merge([$state, { "status": "archived" }]) :
-    $state
-  `.trim(),
 };
 
 /**
