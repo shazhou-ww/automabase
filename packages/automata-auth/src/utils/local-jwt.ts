@@ -34,6 +34,20 @@ export interface LocalJwtConfig {
 }
 
 /**
+ * 本地 JWT 签名配置（只需要私钥）
+ */
+export interface LocalJwtSignConfig {
+  /** Ed25519 私钥 (PEM 格式, PKCS8) */
+  privateKey: string;
+
+  /** Token 过期时间（数字秒数或字符串如 '1h', '30m'），默认 '1h' */
+  expiresIn?: number | string;
+
+  /** Issuer，默认 'local-dev' */
+  issuer?: string;
+}
+
+/**
  * 本地 JWT Payload
  */
 export interface LocalJwtPayload {
@@ -94,7 +108,7 @@ export async function generateLocalKeyPair(): Promise<{
  */
 export async function signLocalJwt(
   payload: LocalJwtPayload,
-  config: LocalJwtConfig
+  config: LocalJwtSignConfig
 ): Promise<string> {
   const privateKey = await importPKCS8(config.privateKey, 'EdDSA');
   const issuer = config.issuer || 'local-dev';

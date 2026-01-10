@@ -109,7 +109,8 @@ describe('Account API', () => {
     it('should return 404 for unregistered user', async () => {
       // Create a new client with fresh token but don't register
       const freshKeyPair = await generateKeyPair();
-      const _freshClient = createClient().setToken(token).setPrivateKey(freshKeyPair.privateKey);
+      // freshClient would be used to test unregistered user, but we need a fresh token
+      createClient().setToken(token).setPrivateKey(freshKeyPair.privateKey);
 
       // This test only works if we have a way to get a truly fresh token
       // Skip if we're reusing the same token

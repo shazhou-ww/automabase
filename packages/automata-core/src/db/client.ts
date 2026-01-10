@@ -2,6 +2,7 @@
  * DynamoDB Client
  */
 
+import type { DynamoDBClientConfig } from '@aws-sdk/client-dynamodb';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 
@@ -21,7 +22,7 @@ const localEndpoint = process.env.DYNAMODB_ENDPOINT || 'http://host.docker.inter
 /**
  * DynamoDB 客户端配置
  */
-function createClientConfig(): ConstructorParameters<typeof DynamoDBClient>[0] {
+function createClientConfig(): DynamoDBClientConfig {
   if (isLocal) {
     return {
       endpoint: localEndpoint,

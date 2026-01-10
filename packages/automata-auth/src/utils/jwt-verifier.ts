@@ -7,6 +7,9 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { AuthContext, CognitoIdTokenClaims } from '../types/cognito';
 
+// Re-export AuthContext for use by other modules
+export type { AuthContext };
+
 /**
  * JWT 验证配置
  */

@@ -139,7 +139,7 @@ describe('Event API', () => {
       const events = listResponse.data.events as Record<string, unknown>[];
 
       if (events.length > 0) {
-        const eventVersion = events[0].baseVersion;
+        const eventVersion = events[0].baseVersion as string;
         const response = await client.getEvent(automataId, eventVersion);
 
         expect(response.status).toBe(200);

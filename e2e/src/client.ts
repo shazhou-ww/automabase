@@ -202,7 +202,7 @@ export class ApiClient {
     let data: T;
     const contentType = response.headers.get('content-type');
     if (contentType?.includes('application/json')) {
-      data = await response.json();
+      data = (await response.json()) as T;
     } else {
       data = (await response.text()) as unknown as T;
     }

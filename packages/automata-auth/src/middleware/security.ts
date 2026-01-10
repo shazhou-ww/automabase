@@ -96,7 +96,8 @@ export async function validateSecurity(
 ): Promise<SecurityResult> {
   // 1. JWT 验证
   const token = event.headers.Authorization || event.headers.authorization;
-  const authContext = await verifyAndExtractContextWithDevMode(token, config.jwt, config.localDev);
+  const localDevConfig: LocalDevConfig = config.localDev ?? { enabled: false };
+  const authContext = await verifyAndExtractContextWithDevMode(token, config.jwt, localDevConfig);
 
   // 2. 提取请求信息
   const requestInfo = extractRequestInfo(event);

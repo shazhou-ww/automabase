@@ -8,17 +8,6 @@ import * as crypto from 'node:crypto';
 import { config } from './config';
 
 /**
- * Generate a local Ed25519 key pair
- */
-async function _generateLocalKeyPair(): Promise<{ privateKey: string; publicKey: string }> {
-  const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519', {
-    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
-    publicKeyEncoding: { type: 'spki', format: 'pem' },
-  });
-  return { privateKey, publicKey };
-}
-
-/**
  * Sign a JWT using Ed25519
  */
 function signLocalJwt(
