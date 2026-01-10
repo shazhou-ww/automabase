@@ -72,11 +72,14 @@ function error(message: string, statusCode = 400, code?: string): APIGatewayProx
 }
 
 /**
- * 从 OAuth 获取 accountId
+ * 验证 JWT 并检查用户是否有权访问指定的 accountId
+ * 
+ * 设计原则：JWT 只负责身份验证，accountId 从路径参数获取
  */
-async function getAccountIdFromAuth(
-  event: APIGatewayProxyEvent
-): Promise<{ accountId: string } | APIGatewayProxyResult> {
+async function verifyAccessToAccount(
+  event: APIGatewayProxyEvent,
+  accountId: string
+): Promise<{ verified: true } | APIGatewayProxyResult> {
   const token = event.headers.Authorization || event.headers.authorization;
   const authContext = await verifyAndExtractContextWithDevMode(
     token,
@@ -84,15 +87,28 @@ async function getAccountIdFromAuth(
     getLocalDevConfig()
   );
 
-  if (authContext.accountId) {
-    return { accountId: authContext.accountId };
+  // 本地开发模式下跳过权限检查
+  if (getLocalDevConfig().enabled) {
+    return { verified: true };
   }
 
-  return error('Account not registered. Please call POST /v1/accounts first.', 403, 'NOT_REGISTERED');
+  // 检查用户是否有权访问该 accountId
+  if (authContext.accountId !== accountId) {
+    return error('Access denied to this account', 403, 'ACCESS_DENIED');
+  }
+
+  return { verified: true };
 }
 
 /**
- * POST /automatas/{automataId}/events - 发送 Event
+ * 从路径参数获取 accountId
+ */
+function getAccountIdFromPath(event: APIGatewayProxyEvent): string | null {
+  return event.pathParameters?.accountId || null;
+}
+
+/**
+ * POST /accounts/{accountId}/automatas/{automataId}/events - 发送 Event
  *
  * Body: {
  *   eventType: string,
@@ -103,9 +119,13 @@ export async function sendEventHandler(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
-    const authResult = await getAccountIdFromAuth(event);
+    const accountId = getAccountIdFromPath(event);
+    if (!accountId) {
+      return error('accountId is required in path', 400);
+    }
+
+    const authResult = await verifyAccessToAccount(event, accountId);
     if ('statusCode' in authResult) return authResult;
-    const { accountId } = authResult;
 
     const automataId = event.pathParameters?.automataId;
     if (!automataId) {
@@ -118,9 +138,9 @@ export async function sendEventHandler(
       return error('Automata not found', 404);
     }
 
-    // 检查权限
+    // 检查 automata 是否属于该 account
     if (automata.ownerAccountId !== accountId) {
-      return error('Access denied', 403);
+      return error('Automata does not belong to this account', 404);
     }
 
     // 检查状态
@@ -198,28 +218,32 @@ export async function sendEventHandler(
 }
 
 /**
- * GET /automatas/{automataId}/events - 查询 Events
+ * GET /accounts/{accountId}/automatas/{automataId}/events - 查询 Events
  */
 export async function listEventsHandler(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
-    const authResult = await getAccountIdFromAuth(event);
+    const accountId = getAccountIdFromPath(event);
+    if (!accountId) {
+      return error('accountId is required in path', 400);
+    }
+
+    const authResult = await verifyAccessToAccount(event, accountId);
     if ('statusCode' in authResult) return authResult;
-    const { accountId } = authResult;
 
     const automataId = event.pathParameters?.automataId;
     if (!automataId) {
       return error('automataId is required', 400);
     }
 
-    // 获取 Automata 并检查权限
+    // 获取 Automata 并检查
     const automata = await getAutomataById(automataId);
     if (!automata) {
       return error('Automata not found', 404);
     }
     if (automata.ownerAccountId !== accountId) {
-      return error('Access denied', 403);
+      return error('Automata does not belong to this account', 404);
     }
 
     // 解析查询参数
@@ -257,15 +281,19 @@ export async function listEventsHandler(
 }
 
 /**
- * GET /automatas/{automataId}/events/{baseVersion} - 获取单个 Event
+ * GET /accounts/{accountId}/automatas/{automataId}/events/{baseVersion} - 获取单个 Event
  */
 export async function getEventHandler(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
-    const authResult = await getAccountIdFromAuth(event);
+    const accountId = getAccountIdFromPath(event);
+    if (!accountId) {
+      return error('accountId is required in path', 400);
+    }
+
+    const authResult = await verifyAccessToAccount(event, accountId);
     if ('statusCode' in authResult) return authResult;
-    const { accountId } = authResult;
 
     const automataId = event.pathParameters?.automataId;
     const baseVersion = event.pathParameters?.baseVersion;
@@ -274,13 +302,13 @@ export async function getEventHandler(
       return error('automataId and baseVersion are required', 400);
     }
 
-    // 获取 Automata 并检查权限
+    // 获取 Automata 并检查
     const automata = await getAutomataById(automataId);
     if (!automata) {
       return error('Automata not found', 404);
     }
     if (automata.ownerAccountId !== accountId) {
-      return error('Access denied', 403);
+      return error('Automata does not belong to this account', 404);
     }
 
     // 获取 Event

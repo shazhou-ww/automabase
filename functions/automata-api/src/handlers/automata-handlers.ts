@@ -70,11 +70,16 @@ function error(message: string, statusCode = 400, code?: string): APIGatewayProx
 }
 
 /**
- * 从 OAuth 获取 accountId（辅助函数）
+ * 验证 JWT 并检查用户是否有权访问指定的 accountId
+ * 
+ * 设计原则：JWT 只负责身份验证，accountId 从路径参数获取
+ * - 验证 JWT token 有效性
+ * - 检查用户是否有权访问该 accountId（目前：用户只能访问自己的 account）
  */
-async function getAccountIdFromAuth(
-  event: APIGatewayProxyEvent
-): Promise<{ accountId: string } | APIGatewayProxyResult> {
+async function verifyAccessToAccount(
+  event: APIGatewayProxyEvent,
+  accountId: string
+): Promise<{ verified: true } | APIGatewayProxyResult> {
   const token = event.headers.Authorization || event.headers.authorization;
   const authContext = await verifyAndExtractContextWithDevMode(
     token,
@@ -82,17 +87,29 @@ async function getAccountIdFromAuth(
     getLocalDevConfig()
   );
 
-  // 在本地开发模式下使用 mock accountId
-  if (authContext.accountId) {
-    return { accountId: authContext.accountId };
+  // 本地开发模式下跳过权限检查
+  if (getLocalDevConfig().enabled) {
+    return { verified: true };
   }
 
-  // 如果没有 accountId，需要先注册
-  return error('Account not registered. Please call POST /v1/accounts first.', 403, 'NOT_REGISTERED');
+  // 检查用户是否有权访问该 accountId
+  // 目前简单实现：用户只能访问自己的 account
+  if (authContext.accountId !== accountId) {
+    return error('Access denied to this account', 403, 'ACCESS_DENIED');
+  }
+
+  return { verified: true };
 }
 
 /**
- * POST /automatas - 创建 Automata
+ * 从路径参数获取 accountId
+ */
+function getAccountIdFromPath(event: APIGatewayProxyEvent): string | null {
+  return event.pathParameters?.accountId || null;
+}
+
+/**
+ * POST /accounts/{accountId}/automatas - 创建 Automata
  *
  * Body: {
  *   blueprint: BlueprintContent,
@@ -104,9 +121,13 @@ export async function createAutomataHandler(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
-    const authResult = await getAccountIdFromAuth(event);
+    const accountId = getAccountIdFromPath(event);
+    if (!accountId) {
+      return error('accountId is required in path', 400);
+    }
+
+    const authResult = await verifyAccessToAccount(event, accountId);
     if ('statusCode' in authResult) return authResult;
-    const { accountId } = authResult;
 
     // 解析请求体
     const body = JSON.parse(event.body || '{}');
@@ -160,15 +181,19 @@ export async function createAutomataHandler(
 }
 
 /**
- * GET /automatas - 列出当前用户的 Automatas
+ * GET /accounts/{accountId}/automatas - 列出指定账户的 Automatas
  */
 export async function listAutomatasHandler(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
-    const authResult = await getAccountIdFromAuth(event);
+    const accountId = getAccountIdFromPath(event);
+    if (!accountId) {
+      return error('accountId is required in path', 400);
+    }
+
+    const authResult = await verifyAccessToAccount(event, accountId);
     if ('statusCode' in authResult) return authResult;
-    const { accountId } = authResult;
 
     const limit = parseInt(event.queryStringParameters?.limit || '100', 10);
     const cursor = event.queryStringParameters?.cursor;
@@ -199,15 +224,19 @@ export async function listAutomatasHandler(
 }
 
 /**
- * GET /automatas/{automataId} - 获取 Automata 详情
+ * GET /accounts/{accountId}/automatas/{automataId} - 获取 Automata 详情
  */
 export async function getAutomataHandler(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
-    const authResult = await getAccountIdFromAuth(event);
+    const accountId = getAccountIdFromPath(event);
+    if (!accountId) {
+      return error('accountId is required in path', 400);
+    }
+
+    const authResult = await verifyAccessToAccount(event, accountId);
     if ('statusCode' in authResult) return authResult;
-    const { accountId } = authResult;
 
     const automataId = event.pathParameters?.automataId;
     if (!automataId) {
@@ -219,9 +248,9 @@ export async function getAutomataHandler(
       return error('Automata not found', 404);
     }
 
-    // 检查权限
+    // 检查 automata 是否属于该 account
     if (automata.ownerAccountId !== accountId) {
-      return error('Access denied', 403);
+      return error('Automata does not belong to this account', 404);
     }
 
     // 获取 Blueprint 详情
@@ -248,15 +277,19 @@ export async function getAutomataHandler(
 }
 
 /**
- * GET /automatas/{automataId}/state - 获取 Automata 当前状态
+ * GET /accounts/{accountId}/automatas/{automataId}/state - 获取 Automata 当前状态
  */
 export async function getAutomataStateHandler(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
-    const authResult = await getAccountIdFromAuth(event);
+    const accountId = getAccountIdFromPath(event);
+    if (!accountId) {
+      return error('accountId is required in path', 400);
+    }
+
+    const authResult = await verifyAccessToAccount(event, accountId);
     if ('statusCode' in authResult) return authResult;
-    const { accountId } = authResult;
 
     const automataId = event.pathParameters?.automataId;
     if (!automataId) {
@@ -268,9 +301,9 @@ export async function getAutomataStateHandler(
       return error('Automata not found', 404);
     }
 
-    // 检查权限
+    // 检查 automata 是否属于该 account
     if (automata.ownerAccountId !== accountId) {
-      return error('Access denied', 403);
+      return error('Automata does not belong to this account', 404);
     }
 
     return success({
@@ -290,15 +323,19 @@ export async function getAutomataStateHandler(
 }
 
 /**
- * PATCH /automatas/{automataId} - 更新 Automata（归档等）
+ * PATCH /accounts/{accountId}/automatas/{automataId} - 更新 Automata（归档等）
  */
 export async function updateAutomataHandler(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
-    const authResult = await getAccountIdFromAuth(event);
+    const accountId = getAccountIdFromPath(event);
+    if (!accountId) {
+      return error('accountId is required in path', 400);
+    }
+
+    const authResult = await verifyAccessToAccount(event, accountId);
     if ('statusCode' in authResult) return authResult;
-    const { accountId } = authResult;
 
     const automataId = event.pathParameters?.automataId;
     if (!automataId) {
@@ -310,9 +347,9 @@ export async function updateAutomataHandler(
       return error('Automata not found', 404);
     }
 
-    // 检查权限
+    // 检查 automata 是否属于该 account
     if (automata.ownerAccountId !== accountId) {
-      return error('Access denied', 403);
+      return error('Automata does not belong to this account', 404);
     }
 
     // 解析请求体

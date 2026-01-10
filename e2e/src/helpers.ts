@@ -89,6 +89,7 @@ export async function retry<T>(
 
 /**
  * AppRegistry Blueprint for creating Apps
+ * Must match exactly with packages/automata-core/src/services/builtin-blueprints.ts
  */
 export const APP_REGISTRY_BLUEPRINT = {
   appId: 'SYSTEM',
@@ -105,7 +106,6 @@ export const APP_REGISTRY_BLUEPRINT = {
       status: { enum: ['draft', 'published', 'archived'] },
     },
     required: ['name', 'status'],
-    additionalProperties: false,
   },
 
   eventSchemas: {
@@ -117,11 +117,10 @@ export const APP_REGISTRY_BLUEPRINT = {
         iconUrl: { type: 'string', format: 'uri' },
         websiteUrl: { type: 'string', format: 'uri' },
       },
-      additionalProperties: false,
     },
-    PUBLISH: { type: 'object', additionalProperties: false },
-    UNPUBLISH: { type: 'object', additionalProperties: false },
-    ARCHIVE: { type: 'object', additionalProperties: false },
+    PUBLISH: { type: 'object' },
+    UNPUBLISH: { type: 'object' },
+    ARCHIVE: { type: 'object' },
   },
 
   initialState: {
@@ -135,6 +134,6 @@ export const APP_REGISTRY_BLUEPRINT = {
     $event.type = 'UNPUBLISH' ? $merge([$state, { "status": "draft" }]) :
     $event.type = 'ARCHIVE' ? $merge([$state, { "status": "archived" }]) :
     $state
-  `,
+  `.trim(),
 };
 

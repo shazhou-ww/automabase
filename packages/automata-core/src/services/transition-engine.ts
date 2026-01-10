@@ -63,17 +63,20 @@ export async function executeTransition(
 ): Promise<unknown> {
   const expression = getCompiledExpression(transition);
 
-  // 构建上下文
-  const context = {
-    $state: currentState,
-    $event: {
+  // 构建变量绑定
+  // JSONata 的 evaluate(input, bindings) 中，bindings 用于绑定 $xxx 变量
+  const bindings = {
+    state: currentState,
+    event: {
       type: eventType,
       data: eventData,
     },
   };
 
   try {
-    const newState = await expression.evaluate(context);
+    // 第一个参数是输入数据（这里传空对象，因为我们通过 bindings 传递所有数据）
+    // 第二个参数是变量绑定，$state 和 $event 会自动绑定
+    const newState = await expression.evaluate({}, bindings);
     return newState;
   } catch (error) {
     throw new TransitionError(

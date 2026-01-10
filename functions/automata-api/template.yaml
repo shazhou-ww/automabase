@@ -39,31 +39,31 @@ AutomataApiFunction:
           Path: /v1/accounts/{accountId}
           Method: ANY
 
-      # Automata API
-      Automatas:
+      # Automata API - nested under /accounts/{accountId}
+      AccountAutomatas:
         Type: Api
         Properties:
-          Path: /v1/automatas
+          Path: /v1/accounts/{accountId}/automatas
           Method: ANY
-      AutomataById:
+      AccountAutomataById:
         Type: Api
         Properties:
-          Path: /v1/automatas/{automataId}
+          Path: /v1/accounts/{accountId}/automatas/{automataId}
           Method: ANY
-      AutomataState:
+      AccountAutomataState:
         Type: Api
         Properties:
-          Path: /v1/automatas/{automataId}/state
+          Path: /v1/accounts/{accountId}/automatas/{automataId}/state
           Method: ANY
 
-      # Event API
-      AutomataEvents:
+      # Event API - nested under /accounts/{accountId}/automatas/{automataId}
+      AccountAutomataEvents:
         Type: Api
         Properties:
-          Path: /v1/automatas/{automataId}/events
+          Path: /v1/accounts/{accountId}/automatas/{automataId}/events
           Method: ANY
-      AutomataEventById:
+      AccountAutomataEventById:
         Type: Api
         Properties:
-          Path: /v1/automatas/{automataId}/events/{baseVersion}
+          Path: /v1/accounts/{accountId}/automatas/{automataId}/events/{baseVersion}
           Method: ANY

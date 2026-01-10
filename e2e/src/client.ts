@@ -122,6 +122,7 @@ export class ApiClient {
   private baseUrl: string;
   private token?: string;
   private privateKey?: string;
+  private accountId?: string;
 
   constructor(baseUrl: string = config.apiBaseUrl) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
@@ -141,6 +142,21 @@ export class ApiClient {
   setPrivateKey(privateKey: string): this {
     this.privateKey = privateKey;
     return this;
+  }
+
+  /**
+   * Set account ID for API calls
+   */
+  setAccountId(accountId: string): this {
+    this.accountId = accountId;
+    return this;
+  }
+
+  /**
+   * Get current account ID
+   */
+  getAccountId(): string | undefined {
+    return this.accountId;
   }
 
   /**
@@ -223,55 +239,83 @@ export class ApiClient {
     return this.request({ method: 'GET', path: `/v1/accounts/${accountId}` });
   }
 
-  // Automata API
-  async createAutomata(blueprint: unknown, blueprintSignature?: string): Promise<ApiResponse<unknown>> {
+  // Automata API - now requires accountId in path
+  async createAutomata(blueprint: unknown, blueprintSignature?: string, accountId?: string): Promise<ApiResponse<unknown>> {
+    const targetAccountId = accountId || this.accountId;
+    if (!targetAccountId) {
+      throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
+    }
     return this.request({
       method: 'POST',
-      path: '/v1/automatas',
+      path: `/v1/accounts/${targetAccountId}/automatas`,
       body: { blueprint, blueprintSignature },
     });
   }
 
-  async listAutomatas(limit?: number, cursor?: string): Promise<ApiResponse<{ automatas: unknown[]; nextCursor?: string }>> {
-    let path = '/v1/automatas';
+  async listAutomatas(options?: { limit?: number; cursor?: string; accountId?: string }): Promise<ApiResponse<{ automatas: unknown[]; nextCursor?: string }>> {
+    const targetAccountId = options?.accountId || this.accountId;
+    if (!targetAccountId) {
+      throw new Error('accountId is required. Call setAccountId() or pass accountId in options.');
+    }
+    let path = `/v1/accounts/${targetAccountId}/automatas`;
     const params = new URLSearchParams();
-    if (limit) params.set('limit', String(limit));
-    if (cursor) params.set('cursor', cursor);
+    if (options?.limit) params.set('limit', String(options.limit));
+    if (options?.cursor) params.set('cursor', options.cursor);
     if (params.toString()) path += `?${params.toString()}`;
 
     return this.request({ method: 'GET', path });
   }
 
-  async getAutomata(automataId: string): Promise<ApiResponse<unknown>> {
-    return this.request({ method: 'GET', path: `/v1/automatas/${automataId}` });
+  async getAutomata(automataId: string, accountId?: string): Promise<ApiResponse<unknown>> {
+    const targetAccountId = accountId || this.accountId;
+    if (!targetAccountId) {
+      throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
+    }
+    return this.request({ method: 'GET', path: `/v1/accounts/${targetAccountId}/automatas/${automataId}` });
   }
 
-  async getAutomataState(automataId: string): Promise<ApiResponse<{ state: unknown }>> {
-    return this.request({ method: 'GET', path: `/v1/automatas/${automataId}/state` });
+  async getAutomataState(automataId: string, accountId?: string): Promise<ApiResponse<{ state: unknown }>> {
+    const targetAccountId = accountId || this.accountId;
+    if (!targetAccountId) {
+      throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
+    }
+    return this.request({ method: 'GET', path: `/v1/accounts/${targetAccountId}/automatas/${automataId}/state` });
   }
 
-  async updateAutomata(automataId: string, updates: { status?: string }): Promise<ApiResponse<unknown>> {
+  async updateAutomata(automataId: string, updates: { status?: string }, accountId?: string): Promise<ApiResponse<unknown>> {
+    const targetAccountId = accountId || this.accountId;
+    if (!targetAccountId) {
+      throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
+    }
     return this.request({
       method: 'PATCH',
-      path: `/v1/automatas/${automataId}`,
+      path: `/v1/accounts/${targetAccountId}/automatas/${automataId}`,
       body: updates,
     });
   }
 
-  // Event API
-  async sendEvent(automataId: string, eventType: string, eventData: unknown): Promise<ApiResponse<unknown>> {
+  // Event API - now requires accountId in path
+  async sendEvent(automataId: string, eventType: string, eventData: unknown, accountId?: string): Promise<ApiResponse<unknown>> {
+    const targetAccountId = accountId || this.accountId;
+    if (!targetAccountId) {
+      throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
+    }
     return this.request({
       method: 'POST',
-      path: `/v1/automatas/${automataId}/events`,
+      path: `/v1/accounts/${targetAccountId}/automatas/${automataId}/events`,
       body: { eventType, eventData },
     });
   }
 
   async listEvents(
     automataId: string,
-    options?: { direction?: 'forward' | 'backward'; anchor?: string; limit?: number }
+    options?: { direction?: 'forward' | 'backward'; anchor?: string; limit?: number; accountId?: string }
   ): Promise<ApiResponse<{ events: unknown[]; nextAnchor?: string }>> {
-    let path = `/v1/automatas/${automataId}/events`;
+    const targetAccountId = options?.accountId || this.accountId;
+    if (!targetAccountId) {
+      throw new Error('accountId is required. Call setAccountId() or pass accountId in options.');
+    }
+    let path = `/v1/accounts/${targetAccountId}/automatas/${automataId}/events`;
     const params = new URLSearchParams();
     if (options?.direction) params.set('direction', options.direction);
     if (options?.anchor) params.set('anchor', options.anchor);
@@ -281,8 +325,12 @@ export class ApiClient {
     return this.request({ method: 'GET', path });
   }
 
-  async getEvent(automataId: string, version: string): Promise<ApiResponse<unknown>> {
-    return this.request({ method: 'GET', path: `/v1/automatas/${automataId}/events/${version}` });
+  async getEvent(automataId: string, version: string, accountId?: string): Promise<ApiResponse<unknown>> {
+    const targetAccountId = accountId || this.accountId;
+    if (!targetAccountId) {
+      throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
+    }
+    return this.request({ method: 'GET', path: `/v1/accounts/${targetAccountId}/automatas/${automataId}/events/${version}` });
   }
 }
 

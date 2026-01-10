@@ -34,28 +34,33 @@ const routes: Route[] = [
   { method: 'GET', pathPattern: /^\/v1\/accounts\/me$/, handler: getCurrentAccount },
   { method: 'POST', pathPattern: /^\/v1\/accounts$/, handler: createOrGetAccount },
   { method: 'PATCH', pathPattern: /^\/v1\/accounts\/me$/, handler: updateCurrentAccount },
-  { method: 'GET', pathPattern: /^\/v1\/accounts\/[^/]+$/, handler: getAccount },
+  { method: 'GET', pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)$/, handler: getAccount },
 
-  // Automata API
-  { method: 'POST', pathPattern: /^\/v1\/automatas$/, handler: createAutomataHandler },
-  { method: 'GET', pathPattern: /^\/v1\/automatas$/, handler: listAutomatasHandler },
-  { method: 'GET', pathPattern: /^\/v1\/automatas\/[^/]+\/state$/, handler: getAutomataStateHandler },
-  { method: 'GET', pathPattern: /^\/v1\/automatas\/[^/]+$/, handler: getAutomataHandler },
-  { method: 'PATCH', pathPattern: /^\/v1\/automatas\/[^/]+$/, handler: updateAutomataHandler },
+  // Automata API - nested under /accounts/{accountId}
+  { method: 'POST', pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)\/automatas$/, handler: createAutomataHandler },
+  { method: 'GET', pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)\/automatas$/, handler: listAutomatasHandler },
+  { method: 'GET', pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)\/automatas\/(?<automataId>[^/]+)\/state$/, handler: getAutomataStateHandler },
+  { method: 'GET', pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)\/automatas\/(?<automataId>[^/]+)$/, handler: getAutomataHandler },
+  { method: 'PATCH', pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)\/automatas\/(?<automataId>[^/]+)$/, handler: updateAutomataHandler },
 
-  // Event API
-  { method: 'POST', pathPattern: /^\/v1\/automatas\/[^/]+\/events$/, handler: sendEventHandler },
-  { method: 'GET', pathPattern: /^\/v1\/automatas\/[^/]+\/events$/, handler: listEventsHandler },
-  { method: 'GET', pathPattern: /^\/v1\/automatas\/[^/]+\/events\/[^/]+$/, handler: getEventHandler },
+  // Event API - nested under /accounts/{accountId}/automatas/{automataId}
+  { method: 'POST', pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)\/automatas\/(?<automataId>[^/]+)\/events$/, handler: sendEventHandler },
+  { method: 'GET', pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)\/automatas\/(?<automataId>[^/]+)\/events$/, handler: listEventsHandler },
+  { method: 'GET', pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)\/automatas\/(?<automataId>[^/]+)\/events\/(?<baseVersion>[^/]+)$/, handler: getEventHandler },
 ];
 
 /**
- * 匹配路由
+ * 匹配路由并提取路径参数
  */
-function matchRoute(method: string, path: string): RouteHandler | null {
+function matchRoute(method: string, path: string): { handler: RouteHandler; pathParams: Record<string, string> } | null {
   for (const route of routes) {
-    if (route.method === method && route.pathPattern.test(path)) {
-      return route.handler;
+    if (route.method === method) {
+      const match = route.pathPattern.exec(path);
+      if (match) {
+        // 提取命名捕获组作为路径参数
+        const pathParams = match.groups || {};
+        return { handler: route.handler, pathParams };
+      }
     }
   }
   return null;
@@ -109,13 +114,22 @@ export const handler = async (
   }
   
   // 路由匹配
-  const routeHandler = matchRoute(method, path);
-  if (!routeHandler) {
+  const routeMatch = matchRoute(method, path);
+  if (!routeMatch) {
     return notFound();
   }
   
+  // 合并路径参数到 event.pathParameters
+  const enrichedEvent: APIGatewayProxyEvent = {
+    ...event,
+    pathParameters: {
+      ...event.pathParameters,
+      ...routeMatch.pathParams,
+    },
+  };
+  
   try {
-    return await routeHandler(event);
+    return await routeMatch.handler(enrichedEvent);
   } catch (error) {
     console.error('Unhandled error:', error);
     return {
