@@ -4,7 +4,12 @@
   "workspaces": {
     "": {
       "name": "automabase",
+      "dependencies": {
+        "@noble/hashes": "^2.0.1",
+      },
       "devDependencies": {
+        "@aws-sdk/client-dynamodb": "^3.965.0",
+        "@aws-sdk/lib-dynamodb": "^3.965.0",
         "@biomejs/biome": "^2.3.11",
         "@biomejs/cli-darwin-arm64": "^2.3.11",
         "@biomejs/cli-darwin-x64": "^2.3.11",
@@ -49,6 +54,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@noble/ed25519": "^2.2.3",
+        "@noble/hashes": "^2.0.1",
       },
       "devDependencies": {
         "@types/node": "^20.11.0",
@@ -340,6 +346,8 @@
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
     "@noble/ed25519": ["@noble/ed25519@2.3.0", "", {}, "sha512-M7dvXL2B92/M7dw9+gzuydL8qn/jiqNHaoR3Q+cb1q1GHV7uwE17WCyFMG+Y+TZb5izcaXk5TdJRrDUxHXL78A=="],
+
+    "@noble/hashes": ["@noble/hashes@2.0.1", "", {}, "sha512-XlOlEbQcE9fmuXxrVTXCTlG2nlRXa9Rj3rr5Ue/+tX+nmkgbX720YHh0VR3hBF9xDvwnb8D2shVGOwNx+ulArw=="],
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-beta.27", "", {}, "sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA=="],
 

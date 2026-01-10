@@ -11,11 +11,18 @@ AutomataWsFunction:
     Runtime: nodejs24.x
     Environment:
       Variables:
-        NODE_ENV: ${Env:NODE_ENV,prod}
+        NODE_ENV: !Ref Environment
+        DYNAMODB_TABLE_NAME: !Ref AutomabaseTable
+        REQUEST_ID_TABLE: !Ref RequestIdTable
+    Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref AutomabaseTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref RequestIdTable
     Events:
       Api:
         Type: Api
         Properties:
-          Path: /automata-ws
+          Path: /v1/ws
           Method: GET
 

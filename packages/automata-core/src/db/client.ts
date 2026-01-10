@@ -10,23 +10,37 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
  */
 const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || 'automabase-dev';
 const REGION = process.env.AWS_REGION || 'ap-northeast-1';
-const ENDPOINT = process.env.DYNAMODB_ENDPOINT; // 本地开发使用
+
+// Check if running locally (SAM Local or LocalStack)
+const isLocal = process.env.AWS_SAM_LOCAL === 'true' || 
+                process.env.LOCALSTACK === 'true' ||
+                process.env.LOCAL_DEV_MODE === 'true';
+
+// Local endpoint configuration
+// Use DYNAMODB_ENDPOINT env var, or default to host.docker.internal for SAM Local
+const localEndpoint = process.env.DYNAMODB_ENDPOINT || 'http://host.docker.internal:8000';
 
 /**
  * DynamoDB 客户端配置
  */
-const clientConfig: ConstructorParameters<typeof DynamoDBClient>[0] = {
-  region: REGION,
-};
-
-if (ENDPOINT) {
-  clientConfig.endpoint = ENDPOINT;
+function createClientConfig(): ConstructorParameters<typeof DynamoDBClient>[0] {
+  if (isLocal) {
+    return {
+      endpoint: localEndpoint,
+      region: REGION,
+      credentials: {
+        accessKeyId: 'local',
+        secretAccessKey: 'local',
+      },
+    };
+  }
+  return { region: REGION };
 }
 
 /**
  * DynamoDB 原始客户端
  */
-export const dynamoDbClient = new DynamoDBClient(clientConfig);
+export const dynamoDbClient = new DynamoDBClient(createClientConfig());
 
 /**
  * DynamoDB Document 客户端（带类型转换）

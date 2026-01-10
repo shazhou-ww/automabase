@@ -16,6 +16,7 @@
   },
   "scripts": {
     "keygen": "bun scripts/keygen.ts",
+    "setup:db": "bun scripts/setup-local-db.ts",
     "create:function": "bun scripts/create.ts function",
     "create:package": "bun scripts/create.ts package",
     "create:webapp": "bun scripts/create.ts webapp",
@@ -43,6 +44,8 @@
     "clean": "turbo run clean && rimraf dist build .aws-sam .turbo merged-template.yaml packaged.yaml"
   },
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.965.0",
+    "@aws-sdk/lib-dynamodb": "^3.965.0",
     "@biomejs/biome": "^2.3.11",
     "@biomejs/cli-darwin-arm64": "^2.3.11",
     "@biomejs/cli-darwin-x64": "^2.3.11",
@@ -80,5 +83,8 @@
     "typescript": "^5.9.3",
     "vite": "^5.4.21",
     "vitest": "^1.6.1"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.0.1"
   }
 }

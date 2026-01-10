@@ -7,6 +7,7 @@ export default defineConfig({
     testTimeout: 30000, // 30s timeout for API calls
     hookTimeout: 30000,
     include: ['src/**/*.test.ts'],
+    setupFiles: ['src/setup.ts'],
   },
 });
 
