@@ -5,7 +5,12 @@
  */
 
 import * as crypto from 'node:crypto';
+import * as ed from '@noble/ed25519';
+import { sha512 } from '@noble/hashes/sha2.js';
 import { config } from './config';
+
+// Polyfill for @noble/ed25519
+ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
 
 export interface RequestOptions {
   method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -27,11 +32,8 @@ export interface ApiResponse<T = unknown> {
  * Generate Ed25519 key pair for testing
  */
 export async function generateKeyPair(): Promise<{ publicKey: string; privateKey: string }> {
-  // Use @noble/ed25519
-  const { getPublicKey, utils } = await import('@noble/ed25519');
-
-  const privateKeyBytes = utils.randomPrivateKey();
-  const publicKeyBytes = await getPublicKey(privateKeyBytes);
+  const privateKeyBytes = ed.utils.randomPrivateKey();
+  const publicKeyBytes = await ed.getPublicKey(privateKeyBytes);
 
   return {
     publicKey: base64UrlEncode(publicKeyBytes),
@@ -43,9 +45,8 @@ export async function generateKeyPair(): Promise<{ publicKey: string; privateKey
  * Sign data with Ed25519 private key
  */
 export async function signData(data: Uint8Array, privateKeyBase64Url: string): Promise<string> {
-  const { sign } = await import('@noble/ed25519');
   const privateKey = base64UrlDecode(privateKeyBase64Url);
-  const signature = await sign(data, privateKey);
+  const signature = await ed.sign(data, privateKey);
   return base64UrlEncode(signature);
 }
 

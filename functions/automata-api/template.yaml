@@ -15,11 +15,20 @@ AutomataApiFunction:
         DYNAMODB_TABLE_NAME: !Ref AutomabaseTable
         COGNITO_USER_POOL_ID: !Ref UserPool
         COGNITO_CLIENT_ID: !Ref UserPoolClient
+        # WebSocket API endpoint for broadcasting state updates
+        WEBSOCKET_API_ENDPOINT: !Sub 'https://${AutomataWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
     Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref AutomabaseTable
       - DynamoDBCrudPolicy:
           TableName: !Ref RequestIdTable
+      # 允许向 WebSocket 连接发送消息（用于广播状态更新）
+      - Statement:
+          - Effect: Allow
+            Action:
+              - 'execute-api:ManageConnections'
+            Resource:
+              - !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AutomataWebSocketApi}/*'
     Events:
       # Account API
       AccountsMe:
@@ -66,3 +75,10 @@ AutomataApiFunction:
         Properties:
           Path: /v1/accounts/{accountId}/automatas/{automataId}/events/{baseVersion}
           Method: ANY
+
+      # WebSocket Token API
+      WsToken:
+        Type: Api
+        Properties:
+          Path: /v1/ws/token
+          Method: POST

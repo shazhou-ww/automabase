@@ -7,3 +7,4 @@ export * from './automata-repository';
 export * from './blueprint-repository';
 export * from './client';
 export * from './event-repository';
+export * from './ws-repository';

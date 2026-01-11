@@ -11,7 +11,13 @@
     "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/index.js --external:\"@aws-sdk/*\" --minify --sourcemap",
     "clean": "rimraf dist"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "@automabase/automata-core": "workspace:*",
+    "@aws-sdk/client-apigatewaymanagementapi": "^3.695.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.130",
+    "@types/node": "^20.11.0"
+  }
 }
 

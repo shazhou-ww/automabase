@@ -9,6 +9,7 @@ import {
   verifyAndExtractContextWithDevMode,
 } from '@automabase/automata-auth';
 import {
+  broadcastStateUpdate,
   createEvent,
   generateEventId,
   getAutomataById,
@@ -18,10 +19,18 @@ import {
   processEvent,
   type QueryEventsInput,
   queryEvents,
+  shouldBroadcast,
   TransitionError,
   updateAutomata,
 } from '@automabase/automata-core';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+
+/**
+ * 获取 WebSocket API endpoint
+ */
+function getWsEndpoint(): string | undefined {
+  return process.env.WEBSOCKET_API_ENDPOINT;
+}
 
 /**
  * 获取 JWT 验证配置
@@ -195,6 +204,17 @@ export async function sendEventHandler(
       currentState: newState,
       version: newVersion,
     });
+
+    // 广播状态更新到 WebSocket 订阅者 (异步，不阻塞响应)
+    const wsEndpoint = getWsEndpoint();
+    if (shouldBroadcast(wsEndpoint)) {
+      // 使用 Promise 不等待，让广播异步执行
+      broadcastStateUpdate(automataId, eventType, baseVersion, newVersion, newState, {
+        wsEndpoint,
+      }).catch((err) => {
+        console.error('[WS] Broadcast error:', err);
+      });
+    }
 
     return success({
       eventId: generateEventId(automataId, baseVersion),

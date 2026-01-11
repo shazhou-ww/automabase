@@ -69,6 +69,7 @@ Resources:
       GenerateSecret: false
       ExplicitAuthFlows:
         - ALLOW_USER_SRP_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
       # 只使用 Cognito 原生认证，外部 IdP 需要单独配置
       SupportedIdentityProviders:
@@ -254,3 +255,9 @@ Outputs:
     Value: !Ref RequestIdTable
     Export:
       Name: !Sub '${AWS::StackName}-RequestIdTableName'
+  
+  WebSocketApiEndpoint:
+    Description: WebSocket API Endpoint
+    Value: !Sub 'wss://${AutomataWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-WebSocketApiEndpoint'

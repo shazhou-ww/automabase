@@ -13,6 +13,7 @@ import {
   updateAutomataHandler,
 } from './handlers/automata-handlers';
 import { getEventHandler, listEventsHandler, sendEventHandler } from './handlers/event-handlers';
+import { getWsTokenHandler } from './handlers/ws-token-handler';
 
 /**
  * 路由定义
@@ -31,6 +32,9 @@ const routes: Route[] = [
   { method: 'POST', pathPattern: /^\/v1\/accounts$/, handler: createOrGetAccount },
   { method: 'PATCH', pathPattern: /^\/v1\/accounts\/me$/, handler: updateCurrentAccount },
   { method: 'GET', pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)$/, handler: getAccount },
+
+  // WebSocket Token API
+  { method: 'POST', pathPattern: /^\/v1\/ws\/token$/, handler: getWsTokenHandler },
 
   // Automata API - nested under /accounts/{accountId}
   {

@@ -12,6 +12,9 @@ export * from './blueprint';
 // Event
 export * from './event';
 
+// WebSocket
+export * from './websocket';
+
 // Common types
 export type Base62String = string;
 export type ISOTimestamp = string;
