@@ -20,7 +20,6 @@
     "dev:skip-build": "bun scripts/dev.ts --skip-build",
     "keygen": "bun scripts/keygen.ts",
     "jwt:local": "bun scripts/local-jwt.ts",
-    "setup:db": "bun scripts/setup-local-db.ts",
     "dev:gateway": "bun run apps/dev-gateway/src/index.ts",
     "dev:gateway:remote": "bun run apps/dev-gateway/src/index.ts --mode remote",
     "create:function": "bun scripts/create.ts function",
