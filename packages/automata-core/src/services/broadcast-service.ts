@@ -8,8 +8,8 @@ import {
   ApiGatewayManagementApiClient,
   PostToConnectionCommand,
 } from '@aws-sdk/client-apigatewaymanagementapi';
-import type { StateUpdateMessage } from '../types/websocket';
 import { deleteSubscription, getSubscribersByAutomata } from '../db/ws-repository';
+import type { StateUpdateMessage } from '../types/websocket';
 
 // 客户端缓存
 let apiGatewayClient: ApiGatewayManagementApiClient | null = null;

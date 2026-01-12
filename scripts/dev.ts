@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 /**
  * Local Development Runner
  *
@@ -13,8 +14,8 @@
  *   bun run dev --gateway-only  只启动 gateway（假设其他服务已运行）
  */
 
-import { spawn, type Subprocess } from 'bun';
 import * as path from 'node:path';
+import { type Subprocess, spawn } from 'bun';
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '..');
 
@@ -74,7 +75,9 @@ function spawnService(
   const useShell = options.shell ?? isWindows;
 
   const proc = spawn({
-    cmd: useShell ? [isWindows ? 'cmd' : 'sh', isWindows ? '/c' : '-c', command.join(' ')] : command,
+    cmd: useShell
+      ? [isWindows ? 'cmd' : 'sh', isWindows ? '/c' : '-c', command.join(' ')]
+      : command,
     cwd: options.cwd || ROOT_DIR,
     env: { ...process.env, ...options.env, FORCE_COLOR: '1' },
     stdout: 'pipe',
@@ -230,13 +233,22 @@ async function main() {
   // Gateway only mode
   if (gatewayOnly) {
     log(prefixes.runner, 'Gateway-only mode');
-    spawnService('gateway', prefixes.gateway, ['bun', 'run', 'apps/dev-gateway/src/index.ts', '--mode', 'remote']);
+    spawnService('gateway', prefixes.gateway, [
+      'bun',
+      'run',
+      'apps/dev-gateway/src/index.ts',
+      '--mode',
+      'remote',
+    ]);
     return;
   }
 
   // Check Docker
   if (!(await checkDocker())) {
-    log(prefixes.runner, `${colors.red}Docker is not running. Please start Docker first.${colors.reset}`);
+    log(
+      prefixes.runner,
+      `${colors.red}Docker is not running. Please start Docker first.${colors.reset}`
+    );
     process.exit(1);
   }
 
@@ -249,7 +261,12 @@ async function main() {
     spawnService('dynamodb', prefixes.dynamo, ['docker', 'compose', 'up', 'dynamodb-local']);
 
     // Wait for DynamoDB
-    const dynamoReady = await waitForService('DynamoDB', prefixes.dynamo, 'http://localhost:8000', 30);
+    const dynamoReady = await waitForService(
+      'DynamoDB',
+      prefixes.dynamo,
+      'http://localhost:8000',
+      30
+    );
     if (!dynamoReady) {
       log(prefixes.runner, `${colors.red}Failed to start DynamoDB. Exiting.${colors.reset}`);
       cleanup();
@@ -292,26 +309,42 @@ async function main() {
 
     // Start SAM
     spawnService('sam', prefixes.sam, [
-      'sam', 'local', 'start-lambda',
-      '--template-file', 'merged-template.yaml',
-      '--env-vars', 'env.json',
+      'sam',
+      'local',
+      'start-lambda',
+      '--template-file',
+      'merged-template.yaml',
+      '--env-vars',
+      'env.json',
       '--skip-pull-image',
-      '--docker-network', 'host',
-      '--warm-containers', 'EAGER',
-      '--port', '3001',
+      '--docker-network',
+      'host',
+      '--warm-containers',
+      'EAGER',
+      '--port',
+      '3001',
     ]);
 
     // Wait for SAM
     await Bun.sleep(3000); // SAM takes a moment to start
     const samReady = await waitForService('SAM Lambda', prefixes.sam, 'http://localhost:3001', 60);
     if (!samReady) {
-      log(prefixes.runner, `${colors.yellow}SAM may still be starting. Continuing...${colors.reset}`);
+      log(
+        prefixes.runner,
+        `${colors.yellow}SAM may still be starting. Continuing...${colors.reset}`
+      );
     }
   }
 
   // Step 4: Start Dev Gateway
   log(prefixes.runner, 'Step 4/4: Starting Dev Gateway...');
-  spawnService('gateway', prefixes.gateway, ['bun', 'run', 'apps/dev-gateway/src/index.ts', '--mode', 'remote']);
+  spawnService('gateway', prefixes.gateway, [
+    'bun',
+    'run',
+    'apps/dev-gateway/src/index.ts',
+    '--mode',
+    'remote',
+  ]);
 
   // Wait for Gateway
   await waitForService('Dev Gateway', prefixes.gateway, 'http://localhost:3000/health', 30);

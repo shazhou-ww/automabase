@@ -4,6 +4,7 @@
  * 处理 WebSocket 连接、订阅和消息
  */
 
+import type { ErrorMessage, PongMessage, WsUpstreamMessage } from '@automabase/automata-core';
 import type {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
@@ -12,8 +13,7 @@ import type {
 } from 'aws-lambda';
 import { handleConnect, handleDisconnect } from './handlers/connection-handlers';
 import { handleSubscribe, handleUnsubscribe } from './handlers/subscription-handlers';
-import { initApiGatewayClient, createSendMessageFn } from './services/broadcast-service';
-import type { WsUpstreamMessage, PongMessage, ErrorMessage } from '@automabase/automata-core';
+import { createSendMessageFn, initApiGatewayClient } from './services/broadcast-service';
 
 /**
  * WebSocket 事件类型

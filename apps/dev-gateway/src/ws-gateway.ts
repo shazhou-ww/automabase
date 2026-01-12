@@ -7,12 +7,12 @@
  * - Management API (PostToConnection)
  */
 
-import * as http from 'node:http';
 import * as crypto from 'node:crypto';
+import * as http from 'node:http';
 import WebSocket, { WebSocketServer } from 'ws';
-import type { GatewayConfig, LambdaWsEvent, JwtClaims } from './types';
-import { JwtVerifier, parseJwt } from './jwt-verifier';
-import { LambdaInvoker } from './lambda-invoker';
+import { type JwtVerifier, parseJwt } from './jwt-verifier';
+import type { LambdaInvoker } from './lambda-invoker';
+import type { GatewayConfig, JwtClaims, LambdaWsEvent } from './types';
 
 /**
  * 活跃连接映射

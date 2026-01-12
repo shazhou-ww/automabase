@@ -11,7 +11,7 @@ const PASSWORD = process.argv[3] || 'TestUser123!';
 function runAwsCommand(args: string[]) {
   const cmd = ['aws', 'cognito-idp', ...args, '--region', REGION];
   const proc = spawnSync(cmd);
-  
+
   if (proc.exitCode !== 0) {
     const errorText = proc.stderr.toString();
     // Ignore "User already exists" error for create command
@@ -20,7 +20,7 @@ function runAwsCommand(args: string[]) {
     }
     throw new Error(`Command failed: ${cmd.join(' ')}\n${errorText}`);
   }
-  
+
   const output = proc.stdout.toString().trim();
   return output ? JSON.parse(output) : null;
 }
@@ -36,9 +36,12 @@ async function main() {
     try {
       runAwsCommand([
         'admin-create-user',
-        '--user-pool-id', USER_POOL_ID,
-        '--username', USERNAME,
-        '--message-action', 'SUPPRESS' // Don't send email
+        '--user-pool-id',
+        USER_POOL_ID,
+        '--username',
+        USERNAME,
+        '--message-action',
+        'SUPPRESS', // Don't send email
       ]);
       console.log('   ✅ User created');
     } catch (e) {
@@ -54,10 +57,13 @@ async function main() {
     console.log('2️⃣  Setting permanent password...');
     runAwsCommand([
       'admin-set-user-password',
-      '--user-pool-id', USER_POOL_ID,
-      '--username', USERNAME,
-      '--password', PASSWORD,
-      '--permanent'
+      '--user-pool-id',
+      USER_POOL_ID,
+      '--username',
+      USERNAME,
+      '--password',
+      PASSWORD,
+      '--permanent',
     ]);
     console.log('   ✅ Password set');
 
@@ -65,9 +71,12 @@ async function main() {
     console.log('3️⃣  Logging in to get tokens...');
     const result = runAwsCommand([
       'initiate-auth',
-      '--client-id', CLIENT_ID,
-      '--auth-flow', 'USER_PASSWORD_AUTH', 
-      '--auth-parameters', `USERNAME=${USERNAME},PASSWORD=${PASSWORD}`
+      '--client-id',
+      CLIENT_ID,
+      '--auth-flow',
+      'USER_PASSWORD_AUTH',
+      '--auth-parameters',
+      `USERNAME=${USERNAME},PASSWORD=${PASSWORD}`,
     ]);
 
     if (result && result.AuthenticationResult) {
@@ -82,7 +91,6 @@ async function main() {
     } else {
       console.error('❌ Login failed:', result);
     }
-
   } catch (error) {
     console.error('❌ Error:', (error as Error).message);
   }

@@ -7,11 +7,11 @@
  * 3. 发送 events 迭代自动机状态
  */
 
-import { WebSocket } from 'ws';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { WebSocket } from 'ws';
 import { type ApiClient, createClient, generateKeyPair } from './client';
-import { APP_REGISTRY_BLUEPRINT, generateLocalDevTokenAsync, getTestTokenAsync } from './helpers';
 import { config } from './config';
+import { APP_REGISTRY_BLUEPRINT, generateLocalDevTokenAsync, getTestTokenAsync } from './helpers';
 
 // Helper to wait for WS open
 function waitForOpen(ws: WebSocket): Promise<void> {
@@ -29,7 +29,11 @@ function waitForOpen(ws: WebSocket): Promise<void> {
 }
 
 // Helper to wait for a message matching predicate
-function waitForMessage(ws: WebSocket, predicate: (data: any) => boolean, timeoutMs = 5000): Promise<any> {
+function waitForMessage(
+  ws: WebSocket,
+  predicate: (data: any) => boolean,
+  timeoutMs = 5000
+): Promise<any> {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       ws.off('message', handler);

@@ -58,11 +58,11 @@ SAM CLI 目前无法本地模拟 API Gateway WebSocket 的 `$connect / $disconne
 - `JWT=$(bun run jwt:local)`
 - `curl -X POST http://localhost:3000/v1/ws/token -H "Authorization: $JWT"`
 
-2) 用 token 连接 ws：
+1) 用 token 连接 ws：
 
 - `wscat -c "ws://localhost:3000?token=<wsToken>"`
 
-3) 发消息（示例）：
+1) 发消息（示例）：
 
 - `{"action":"ping"}`
 - `{"action":"subscribe","automataId":"..."}`

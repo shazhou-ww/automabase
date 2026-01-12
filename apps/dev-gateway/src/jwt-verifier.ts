@@ -8,7 +8,7 @@
  */
 
 import * as crypto from 'node:crypto';
-import type { JwtConfig, JwtClaims } from './types';
+import type { JwtClaims, JwtConfig } from './types';
 
 /**
  * Base64url 解码
@@ -25,7 +25,9 @@ function base64urlDecode(input: string): Buffer {
 /**
  * 解析 JWT（不验证签名）
  */
-export function parseJwt(token: string): { header: any; payload: JwtClaims; signature: string } | null {
+export function parseJwt(
+  token: string
+): { header: any; payload: JwtClaims; signature: string } | null {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
@@ -136,7 +138,7 @@ function jwkToPem(jwk: any): string {
  * JWT 验证器
  */
 export class JwtVerifier {
-  constructor(private config: JwtConfig) { }
+  constructor(private config: JwtConfig) {}
 
   /**
    * 验证 JWT 并返回 claims
@@ -212,7 +214,11 @@ export class JwtVerifier {
   /**
    * 使用 JWKS 验证
    */
-  private async verifyWithJwks(token: string, header: any, payload: JwtClaims): Promise<JwtClaims | null> {
+  private async verifyWithJwks(
+    token: string,
+    header: any,
+    payload: JwtClaims
+  ): Promise<JwtClaims | null> {
     if (!this.config.jwksUrl) {
       console.log('[JWT] JWKS URL not configured');
       return null;

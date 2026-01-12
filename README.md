@@ -73,6 +73,7 @@ bun run dev
 ```
 
 这会自动启动：
+
 - DynamoDB Local (Docker, port 8000)
 - SAM Lambda Service (port 3002)
 - Dev Gateway (port 3001)

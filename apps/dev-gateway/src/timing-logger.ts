@@ -14,7 +14,7 @@ const SAM_LOG = path.join(LOG_DIR, 'sam.log');
 // 确保日志目录存在
 try {
   fs.mkdirSync(LOG_DIR, { recursive: true });
-} catch { }
+} catch {}
 
 /**
  * 格式化时间戳
@@ -96,11 +96,14 @@ export class RequestTimer {
     appendLog(TIMING_LOG, logContent);
 
     // 也输出到控制台（简化版）
-    console.log(`[TIMING] ${this.requestId.slice(0, 8)} | Total: ${totalTime.toFixed(0)}ms | Breakdown:`);
+    console.log(
+      `[TIMING] ${this.requestId.slice(0, 8)} | Total: ${totalTime.toFixed(0)}ms | Breakdown:`
+    );
     for (let i = 1; i < this.marks.length; i++) {
       const mark = this.marks[i];
       const delta = mark.time - this.marks[i - 1].time;
-      if (delta > 1) { // 只显示 > 1ms 的阶段
+      if (delta > 1) {
+        // 只显示 > 1ms 的阶段
         console.log(`         -> ${mark.name}: ${delta.toFixed(0)}ms`);
       }
     }
@@ -155,7 +158,8 @@ export class SamTimer {
     for (let i = 1; i < this.marks.length; i++) {
       const mark = this.marks[i];
       const delta = mark.time - this.marks[i - 1].time;
-      if (delta > 5) { // 只显示 > 5ms 的阶段
+      if (delta > 5) {
+        // 只显示 > 5ms 的阶段
         console.log(`      -> ${mark.name}: ${delta.toFixed(0)}ms`);
       }
     }

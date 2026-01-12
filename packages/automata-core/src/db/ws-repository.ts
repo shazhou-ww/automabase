@@ -4,8 +4,8 @@
  * 管理 WebSocket 连接、订阅和临时 Token
  */
 
-import { DeleteCommand, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { randomBytes } from 'node:crypto';
+import { DeleteCommand, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import type { WsConnection, WsSubscription, WsToken } from '../types/websocket';
 import { docClient, getTableName, Keys } from './client';
 
@@ -231,10 +231,7 @@ export async function createSubscription(subscription: WsSubscription): Promise<
 /**
  * 删除订阅
  */
-export async function deleteSubscription(
-  connectionId: string,
-  automataId: string
-): Promise<void> {
+export async function deleteSubscription(connectionId: string, automataId: string): Promise<void> {
   // 双删
   await Promise.all([
     docClient.send(
@@ -280,9 +277,7 @@ export async function getSubscriptionsByConnection(
 /**
  * 获取 Automata 的所有订阅者 (用于广播)
  */
-export async function getSubscribersByAutomata(
-  automataId: string
-): Promise<WsSubscription[]> {
+export async function getSubscribersByAutomata(automataId: string): Promise<WsSubscription[]> {
   const result = await docClient.send(
     new QueryCommand({
       TableName: TABLE_NAME,
@@ -299,10 +294,7 @@ export async function getSubscribersByAutomata(
 /**
  * 检查连接是否订阅了指定 Automata
  */
-export async function isSubscribed(
-  connectionId: string,
-  automataId: string
-): Promise<boolean> {
+export async function isSubscribed(connectionId: string, automataId: string): Promise<boolean> {
   const result = await docClient.send(
     new GetCommand({
       TableName: TABLE_NAME,

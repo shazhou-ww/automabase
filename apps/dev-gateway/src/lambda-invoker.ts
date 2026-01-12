@@ -7,14 +7,14 @@
  * - remote: 调用远程 Lambda endpoint
  */
 
-import * as url from 'node:url';
-import * as path from 'node:path';
-import * as os from 'node:os';
-import * as fs from 'node:fs/promises';
-import * as crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
-import type { GatewayConfig, LambdaHttpEvent, LambdaWsEvent, LambdaResult } from './types';
+import * as crypto from 'node:crypto';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import * as url from 'node:url';
 import { SamTimer } from './timing-logger';
+import type { GatewayConfig, LambdaHttpEvent, LambdaResult, LambdaWsEvent } from './types';
 
 type LambdaEvent = LambdaHttpEvent | LambdaWsEvent;
 
@@ -72,7 +72,10 @@ async function invokeSam(
   await fs.mkdir(tmpDir, { recursive: true });
   timer.mark('mkdir');
 
-  const tmpEventPath = path.join(tmpDir, `event-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
+  const tmpEventPath = path.join(
+    tmpDir,
+    `event-${Date.now()}-${Math.random().toString(16).slice(2)}.json`
+  );
   await fs.writeFile(tmpEventPath, JSON.stringify(event), 'utf-8');
   timer.mark('write_event_file');
 
@@ -106,7 +109,7 @@ async function invokeSam(
       timer.mark('process_exit');
 
       // 清理临时文件
-      await fs.unlink(tmpEventPath).catch(() => { });
+      await fs.unlink(tmpEventPath).catch(() => {});
       timer.mark('cleanup');
 
       if (code !== 0) {
@@ -212,11 +215,7 @@ export class LambdaInvoker {
         return invokeSam(this.config, this.getSamFunctionName(name), event);
 
       case 'remote':
-        return invokeRemote(
-          this.config.remoteEndpoint!,
-          this.getSamFunctionName(name),
-          event
-        );
+        return invokeRemote(this.config.remoteEndpoint!, this.getSamFunctionName(name), event);
 
       default:
         throw new Error(`Unknown lambda mode: ${this.config.lambdaMode}`);
@@ -237,11 +236,7 @@ export class LambdaInvoker {
         return invokeSam(this.config, this.getSamFunctionName(name), event);
 
       case 'remote':
-        return invokeRemote(
-          this.config.remoteEndpoint!,
-          this.getSamFunctionName(name),
-          event
-        );
+        return invokeRemote(this.config.remoteEndpoint!, this.getSamFunctionName(name), event);
 
       default:
         throw new Error(`Unknown lambda mode: ${this.config.lambdaMode}`);

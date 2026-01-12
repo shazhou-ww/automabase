@@ -27,8 +27,8 @@ import * as path from 'node:path';
 import { loadConfig } from './config';
 import { JwtVerifier } from './jwt-verifier';
 import { LambdaInvoker } from './lambda-invoker';
-import { createUnifiedGateway, getActiveConnectionCount } from './unified-gateway';
 import { clearLogs } from './timing-logger';
+import { createUnifiedGateway, getActiveConnectionCount } from './unified-gateway';
 
 // 获取项目根目录
 const ROOT_DIR = path.resolve(import.meta.dirname, '../../..');
@@ -46,7 +46,9 @@ async function main() {
   console.log('🔧 Environment:');
   console.log(`   DYNAMODB_ENDPOINT:     ${process.env.DYNAMODB_ENDPOINT || '(not set)'}`);
   console.log(`   AUTOMABASE_TABLE:      ${process.env.AUTOMABASE_TABLE || '(not set)'}`);
-  console.log(`   LOCAL_JWT_PUBLIC_KEY:  ${process.env.LOCAL_JWT_PUBLIC_KEY ? '✓ set' : '(not set)'}`);
+  console.log(
+    `   LOCAL_JWT_PUBLIC_KEY:  ${process.env.LOCAL_JWT_PUBLIC_KEY ? '✓ set' : '(not set)'}`
+  );
   console.log('');
 
   console.log('📋 Configuration:');

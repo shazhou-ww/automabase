@@ -2,19 +2,19 @@
  * WebSocket 订阅处理器
  */
 
-import type { APIGatewayProxyResult } from 'aws-lambda';
+import type {
+  ErrorMessage,
+  SubscribedMessage,
+  UnsubscribedMessage,
+  WsSubscription,
+} from '@automabase/automata-core';
 import {
   createSubscription,
   deleteSubscription,
-  getConnection,
   getAutomataById,
+  getConnection,
 } from '@automabase/automata-core';
-import type {
-  WsSubscription,
-  SubscribedMessage,
-  UnsubscribedMessage,
-  ErrorMessage,
-} from '@automabase/automata-core';
+import type { APIGatewayProxyResult } from 'aws-lambda';
 
 /**
  * 处理订阅请求

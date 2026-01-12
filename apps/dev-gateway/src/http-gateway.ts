@@ -7,12 +7,12 @@
  * - 请求/响应转换
  */
 
-import * as http from 'node:http';
 import * as crypto from 'node:crypto';
-import type { GatewayConfig, LambdaHttpEvent, JwtClaims } from './types';
-import { JwtVerifier } from './jwt-verifier';
-import { LambdaInvoker } from './lambda-invoker';
+import * as http from 'node:http';
+import type { JwtVerifier } from './jwt-verifier';
+import type { LambdaInvoker } from './lambda-invoker';
 import { RequestTimer } from './timing-logger';
+import type { GatewayConfig, JwtClaims, LambdaHttpEvent } from './types';
 
 /**
  * 不需要认证的路径
@@ -105,7 +105,7 @@ export function createHttpGateway(
 
       // JWT 验证
       let claims: JwtClaims | null = null;
-      const authHeader = req.headers.authorization || req.headers.Authorization as string;
+      const authHeader = req.headers.authorization || (req.headers.Authorization as string);
 
       if (authHeader) {
         const token = authHeader.replace(/^Bearer\s+/i, '');
@@ -140,9 +140,10 @@ export function createHttpGateway(
         httpMethod: method,
         path: pathname,
         headers,
-        queryStringParameters: Object.keys(parseQueryString(url.search.slice(1))).length > 0
-          ? parseQueryString(url.search.slice(1))
-          : null,
+        queryStringParameters:
+          Object.keys(parseQueryString(url.search.slice(1))).length > 0
+            ? parseQueryString(url.search.slice(1))
+            : null,
         pathParameters: null, // 由 Lambda 路由解析
         body: body || null,
         isBase64Encoded: false,
@@ -170,7 +171,6 @@ export function createHttpGateway(
       timer.mark('send_response');
 
       timer.finish(result.statusCode);
-
     } catch (err) {
       console.error(`[HTTP] Error handling ${method} ${pathname}:`, err);
       res.writeHead(500, { 'Content-Type': 'application/json' });

@@ -9,12 +9,18 @@
  * 路由配置与 AWS API Gateway 保持一致
  */
 
-import * as http from 'node:http';
 import * as crypto from 'node:crypto';
+import * as http from 'node:http';
 import WebSocket, { WebSocketServer } from 'ws';
-import type { GatewayConfig, LambdaHttpEvent, LambdaWsEvent, JwtClaims, RouteConfig } from './types';
-import { JwtVerifier } from './jwt-verifier';
-import { LambdaInvoker } from './lambda-invoker';
+import type { JwtVerifier } from './jwt-verifier';
+import type { LambdaInvoker } from './lambda-invoker';
+import type {
+  GatewayConfig,
+  JwtClaims,
+  LambdaHttpEvent,
+  LambdaWsEvent,
+  RouteConfig,
+} from './types';
 
 /**
  * 活跃 WebSocket 连接
@@ -151,11 +157,13 @@ function handleManagementApi(
     const socket = connectionMap.get(connectionId);
     if (socket && socket.readyState === WebSocket.OPEN) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        connectionId,
-        connected: true,
-        claims: connectionClaims.get(connectionId) || null,
-      }));
+      res.end(
+        JSON.stringify({
+          connectionId,
+          connected: true,
+          claims: connectionClaims.get(connectionId) || null,
+        })
+      );
     } else {
       res.writeHead(410, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ message: 'Gone' }));
@@ -184,11 +192,13 @@ async function handleHttpRequest(
   // Health check
   if ((pathname === '/health' || pathname === '/v1/health') && method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      ok: true,
-      gateway: 'dev-gateway',
-      connections: connectionMap.size,
-    }));
+    res.end(
+      JSON.stringify({
+        ok: true,
+        gateway: 'dev-gateway',
+        connections: connectionMap.size,
+      })
+    );
     return;
   }
 
@@ -238,9 +248,10 @@ async function handleHttpRequest(
     httpMethod: method,
     path: pathname,
     headers,
-    queryStringParameters: Object.keys(parseQueryString(url.search.slice(1))).length > 0
-      ? parseQueryString(url.search.slice(1))
-      : null,
+    queryStringParameters:
+      Object.keys(parseQueryString(url.search.slice(1))).length > 0
+        ? parseQueryString(url.search.slice(1))
+        : null,
     pathParameters: Object.keys(pathParams).length > 0 ? pathParams : null,
     body: body.length > 0 ? body.toString('utf-8') : null,
     isBase64Encoded: false,
@@ -305,7 +316,8 @@ async function handleWebSocketConnection(
   }
 
   // 找到 WebSocket Lambda 函数
-  const wsFunction = config.routes.find(r => r.type === 'websocket')?.function || config.functions.websocket;
+  const wsFunction =
+    config.routes.find((r) => r.type === 'websocket')?.function || config.functions.websocket;
 
   // 调用 $connect
   try {

@@ -1,14 +1,10 @@
 #!/usr/bin/env bun
 /**
- * JWT Tool for local development
+ * Setup Tool - Initialize development environment
  *
  * Usage:
- *   bun run jwt              # Generate a new JWT token
- *   bun run jwt init         # Generate key pair and save to env.json (first-time setup)
- *   bun run jwt --accountId xxx  # Generate token with custom accountId
- *
- * Output:
- *   Prints a Bearer token to stdout.
+ *   bun run setup         # Full environment setup (install deps, generate keys, etc.)
+ *   bun run setup jwt     # Generate a new JWT token for API testing
  */
 
 import * as crypto from 'node:crypto';
@@ -25,11 +21,7 @@ const ENV_JSON_EXAMPLE_PATH = resolve(import.meta.dirname, '..', 'env.json.examp
 
 function base64url(input: Buffer | string): string {
   const buf = typeof input === 'string' ? Buffer.from(input) : input;
-  return buf
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
+  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
 function signEd25519Jwt(
@@ -76,18 +68,55 @@ function loadKeysFromEnvJson(): { privateKey?: string; issuer?: string } {
 // ============================================================================
 
 /**
- * Generate Ed25519 key pair and save to env.json
+ * Full environment setup
  */
-async function initKeys(): Promise<void> {
+async function setupEnvironment(): Promise<void> {
+  console.log('🚀 Setting up development environment...\n');
+
+  // Step 1: Check if env.json exists, create if not
   let envConfig: Record<string, unknown>;
 
-  // Check if env.json exists
   if (existsSync(ENV_JSON_PATH)) {
-    console.log(`📄 Found existing env.json`);
+    console.log('✅ env.json exists');
     const content = readFileSync(ENV_JSON_PATH, 'utf-8');
     envConfig = JSON.parse(content);
   } else if (existsSync(ENV_JSON_EXAMPLE_PATH)) {
-    console.log(`📄 env.json not found, creating from env.json.example`);
+    console.log('📄 Creating env.json from env.json.example...');
+    const content = readFileSync(ENV_JSON_EXAMPLE_PATH, 'utf-8');
+    envConfig = JSON.parse(content);
+    writeFileSync(ENV_JSON_PATH, content);
+    console.log('✅ env.json created');
+  } else {
+    console.error('❌ Neither env.json nor env.json.example found');
+    process.exit(1);
+  }
+
+  // Step 2: Check if JWT keys exist, generate if not
+  const e2eConfig = envConfig.E2ETests as Record<string, unknown> | undefined;
+  if (!e2eConfig?.LOCAL_JWT_PRIVATE_KEY) {
+    console.log('\n🔐 Generating JWT keys...');
+    await generateKeys();
+  } else {
+    console.log('✅ JWT keys already configured');
+  }
+
+  console.log('\n✅ Setup complete!');
+  console.log('\nNext steps:');
+  console.log('  1. Start development: bun run dev');
+  console.log('  2. Run tests: bun run test');
+}
+
+/**
+ * Generate Ed25519 key pair and save to env.json
+ */
+async function generateKeys(): Promise<void> {
+  let envConfig: Record<string, unknown>;
+
+  if (existsSync(ENV_JSON_PATH)) {
+    const content = readFileSync(ENV_JSON_PATH, 'utf-8');
+    envConfig = JSON.parse(content);
+  } else if (existsSync(ENV_JSON_EXAMPLE_PATH)) {
+    console.log('📄 Creating env.json from env.json.example...');
     const content = readFileSync(ENV_JSON_EXAMPLE_PATH, 'utf-8');
     envConfig = JSON.parse(content);
   } else {
@@ -96,7 +125,6 @@ async function initKeys(): Promise<void> {
   }
 
   // Generate Ed25519 key pair
-  console.log(`🔐 Generating Ed25519 key pair...`);
   const { privateKey, publicKey } = generateKeyPairSync('ed25519', {
     privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     publicKeyEncoding: { type: 'spki', format: 'pem' },
@@ -113,7 +141,6 @@ async function initKeys(): Promise<void> {
     }
     funcConfig.LOCAL_JWT_PUBLIC_KEY = publicKey;
     funcConfig.LOCAL_JWT_ISSUER = 'local-dev';
-    console.log(`  ✅ Updated ${funcName}`);
   }
 
   // Store private key in E2ETests section
@@ -125,29 +152,24 @@ async function initKeys(): Promise<void> {
   e2eConfig.LOCAL_JWT_PRIVATE_KEY = privateKey;
   e2eConfig.LOCAL_JWT_PUBLIC_KEY = publicKey;
   e2eConfig.LOCAL_JWT_ISSUER = 'local-dev';
-  console.log(`  ✅ Updated E2ETests`);
 
   // Write back to env.json
   writeFileSync(ENV_JSON_PATH, `${JSON.stringify(envConfig, null, 2)}\n`);
 
-  console.log(`\n💾 Saved to: env.json`);
-  console.log(`\n✅ Done! Restart SAM Local to pick up the new keys.`);
+  console.log('✅ JWT keys generated and saved to env.json');
 }
 
 /**
  * Generate a new JWT token
  */
-function generateToken(accountId?: string): void {
+function generateJwt(accountId?: string): void {
   const fromEnvJson = loadKeysFromEnvJson();
 
   const privateKeyPem = process.env.LOCAL_JWT_PRIVATE_KEY || fromEnvJson.privateKey;
   const issuer = process.env.LOCAL_JWT_ISSUER || fromEnvJson.issuer || 'local-dev';
 
   if (!privateKeyPem) {
-    console.error(
-      '❌ Missing JWT keys.\n\n' +
-      'Run `bun run jwt init` to generate keys first.'
-    );
+    console.error('❌ Missing JWT keys.\n\n' + 'Run `bun run setup` to generate keys first.');
     process.exit(1);
   }
 
@@ -175,7 +197,6 @@ function generateToken(accountId?: string): void {
 function parseArgs(argv: string[]): { command?: string; accountId?: string } {
   const result: { command?: string; accountId?: string } = {};
 
-  // Check for subcommand (first non-flag argument)
   for (const arg of argv) {
     if (!arg.startsWith('-')) {
       result.command = arg;
@@ -183,7 +204,6 @@ function parseArgs(argv: string[]): { command?: string; accountId?: string } {
     }
   }
 
-  // Check for --accountId
   const idxAccountId = argv.indexOf('--accountId');
   if (idxAccountId >= 0) {
     result.accountId = argv[idxAccountId + 1];
@@ -194,11 +214,19 @@ function parseArgs(argv: string[]): { command?: string; accountId?: string } {
 
 const args = parseArgs(process.argv.slice(2));
 
-if (args.command === 'init') {
-  initKeys().catch((error) => {
-    console.error('❌ Error:', error.message);
-    process.exit(1);
-  });
-} else {
-  generateToken(args.accountId);
+switch (args.command) {
+  case 'jwt':
+    generateJwt(args.accountId);
+    break;
+  case 'keys':
+    generateKeys().catch((error) => {
+      console.error('❌ Error:', error.message);
+      process.exit(1);
+    });
+    break;
+  default:
+    setupEnvironment().catch((error) => {
+      console.error('❌ Error:', error.message);
+      process.exit(1);
+    });
 }

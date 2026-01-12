@@ -2,14 +2,14 @@
  * WebSocket 连接处理器
  */
 
-import type { APIGatewayProxyResult } from 'aws-lambda';
+import type { ConnectedMessage, WsConnection } from '@automabase/automata-core';
 import {
   consumeWsToken,
-  saveConnection,
   deleteConnection,
   getConnection,
+  saveConnection,
 } from '@automabase/automata-core';
-import type { WsConnection, ConnectedMessage } from '@automabase/automata-core';
+import type { APIGatewayProxyResult } from 'aws-lambda';
 
 /**
  * 处理 WebSocket 连接 ($connect)

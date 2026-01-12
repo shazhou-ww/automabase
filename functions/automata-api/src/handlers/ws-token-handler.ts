@@ -4,10 +4,10 @@
  * 提供一次性 WebSocket Token 的获取接口
  */
 
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import type { JwtVerifierConfig, LocalDevConfig } from '@automabase/automata-auth';
 import { verifyAndExtractContextWithDevMode } from '@automabase/automata-auth';
-import type { LocalDevConfig, JwtVerifierConfig } from '@automabase/automata-auth';
 import { createWsToken } from '@automabase/automata-core';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 /**
  * JWT 验证配置
@@ -49,11 +49,7 @@ export async function getWsTokenHandler(
     const jwtConfig = getJwtConfig();
     const localDevConfig = getLocalDevConfig();
 
-    const authContext = await verifyAndExtractContextWithDevMode(
-      token,
-      jwtConfig,
-      localDevConfig
-    );
+    const authContext = await verifyAndExtractContextWithDevMode(token, jwtConfig, localDevConfig);
 
     // 2. 检查账户是否已注册
     if (!authContext.accountId) {

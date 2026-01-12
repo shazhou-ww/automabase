@@ -22,13 +22,38 @@ const DEFAULT_ROUTES: RouteConfig[] = [
   { type: 'http', method: 'ANY', path: '/v1/accounts/{accountId}', function: 'automata-api' },
 
   // Automata 路由
-  { type: 'http', method: 'ANY', path: '/v1/accounts/{accountId}/automatas', function: 'automata-api' },
-  { type: 'http', method: 'ANY', path: '/v1/accounts/{accountId}/automatas/{automataId}', function: 'automata-api' },
-  { type: 'http', method: 'ANY', path: '/v1/accounts/{accountId}/automatas/{automataId}/state', function: 'automata-api' },
+  {
+    type: 'http',
+    method: 'ANY',
+    path: '/v1/accounts/{accountId}/automatas',
+    function: 'automata-api',
+  },
+  {
+    type: 'http',
+    method: 'ANY',
+    path: '/v1/accounts/{accountId}/automatas/{automataId}',
+    function: 'automata-api',
+  },
+  {
+    type: 'http',
+    method: 'ANY',
+    path: '/v1/accounts/{accountId}/automatas/{automataId}/state',
+    function: 'automata-api',
+  },
 
   // Event 路由
-  { type: 'http', method: 'ANY', path: '/v1/accounts/{accountId}/automatas/{automataId}/events', function: 'automata-api' },
-  { type: 'http', method: 'GET', path: '/v1/accounts/{accountId}/automatas/{automataId}/events/{baseVersion}', function: 'automata-api' },
+  {
+    type: 'http',
+    method: 'ANY',
+    path: '/v1/accounts/{accountId}/automatas/{automataId}/events',
+    function: 'automata-api',
+  },
+  {
+    type: 'http',
+    method: 'GET',
+    path: '/v1/accounts/{accountId}/automatas/{automataId}/events/{baseVersion}',
+    function: 'automata-api',
+  },
 
   // WebSocket Token 路由
   { type: 'http', method: 'POST', path: '/v1/ws/token', function: 'automata-api' },
@@ -233,11 +258,7 @@ async function loadJwtFromEnvJson(rootDir: string): Promise<{
     const parsed = JSON.parse(content) as Record<string, any>;
 
     // 尝试从 E2ETests 或其他函数配置中读取
-    const sources = [
-      parsed.E2ETests,
-      parsed.AutomataApiFunction,
-      parsed.AutomataWsFunction,
-    ];
+    const sources = [parsed.E2ETests, parsed.AutomataApiFunction, parsed.AutomataWsFunction];
 
     for (const source of sources) {
       if (source?.LOCAL_JWT_PUBLIC_KEY) {
@@ -286,7 +307,10 @@ export async function loadConfig(rootDir: string, argv: string[]): Promise<Gatew
   // 设置环境变量供 Lambda 使用（向后兼容）
   if (envJsonConfig.dynamodbEndpoint && targetMode === 'direct') {
     // 本地运行时使用 localhost
-    process.env.DYNAMODB_ENDPOINT = envJsonConfig.dynamodbEndpoint.replace('host.docker.internal', 'localhost');
+    process.env.DYNAMODB_ENDPOINT = envJsonConfig.dynamodbEndpoint.replace(
+      'host.docker.internal',
+      'localhost'
+    );
     process.env.DYNAMODB_TABLE_NAME = 'automabase-dev';
     process.env.AUTOMABASE_TABLE = 'automabase-dev';
   }
@@ -319,9 +343,7 @@ function mergeConfig(base: GatewayConfig, override: PartialGatewayConfig): Gatew
       ...base.functions,
       ...(override.functions || {}),
     },
-    sam: base.sam && override.sam
-      ? { ...base.sam, ...override.sam }
-      : (override.sam || base.sam),
+    sam: base.sam && override.sam ? { ...base.sam, ...override.sam } : override.sam || base.sam,
     routes: override.routes ?? base.routes,
   };
 }

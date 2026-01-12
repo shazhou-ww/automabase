@@ -1,6 +1,6 @@
 /**
  * DynamoDB Client
- * 
+ *
  * 使用懒加载模式，在首次调用时读取环境变量初始化客户端。
  * 这样可以确保 dev-gateway 设置的环境变量能正确生效。
  */
@@ -14,14 +14,14 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
  * 在调用时读取环境变量，而不是模块加载时
  */
 function createClientConfig(): DynamoDBClientConfig {
-  const tableName = process.env.DYNAMODB_TABLE_NAME || process.env.AUTOMABASE_TABLE || 'automabase-dev';
+  const tableName =
+    process.env.DYNAMODB_TABLE_NAME || process.env.AUTOMABASE_TABLE || 'automabase-dev';
   const region = process.env.AWS_REGION || 'ap-northeast-1';
   const dynamodbEndpoint = process.env.DYNAMODB_ENDPOINT;
 
   // Check if running locally
-  const isLocal = process.env.AWS_SAM_LOCAL === 'true'
-    || process.env.LOCALSTACK === 'true'
-    || !!dynamodbEndpoint;
+  const isLocal =
+    process.env.AWS_SAM_LOCAL === 'true' || process.env.LOCALSTACK === 'true' || !!dynamodbEndpoint;
 
   if (isLocal) {
     const endpoint = dynamodbEndpoint || 'http://host.docker.internal:8000';

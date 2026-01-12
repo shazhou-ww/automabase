@@ -2,9 +2,12 @@
  * WebSocket 消息广播服务
  */
 
-import { ApiGatewayManagementApiClient, PostToConnectionCommand } from '@aws-sdk/client-apigatewaymanagementapi';
-import { getSubscribersByAutomata, deleteSubscription } from '@automabase/automata-core';
 import type { StateUpdateMessage } from '@automabase/automata-core';
+import { deleteSubscription, getSubscribersByAutomata } from '@automabase/automata-core';
+import {
+  ApiGatewayManagementApiClient,
+  PostToConnectionCommand,
+} from '@aws-sdk/client-apigatewaymanagementapi';
 
 let apiGatewayClient: ApiGatewayManagementApiClient | null = null;
 
@@ -30,10 +33,7 @@ function getApiGatewayClient(): ApiGatewayManagementApiClient {
 /**
  * 向指定连接发送消息
  */
-export async function sendToConnection(
-  connectionId: string,
-  message: unknown
-): Promise<boolean> {
+export async function sendToConnection(connectionId: string, message: unknown): Promise<boolean> {
   try {
     const client = getApiGatewayClient();
     await client.send(
@@ -101,7 +101,9 @@ export async function broadcastStateUpdate(
   );
 
   // 清理失效的连接
-  const failedConnections = results.filter((r: { connectionId: string; success: boolean }) => !r.success);
+  const failedConnections = results.filter(
+    (r: { connectionId: string; success: boolean }) => !r.success
+  );
   for (const { connectionId } of failedConnections) {
     console.log(`[WS] Cleaning up stale subscription: ${connectionId} -> ${automataId}`);
     await deleteSubscription(connectionId, automataId);

@@ -2,11 +2,11 @@
  * WebSocket E2E Tests
  */
 
-import { WebSocket } from 'ws';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { WebSocket } from 'ws';
 import { type ApiClient, createClient, generateKeyPair } from './client';
-import { APP_REGISTRY_BLUEPRINT, getTestTokenAsync } from './helpers';
 import { config } from './config';
+import { APP_REGISTRY_BLUEPRINT, getTestTokenAsync } from './helpers';
 
 // Helper to wait for WS open
 function waitForOpen(ws: WebSocket): Promise<void> {
@@ -60,18 +60,18 @@ describe('Automata WebSocket API', () => {
 
     // Determine WS URL
     if (config.isLocal) {
-        // Local sam doesn't support WS, so we might skip or fail.
-        // Assuming a hypothetical local WS server on port 3001 for testing purposes
-        // or derived from apiBaseUrl
-        wsUrl = process.env.WS_API_URL || 'ws://localhost:3001';
+      // Local sam doesn't support WS, so we might skip or fail.
+      // Assuming a hypothetical local WS server on port 3001 for testing purposes
+      // or derived from apiBaseUrl
+      wsUrl = process.env.WS_API_URL || 'ws://localhost:3001';
     } else {
-        // For deployed env, derive from stack output or env var. 
-        // Here we assume it's passed via env var or we need to query CloudFormation (too complex for now).
-        // Let's rely on WS_API_URL env var.
-        if (!process.env.WS_API_URL) {
-            console.warn('WS_API_URL not set, tests may fail against deployed env');
-        }
-        wsUrl = process.env.WS_API_URL || '';
+      // For deployed env, derive from stack output or env var.
+      // Here we assume it's passed via env var or we need to query CloudFormation (too complex for now).
+      // Let's rely on WS_API_URL env var.
+      if (!process.env.WS_API_URL) {
+        console.warn('WS_API_URL not set, tests may fail against deployed env');
+      }
+      wsUrl = process.env.WS_API_URL || '';
     }
   });
 
@@ -135,7 +135,7 @@ describe('Automata WebSocket API', () => {
         path: '/v1/ws/token',
       });
       const token = (tokenRes.data as any).token;
-      
+
       ws = new WebSocket(`${wsUrl}?token=${token}`);
       await waitForOpen(ws);
     });
@@ -162,14 +162,15 @@ describe('Automata WebSocket API', () => {
         body: {
           event: {
             type: 'UPDATE_METADATA',
-            payload: { name: 'Updated Name Via E2E' }
-          }
+            payload: { name: 'Updated Name Via E2E' },
+          },
         },
       });
 
       // 4. Wait for update message
-      const updateMsg = await waitForMessage(ws, (msg) => 
-        msg.type === 'state_update' && msg.automataId === automataId
+      const updateMsg = await waitForMessage(
+        ws,
+        (msg) => msg.type === 'state_update' && msg.automataId === automataId
       );
 
       expect(updateMsg).toBeDefined();
