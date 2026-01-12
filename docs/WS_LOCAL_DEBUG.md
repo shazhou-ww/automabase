@@ -4,7 +4,8 @@ SAM CLI 目前无法本地模拟 API Gateway WebSocket 的 `$connect / $disconne
 本仓库采用的可行方案是：
 
 - 本地启动一个 WebSocket Server（用于真实 ws 客户端连接）
-- 同时暴露一个最小版的 **Management API**（`POST /@connections/{id}`），让 Lambda 内的 `ApiGatewayManagementApiClient(PostToConnectionCommand)` 在本地也能“回推消息”
+- 同时暴露一个最小版的 **Management API**（`POST /@connections/{id}`），
+  让 Lambda 内的 `ApiGatewayManagementApiClient(PostToConnectionCommand)` 在本地也能"回推消息"
 - 通过本地 gateway 触发 Lambda handler 的 `$connect/$default/$disconnect`（默认 **direct** 模式直接调用 handler；也支持 **sam** 模式）
 
 ## 1) 一次性准备

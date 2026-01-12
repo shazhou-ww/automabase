@@ -60,11 +60,25 @@
   },
   "overrides": [
     {
-      "includes": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"],
+      "includes": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx", "e2e/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off",
+            "noDuplicateTestHooks": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/dev-gateway/**", "scripts/**"],
       "linter": {
         "rules": {
           "suspicious": {
             "noExplicitAny": "off"
+          },
+          "style": {
+            "noNonNullAssertion": "off"
           }
         }
       }

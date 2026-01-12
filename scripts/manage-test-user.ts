@@ -79,7 +79,7 @@ async function main() {
       `USERNAME=${USERNAME},PASSWORD=${PASSWORD}`,
     ]);
 
-    if (result && result.AuthenticationResult) {
+    if (result?.AuthenticationResult) {
       const idToken = result.AuthenticationResult.IdToken;
       console.log('\n✅ Login Successful!');
       console.log('---------------------------------------------------');

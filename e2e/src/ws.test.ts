@@ -26,7 +26,7 @@ function waitForMessage(ws: WebSocket, predicate: (data: any) => boolean): Promi
           ws.off('message', handler);
           resolve(parsed);
         }
-      } catch (e) {
+      } catch (_e) {
         // Ignore parse errors
       }
     };
@@ -83,9 +83,9 @@ describe('Automata WebSocket API', () => {
       const ws = new WebSocket(wsUrl);
       try {
         await waitForOpen(ws);
-      } catch (err) {
+      } catch (_err) {
         // Expected failure
-        expect(err).toBeDefined();
+        expect(_err).toBeDefined();
       }
       ws.close();
     });
@@ -97,7 +97,7 @@ describe('Automata WebSocket API', () => {
         // Should close immediately usually
         await new Promise((resolve) => setTimeout(resolve, 100));
         expect(ws.readyState).not.toBe(WebSocket.OPEN);
-      } catch (err) {
+      } catch (_err) {
         // Expected
       }
       ws.close();

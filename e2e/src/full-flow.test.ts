@@ -29,7 +29,7 @@ function waitForOpen(ws: WebSocket): Promise<void> {
 }
 
 // Helper to wait for a message matching predicate
-function waitForMessage(
+function _waitForMessage(
   ws: WebSocket,
   predicate: (data: any) => boolean,
   timeoutMs = 5000
