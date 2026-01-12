@@ -32,32 +32,6 @@ function readRequestBody(req: http.IncomingMessage): Promise<string> {
 }
 
 /**
- * 解析路径参数
- */
-function parsePathParams(pathTemplate: string, actualPath: string): Record<string, string> | null {
-  // 简化实现：匹配 {param} 模式
-  const templateParts = pathTemplate.split('/');
-  const actualParts = actualPath.split('/');
-
-  if (templateParts.length !== actualParts.length) return null;
-
-  const params: Record<string, string> = {};
-  for (let i = 0; i < templateParts.length; i++) {
-    const template = templateParts[i];
-    const actual = actualParts[i];
-
-    if (template.startsWith('{') && template.endsWith('}')) {
-      const paramName = template.slice(1, -1);
-      params[paramName] = actual;
-    } else if (template !== actual) {
-      return null;
-    }
-  }
-
-  return params;
-}
-
-/**
  * 解析查询字符串
  */
 function parseQueryString(queryString: string): Record<string, string | undefined> {
@@ -81,7 +55,6 @@ export function createHttpGateway(
 ): http.Server {
   const server = http.createServer(async (req, res) => {
     const requestId = crypto.randomUUID();
-    const startTime = Date.now();
 
     // 解析 URL
     const url = new URL(req.url || '/', `http://localhost:${config.httpPort}`);

@@ -10,7 +10,7 @@
 import * as crypto from 'node:crypto';
 import * as http from 'node:http';
 import WebSocket, { WebSocketServer } from 'ws';
-import { type JwtVerifier, parseJwt } from './jwt-verifier';
+import type { JwtVerifier } from './jwt-verifier';
 import type { LambdaInvoker } from './lambda-invoker';
 import type { GatewayConfig, JwtClaims, LambdaWsEvent } from './types';
 

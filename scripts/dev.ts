@@ -64,7 +64,7 @@ const isWindows = process.platform === 'win32';
  * Spawn a process with colored output
  */
 function spawnService(
-  name: string,
+  _name: string,
   prefix: string,
   command: string[],
   options: { cwd?: string; env?: Record<string, string>; shell?: boolean } = {}
@@ -182,7 +182,7 @@ async function isDynamoRunning(): Promise<boolean> {
  */
 async function isSamRunning(): Promise<boolean> {
   try {
-    const response = await fetch('http://localhost:3001');
+    await fetch('http://localhost:3001');
     return true; // Any response means it's running
   } catch {
     return false;
