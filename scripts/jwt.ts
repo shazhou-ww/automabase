@@ -146,7 +146,7 @@ function generateToken(accountId?: string): void {
   if (!privateKeyPem) {
     console.error(
       '❌ Missing JWT keys.\n\n' +
-        'Run `bun run jwt init` to generate keys first.'
+      'Run `bun run jwt init` to generate keys first.'
     );
     process.exit(1);
   }
