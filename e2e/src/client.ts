@@ -378,6 +378,14 @@ export class ApiClient {
       path: `/v1/accounts/${targetAccountId}/automatas/${automataId}/events/${version}`,
     });
   }
+
+  // WebSocket API
+  async getWsToken(): Promise<ApiResponse<{ token: string }>> {
+    return this.request({
+      method: 'POST',
+      path: '/v1/ws/token',
+    });
+  }
 }
 
 /**

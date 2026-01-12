@@ -6,6 +6,7 @@
       "name": "automabase",
       "dependencies": {
         "@noble/hashes": "^2.0.1",
+        "ws": "^8.19.0",
       },
       "devDependencies": {
         "@aws-sdk/client-dynamodb": "^3.965.0",
@@ -28,6 +29,7 @@
         "@types/node": "^20.19.27",
         "@types/react": "^18.3.27",
         "@types/react-dom": "^18.3.7",
+        "@types/ws": "^8.18.1",
         "@vitejs/plugin-react": "^4.7.0",
         "@vitest/coverage-v8": "^1.6.1",
         "elysia": "^1.4.21",
@@ -47,6 +49,21 @@
         "typescript": "^5.9.3",
         "vite": "^5.4.21",
         "vitest": "^1.6.1",
+      },
+    },
+    "apps/dev-gateway": {
+      "name": "@automabase/dev-gateway",
+      "version": "0.1.0",
+      "dependencies": {
+        "@automabase/automata-auth": "workspace:*",
+        "ws": "^8.18.0",
+      },
+      "devDependencies": {
+        "@types/aws-lambda": "^8.10.147",
+        "@types/node": "^22.12.0",
+        "@types/ws": "^8.18.0",
+        "bun-types": "^1.3.5",
+        "typescript": "^5.7.3",
       },
     },
     "e2e": {
@@ -150,6 +167,8 @@
     "@automabase/automata-core": ["@automabase/automata-core@workspace:packages/automata-core"],
 
     "@automabase/automata-server": ["@automabase/automata-server@workspace:packages/automata-server"],
+
+    "@automabase/dev-gateway": ["@automabase/dev-gateway@workspace:apps/dev-gateway"],
 
     "@automabase/e2e": ["@automabase/e2e@workspace:e2e"],
 
@@ -960,6 +979,8 @@
     "yallist": ["yallist@3.1.1", "", {}, "sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g=="],
 
     "yocto-queue": ["yocto-queue@1.2.2", "", {}, "sha512-4LCcse/U2MHZ63HAJVE+v71o7yOdIe4cZ70Wpf8D/IyjDKYQLV5GD46B+hSTjJsvV5PztjvHoU580EftxjDZFQ=="],
+
+    "@automabase/dev-gateway/@types/node": ["@types/node@22.19.5", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-HfF8+mYcHPcPypui3w3mvzuIErlNOh2OAG+BCeBZCEwyiD5ls2SiCwEyT47OELtf7M3nHxBdu0FsmzdKxkN52Q=="],
 
     "@aws-crypto/sha256-browser/@smithy/util-utf8": ["@smithy/util-utf8@2.3.0", "", { "dependencies": { "@smithy/util-buffer-from": "^2.2.0", "tslib": "^2.6.2" } }, "sha512-R8Rdn8Hy72KKcebgLiv8jQcQkXoLMOGGv5uI1/k0l+snqkOzQ1R0ChUBCxWMlBsFMekWjq0wRudIweFs7sKT5A=="],
 

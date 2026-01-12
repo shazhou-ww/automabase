@@ -1,5 +1,8 @@
 /**
  * DynamoDB Client
+ * 
+ * 使用懒加载模式，在首次调用时读取环境变量初始化客户端。
+ * 这样可以确保 dev-gateway 设置的环境变量能正确生效。
  */
 
 import type { DynamoDBClientConfig } from '@aws-sdk/client-dynamodb';
@@ -7,58 +10,91 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 
 /**
- * 环境变量配置
- */
-const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || 'automabase-dev';
-const REGION = process.env.AWS_REGION || 'ap-northeast-1';
-
-// Check if running locally (SAM Local or LocalStack)
-const isLocal = process.env.AWS_SAM_LOCAL === 'true' || process.env.LOCALSTACK === 'true';
-
-// Local endpoint configuration
-// Use DYNAMODB_ENDPOINT env var, or default to host.docker.internal for SAM Local
-const localEndpoint = process.env.DYNAMODB_ENDPOINT || 'http://host.docker.internal:8000';
-
-/**
- * DynamoDB 客户端配置
+ * DynamoDB 客户端配置（懒加载）
+ * 在调用时读取环境变量，而不是模块加载时
  */
 function createClientConfig(): DynamoDBClientConfig {
+  const tableName = process.env.DYNAMODB_TABLE_NAME || process.env.AUTOMABASE_TABLE || 'automabase-dev';
+  const region = process.env.AWS_REGION || 'ap-northeast-1';
+  const dynamodbEndpoint = process.env.DYNAMODB_ENDPOINT;
+
+  // Check if running locally
+  const isLocal = process.env.AWS_SAM_LOCAL === 'true'
+    || process.env.LOCALSTACK === 'true'
+    || !!dynamodbEndpoint;
+
   if (isLocal) {
+    const endpoint = dynamodbEndpoint || 'http://host.docker.internal:8000';
+    console.log(`[DynamoDB] Using local endpoint: ${endpoint}, table: ${tableName}`);
     return {
-      endpoint: localEndpoint,
-      region: REGION,
+      endpoint,
+      region,
       credentials: {
         accessKeyId: 'local',
         secretAccessKey: 'local',
       },
     };
   }
-  return { region: REGION };
+  return { region };
+}
+
+// 懒加载客户端实例
+let _dynamoDbClient: DynamoDBClient | null = null;
+let _docClient: DynamoDBDocumentClient | null = null;
+
+/**
+ * 获取 DynamoDB 原始客户端（懒加载）
+ */
+export function getDynamoDbClient(): DynamoDBClient {
+  if (!_dynamoDbClient) {
+    _dynamoDbClient = new DynamoDBClient(createClientConfig());
+  }
+  return _dynamoDbClient;
 }
 
 /**
- * DynamoDB 原始客户端
+ * 获取 DynamoDB Document 客户端（懒加载）
  */
-export const dynamoDbClient = new DynamoDBClient(createClientConfig());
+export function getDocClient(): DynamoDBDocumentClient {
+  if (!_docClient) {
+    _docClient = DynamoDBDocumentClient.from(getDynamoDbClient(), {
+      marshallOptions: {
+        removeUndefinedValues: true,
+        convertEmptyValues: false,
+      },
+      unmarshallOptions: {
+        wrapNumbers: false,
+      },
+    });
+  }
+  return _docClient;
+}
 
 /**
- * DynamoDB Document 客户端（带类型转换）
+ * DynamoDB 原始客户端（向后兼容，使用 getter）
+ * @deprecated 使用 getDynamoDbClient() 代替
  */
-export const docClient = DynamoDBDocumentClient.from(dynamoDbClient, {
-  marshallOptions: {
-    removeUndefinedValues: true,
-    convertEmptyValues: false,
-  },
-  unmarshallOptions: {
-    wrapNumbers: false,
+export const dynamoDbClient = new Proxy({} as DynamoDBClient, {
+  get(_, prop) {
+    return Reflect.get(getDynamoDbClient(), prop);
   },
 });
 
 /**
- * 获取表名
+ * DynamoDB Document 客户端（向后兼容，使用 getter）
+ * @deprecated 使用 getDocClient() 代替
+ */
+export const docClient = new Proxy({} as DynamoDBDocumentClient, {
+  get(_, prop) {
+    return Reflect.get(getDocClient(), prop);
+  },
+});
+
+/**
+ * 获取表名（懒加载）
  */
 export function getTableName(): string {
-  return TABLE_NAME;
+  return process.env.DYNAMODB_TABLE_NAME || process.env.AUTOMABASE_TABLE || 'automabase-dev';
 }
 
 /**

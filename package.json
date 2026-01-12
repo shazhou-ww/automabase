@@ -4,6 +4,7 @@
   "description": "Automabase - Fullstack Monorepo with Bun",
   "type": "module",
   "workspaces": [
+    "apps/*",
     "functions/*",
     "packages/*",
     "webapps/*",
@@ -16,7 +17,10 @@
   },
   "scripts": {
     "keygen": "bun scripts/keygen.ts",
+    "jwt:local": "bun scripts/local-jwt.ts",
     "setup:db": "bun scripts/setup-local-db.ts",
+    "dev:gateway": "bun run apps/dev-gateway/src/index.ts",
+    "dev:gateway:remote": "bun run apps/dev-gateway/src/index.ts --mode remote",
     "create:function": "bun scripts/create.ts function",
     "create:package": "bun scripts/create.ts package",
     "create:webapp": "bun scripts/create.ts webapp",
@@ -36,7 +40,7 @@
     "sam:merge": "bun scripts/merge-templates.ts",
     "sam:build": "bun run build:functions && bun run sam:merge && sam build --template-file merged-template.yaml",
     "sam:validate": "bun run sam:merge && sam validate --template-file merged-template.yaml",
-    "sam:local": "bun run sam:build && sam local start-api --template-file merged-template.yaml --env-vars env.json --skip-pull-image --docker-network bridge",
+    "sam:local": "bun run sam:build && sam local start-lambda --template-file merged-template.yaml --env-vars env.json --skip-pull-image --docker-network bridge --warm-containers EAGER --port 3002",
     "sam:invoke": "bun run sam:build && sam local invoke --template-file merged-template.yaml --skip-pull-image",
     "sam:package": "bun run sam:build && sam package --template-file merged-template.yaml --output-template-file packaged.yaml",
     "sam:deploy": "bun run sam:build && sam deploy --template-file merged-template.yaml",
@@ -64,6 +68,7 @@
     "@types/node": "^20.19.27",
     "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.7",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.7.0",
     "@vitest/coverage-v8": "^1.6.1",
     "elysia": "^1.4.21",
@@ -85,6 +90,7 @@
     "vitest": "^1.6.1"
   },
   "dependencies": {
-    "@noble/hashes": "^2.0.1"
+    "@noble/hashes": "^2.0.1",
+    "ws": "^8.19.0"
   }
 }

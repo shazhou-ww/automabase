@@ -37,6 +37,10 @@ AutomataWsFunction:
         DYNAMODB_TABLE_NAME: !Ref AutomabaseTable
         REQUEST_ID_TABLE: !Ref RequestIdTable
         WEBSOCKET_API_ENDPOINT: !Sub 'https://${AutomataWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+        # Local dev variables (from env.json)
+        LOCAL_JWT_PUBLIC_KEY: local
+        LOCAL_JWT_ISSUER: local
+        DYNAMODB_ENDPOINT: local
     Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref AutomabaseTable

@@ -12,6 +12,12 @@ build/
 *.tsbuildinfo
 .aws-sam/
 
+# Logs
+logs/
+
+# Local dev cache
+.local-jwt-cache
+
 # Environment variables
 .env
 .env.local

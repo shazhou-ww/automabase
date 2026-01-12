@@ -76,6 +76,20 @@ bun run setup:db
 bun run sam:local
 ```
 
+### 2.1 WebSocket 本地调试
+
+SAM CLI 不能本地模拟 API Gateway WebSocket（`$connect / $disconnect / $default`）。
+
+本仓库提供了一个本地 WebSocket Gateway（同时模拟 Management API），用于调试/测试 WebSocket 逻辑：
+
+- 文档： [docs/WS_LOCAL_DEBUG.md](docs/WS_LOCAL_DEBUG.md)
+
+快速启动：
+
+```bash
+bun run ws:local
+```
+
 ### 3. 运行测试
 
 ```bash
