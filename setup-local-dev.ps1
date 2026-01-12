@@ -1,51 +1,86 @@
-# Local Development Setup Guide for PowerShell
-# 
-# This script provides guidance on starting all required services
+# Automabase Local Development Setup (PowerShell)
+#
+# This script sets up the local development environment.
+# For daily development, use: bun run dev
+#
 
-Write-Host "🚀 Automabase Local Development Setup" -ForegroundColor Green
+$ErrorActionPreference = "Stop"
+
+Write-Host ""
+Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Magenta
+Write-Host "  🚀 Automabase Local Development Setup" -ForegroundColor Magenta
+Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Magenta
 Write-Host ""
 
-Write-Host "📋 Service Status:" -ForegroundColor Cyan
+# Check prerequisites
+Write-Host "📋 Checking prerequisites..." -ForegroundColor Cyan
 
-# Check DynamoDB
-$dynamodbRunning = docker ps | Select-String "dynamodb-local"
-if ($dynamodbRunning) {
-    Write-Host "   ✓ DynamoDB Local: Running on port 8000" -ForegroundColor Green
-} else {
-    Write-Host "   ✗ DynamoDB Local: Not running" -ForegroundColor Yellow
-    Write-Host "     Start with: bun run setup:db" -ForegroundColor Gray
+# Check Bun
+try {
+    $bunVersion = bun --version
+    Write-Host "   ✓ Bun $bunVersion" -ForegroundColor Green
+} catch {
+    Write-Host "❌ Bun is not installed. Please install it first:" -ForegroundColor Red
+    Write-Host "   irm bun.sh/install.ps1 | iex" -ForegroundColor Gray
+    exit 1
 }
 
-# Check SAM Local
-$samRunning = netstat -ano 2>$null | Select-String "3000"
-if ($samRunning) {
-    Write-Host "   ✓ SAM Local API: Running on port 3000" -ForegroundColor Green
-} else {
-    Write-Host "   ✗ SAM Local API: Not running" -ForegroundColor Yellow
-    Write-Host "     Start with: bun run sam:local" -ForegroundColor Gray
+# Check Docker
+try {
+    $dockerVersion = docker --version
+    Write-Host "   ✓ $dockerVersion" -ForegroundColor Green
+} catch {
+    Write-Host "❌ Docker is not installed. Please install Docker Desktop." -ForegroundColor Red
+    exit 1
 }
 
-# Check WebSocket Local
-$wsRunning = netstat -ano 2>$null | Select-String "3001"
-if ($wsRunning) {
-    Write-Host "   ✓ WebSocket Gateway: Running on port 3001" -ForegroundColor Green
-} else {
-    Write-Host "   ✗ WebSocket Gateway: Not running" -ForegroundColor Yellow
-    Write-Host "     Start with: bun run ws:local" -ForegroundColor Gray
+# Check SAM CLI
+try {
+    $samVersion = sam --version
+    Write-Host "   ✓ $samVersion" -ForegroundColor Green
+} catch {
+    Write-Host "❌ AWS SAM CLI is not installed. Please install it:" -ForegroundColor Red
+    Write-Host "   https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html" -ForegroundColor Gray
+    exit 1
 }
 
+# Install dependencies
 Write-Host ""
-Write-Host "🎯 Quick Start:" -ForegroundColor Cyan
+Write-Host "📦 Installing dependencies..." -ForegroundColor Cyan
+bun install
+
+# Create env.json if not exists
+if (-not (Test-Path "env.json")) {
+    Write-Host ""
+    Write-Host "⚙️  Creating env.json from template..." -ForegroundColor Cyan
+    Copy-Item "env.json.example" "env.json"
+    
+    # Generate JWT keys
+    Write-Host "🔐 Generating JWT keys..." -ForegroundColor Cyan
+    bun run keygen
+}
+
+# Generate local JWT
 Write-Host ""
-Write-Host "1. In Terminal 1 - Start DynamoDB:" -ForegroundColor Cyan
-Write-Host "   > bun run setup:db" -ForegroundColor Gray
+Write-Host "🔑 Generating local JWT..." -ForegroundColor Cyan
+bun run jwt:local --accountId acc_local_test_001 --refresh
+
 Write-Host ""
-Write-Host "2. In Terminal 2 - Start SAM Local API:" -ForegroundColor Cyan
-Write-Host "   > bun run sam:local" -ForegroundColor Gray
+Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Green
+Write-Host "  ✅ Setup Complete!" -ForegroundColor Green
+Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Green
 Write-Host ""
-Write-Host "3. In Terminal 3 - Start WebSocket Gateway:" -ForegroundColor Cyan
-Write-Host "   > bun run ws:local" -ForegroundColor Gray
+Write-Host "  Start development environment:" -ForegroundColor White
+Write-Host "    bun run dev" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "4. In Terminal 4 - Run Integration Test:" -ForegroundColor Cyan
-Write-Host "   > bun run test:e2e" -ForegroundColor Gray
+Write-Host "  This will start:" -ForegroundColor White
+Write-Host "    - DynamoDB Local:  http://localhost:8000" -ForegroundColor Gray
+Write-Host "    - SAM Lambda:      http://localhost:3002" -ForegroundColor Gray
+Write-Host "    - Dev Gateway:     http://localhost:3001" -ForegroundColor Gray
+Write-Host "    - WebSocket:       ws://localhost:3001" -ForegroundColor Gray
+Write-Host ""
+Write-Host "  Other commands:" -ForegroundColor White
+Write-Host "    bun run dev:skip-build    Skip building (faster restart)" -ForegroundColor Gray
+Write-Host "    bun run test:e2e          Run E2E tests" -ForegroundColor Gray
+Write-Host "    bun run jwt:local         Refresh JWT token" -ForegroundColor Gray
 Write-Host ""

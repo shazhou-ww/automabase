@@ -62,39 +62,49 @@ bun install
 
 ### 2. 本地开发环境
 
+**一键启动所有服务（推荐）：**
+
 ```bash
 # 复制环境变量模板
 cp env.json.example env.json
 
-# 启动 DynamoDB Local（需要 Docker）
-docker run -d -p 8000:8000 --name dynamodb-local amazon/dynamodb-local -jar DynamoDBLocal.jar -sharedDb
+# 一键启动 DynamoDB + SAM + Gateway
+bun run dev
+```
+
+这会自动启动：
+- DynamoDB Local (Docker, port 8000)
+- SAM Lambda Service (port 3002)
+- Dev Gateway (port 3001)
+
+**或者分别启动：**
+
+```bash
+# 启动 DynamoDB Local（Docker）
+docker compose up dynamodb-local
 
 # 创建本地数据库表
 bun run setup:db
 
-# 构建并启动本地 API
+# 启动 SAM Lambda 服务（另一个终端）
 bun run sam:local
+
+# 启动 Dev Gateway（另一个终端）
+bun run dev:gateway:remote
 ```
 
 ### 2.1 WebSocket 本地调试
 
-SAM CLI 不能本地模拟 API Gateway WebSocket（`$connect / $disconnect / $default`）。
+Dev Gateway 同时模拟 HTTP API 和 WebSocket API，支持 Management API：
 
-本仓库提供了一个本地 WebSocket Gateway（同时模拟 Management API），用于调试/测试 WebSocket 逻辑：
-
-- 文档： [docs/WS_LOCAL_DEBUG.md](docs/WS_LOCAL_DEBUG.md)
-
-快速启动：
-
-```bash
-bun run ws:local
-```
+- 文档：[docs/WS_LOCAL_DEBUG.md](docs/WS_LOCAL_DEBUG.md)
+- WebSocket 端点：`ws://localhost:3001`
 
 ### 3. 运行测试
 
 ```bash
-# 运行 E2E 测试（需要先启动 sam:local）
-bun run test:e2e:local
+# 运行 E2E 测试（需要先启动 dev 环境）
+bun run test:e2e
 
 # 运行单元测试
 bun run test

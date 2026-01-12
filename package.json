@@ -16,6 +16,8 @@
     "node": ">=24.0.0"
   },
   "scripts": {
+    "dev": "bun scripts/dev.ts",
+    "dev:skip-build": "bun scripts/dev.ts --skip-build",
     "keygen": "bun scripts/keygen.ts",
     "jwt:local": "bun scripts/local-jwt.ts",
     "setup:db": "bun scripts/setup-local-db.ts",
@@ -71,6 +73,7 @@
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.7.0",
     "@vitest/coverage-v8": "^1.6.1",
+    "concurrently": "^9.2.1",
     "elysia": "^1.4.21",
     "esbuild": "^0.27.2",
     "jose": "^6.1.3",
