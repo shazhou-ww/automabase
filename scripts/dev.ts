@@ -97,7 +97,7 @@ function spawnService(
     }
   })();
 
-  // Stream stderr with prefix
+  // Stream stderr with prefix (gray - many tools output normal logs to stderr)
   (async () => {
     const reader = proc.stderr.getReader();
     const decoder = new TextDecoder();
@@ -107,7 +107,7 @@ function spawnService(
       const lines = decoder.decode(value).split('\n');
       for (const line of lines) {
         if (line.trim()) {
-          console.log(`${prefix} ${colors.red}${line}${colors.reset}`);
+          console.log(`${prefix} ${colors.gray}${line}${colors.reset}`);
         }
       }
     }
