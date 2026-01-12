@@ -40,9 +40,9 @@ const DEFAULT_ROUTES: RouteConfig[] = [
  * 默认配置
  */
 const DEFAULT_CONFIG: GatewayConfig = {
-  port: 3001,
+  port: 3000,
   lambdaMode: 'direct',
-  remoteEndpoint: 'http://127.0.0.1:3002', // sam local start-lambda 默认端口
+  remoteEndpoint: 'http://127.0.0.1:3001', // sam local start-lambda 端口
   jwt: {
     mode: 'local',
     issuer: 'local-dev',

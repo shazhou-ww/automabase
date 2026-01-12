@@ -80,7 +80,7 @@ describe('Full Flow Integration', () => {
     client.setAccountId(accountId);
 
     // Set WS URL
-    wsUrl = process.env.WS_API_URL || 'ws://localhost:3001';
+    wsUrl = process.env.WS_API_URL || 'ws://localhost:3000';
   });
 
   afterAll(async () => {

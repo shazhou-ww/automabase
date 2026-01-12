@@ -75,9 +75,9 @@ Write-Host "    bun run dev" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  This will start:" -ForegroundColor White
 Write-Host "    - DynamoDB Local:  http://localhost:8000" -ForegroundColor Gray
-Write-Host "    - SAM Lambda:      http://localhost:3002" -ForegroundColor Gray
-Write-Host "    - Dev Gateway:     http://localhost:3001" -ForegroundColor Gray
-Write-Host "    - WebSocket:       ws://localhost:3001" -ForegroundColor Gray
+Write-Host "    - SAM Lambda:      http://localhost:3001" -ForegroundColor Gray
+Write-Host "    - Dev Gateway:     http://localhost:3000" -ForegroundColor Gray
+Write-Host "    - WebSocket:       ws://localhost:3000" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  Other commands:" -ForegroundColor White
 Write-Host "    bun run dev:skip-build    Skip building (faster restart)" -ForegroundColor Gray

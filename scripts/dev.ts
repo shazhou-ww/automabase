@@ -56,18 +56,26 @@ function log(prefix: string, message: string) {
 }
 
 /**
+ * Check if running on Windows
+ */
+const isWindows = process.platform === 'win32';
+
+/**
  * Spawn a process with colored output
  */
 function spawnService(
   name: string,
   prefix: string,
   command: string[],
-  options: { cwd?: string; env?: Record<string, string> } = {}
+  options: { cwd?: string; env?: Record<string, string>; shell?: boolean } = {}
 ): Subprocess {
   log(prefix, `Starting: ${command.join(' ')}`);
 
+  // On Windows, use shell for commands like 'sam' that are .cmd files
+  const useShell = options.shell ?? isWindows;
+
   const proc = spawn({
-    cmd: command,
+    cmd: useShell ? [isWindows ? 'cmd' : 'sh', isWindows ? '/c' : '-c', command.join(' ')] : command,
     cwd: options.cwd || ROOT_DIR,
     env: { ...process.env, ...options.env, FORCE_COLOR: '1' },
     stdout: 'pipe',
@@ -172,7 +180,7 @@ async function isDynamoRunning(): Promise<boolean> {
  */
 async function isSamRunning(): Promise<boolean> {
   try {
-    const response = await fetch('http://localhost:3002');
+    const response = await fetch('http://localhost:3001');
     return true; // Any response means it's running
   } catch {
     return false;
@@ -235,12 +243,12 @@ async function main() {
 
   // Step 1: Start DynamoDB Local
   log(prefixes.runner, 'Step 1/4: Starting DynamoDB Local...');
-  
+
   if (await isDynamoRunning()) {
     log(prefixes.dynamo, 'Already running on port 8000');
   } else {
     spawnService('dynamodb', prefixes.dynamo, ['docker', 'compose', 'up', 'dynamodb-local']);
-    
+
     // Wait for DynamoDB
     const dynamoReady = await waitForService('DynamoDB', prefixes.dynamo, 'http://localhost:8000', 30);
     if (!dynamoReady) {
@@ -262,7 +270,7 @@ async function main() {
 
   // Step 3: Build and start SAM
   log(prefixes.runner, 'Step 3/4: Starting SAM Lambda Service...');
-  
+
   if (await isSamRunning()) {
     log(prefixes.sam, 'Already running on port 3002');
   } else {
@@ -275,7 +283,7 @@ async function main() {
         stderr: 'inherit',
       });
       await build.exited;
-      
+
       if (build.exitCode !== 0) {
         log(prefixes.runner, `${colors.red}Build failed. Exiting.${colors.reset}`);
         cleanup();
@@ -291,12 +299,12 @@ async function main() {
       '--skip-pull-image',
       '--docker-network', 'host',
       '--warm-containers', 'EAGER',
-      '--port', '3002',
+      '--port', '3001',
     ]);
 
     // Wait for SAM
     await Bun.sleep(3000); // SAM takes a moment to start
-    const samReady = await waitForService('SAM Lambda', prefixes.sam, 'http://localhost:3002', 60);
+    const samReady = await waitForService('SAM Lambda', prefixes.sam, 'http://localhost:3001', 60);
     if (!samReady) {
       log(prefixes.runner, `${colors.yellow}SAM may still be starting. Continuing...${colors.reset}`);
     }
@@ -307,7 +315,7 @@ async function main() {
   spawnService('gateway', prefixes.gateway, ['bun', 'run', 'apps/dev-gateway/src/index.ts', '--mode', 'remote']);
 
   // Wait for Gateway
-  await waitForService('Dev Gateway', prefixes.gateway, 'http://localhost:3001/health', 30);
+  await waitForService('Dev Gateway', prefixes.gateway, 'http://localhost:3000/health', 30);
 
   // Print summary
   console.log('\n');
@@ -316,9 +324,9 @@ async function main() {
   console.log('━'.repeat(60));
   console.log('\n');
   console.log(`  ${colors.cyan}DynamoDB Local${colors.reset}:    http://localhost:8000`);
-  console.log(`  ${colors.yellow}SAM Lambda${colors.reset}:        http://localhost:3002`);
-  console.log(`  ${colors.green}Dev Gateway${colors.reset}:       http://localhost:3001`);
-  console.log(`  ${colors.green}WebSocket${colors.reset}:         ws://localhost:3001`);
+  console.log(`  ${colors.yellow}SAM Lambda${colors.reset}:        http://localhost:3001`);
+  console.log(`  ${colors.green}Dev Gateway${colors.reset}:       http://localhost:3000`);
+  console.log(`  ${colors.green}WebSocket${colors.reset}:         ws://localhost:3000`);
   console.log('\n');
   console.log(`  ${colors.gray}Generate JWT:${colors.reset}       bun run jwt:local`);
   console.log(`  ${colors.gray}Run E2E tests:${colors.reset}      bun run test:e2e`);

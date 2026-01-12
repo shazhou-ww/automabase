@@ -37,12 +37,12 @@ SAM CLI 目前无法本地模拟 API Gateway WebSocket 的 `$connect / $disconne
 
 默认监听：
 
-- WebSocket：`ws://localhost:3001`
-- Management API：`http://localhost:3001/@connections/{connectionId}`
+- WebSocket：`ws://localhost:3000`
+- Management API：`http://localhost:3000/@connections/{connectionId}`
 
 本地调试建议确保：
 
-- `WEBSOCKET_API_ENDPOINT=http://localhost:3001`
+- `WEBSOCKET_API_ENDPOINT=http://localhost:3000`
 
 建议在 `env.json` 里同时给以下函数配置该变量：
 
@@ -60,7 +60,7 @@ SAM CLI 目前无法本地模拟 API Gateway WebSocket 的 `$connect / $disconne
 
 2) 用 token 连接 ws：
 
-- `wscat -c "ws://localhost:3001?token=<wsToken>"`
+- `wscat -c "ws://localhost:3000?token=<wsToken>"`
 
 3) 发消息（示例）：
 

@@ -98,7 +98,7 @@ bun run dev:gateway:remote
 Dev Gateway 同时模拟 HTTP API 和 WebSocket API，支持 Management API：
 
 - 文档：[docs/WS_LOCAL_DEBUG.md](docs/WS_LOCAL_DEBUG.md)
-- WebSocket 端点：`ws://localhost:3001`
+- WebSocket 端点：`ws://localhost:3000`
 
 ### 3. 运行测试
 
