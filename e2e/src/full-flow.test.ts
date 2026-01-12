@@ -10,7 +10,7 @@
 import { WebSocket } from 'ws';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type ApiClient, createClient, generateKeyPair } from './client';
-import { APP_REGISTRY_BLUEPRINT, getTestTokenAsync } from './helpers';
+import { APP_REGISTRY_BLUEPRINT, generateLocalDevTokenAsync, getTestTokenAsync } from './helpers';
 import { config } from './config';
 
 // Helper to wait for WS open
@@ -78,6 +78,12 @@ describe('Full Flow Integration', () => {
     const accountData = accountResponse.data.account as Record<string, unknown>;
     accountId = accountData.accountId as string;
     client.setAccountId(accountId);
+
+    // Regenerate token with accountId for WS token requests
+    if (config.isLocal) {
+      const tokenWithAccount = await generateLocalDevTokenAsync({ accountId });
+      client.setToken(tokenWithAccount);
+    }
 
     // Set WS URL
     wsUrl = process.env.WS_API_URL || 'ws://localhost:3000';

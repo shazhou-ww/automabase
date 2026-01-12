@@ -21,7 +21,7 @@ ed.etc.sha512Async = async (...m) => sha512(ed.etc.concatBytes(...m));
 
 // Load JWT keys from env.json for local testing
 function loadKeysFromEnvJson(): void {
-  const envJsonPath = resolve(import.meta.dirname, '../../..', 'env.json');
+  const envJsonPath = resolve(import.meta.dirname, '../..', 'env.json');
 
   if (!existsSync(envJsonPath)) {
     console.error('\n❌ env.json not found!');

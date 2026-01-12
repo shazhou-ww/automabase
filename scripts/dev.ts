@@ -15,7 +15,6 @@
 
 import { spawn, type Subprocess } from 'bun';
 import * as path from 'node:path';
-import * as fs from 'node:fs';
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '..');
 

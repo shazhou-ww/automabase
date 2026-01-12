@@ -28,6 +28,7 @@ const DEFAULT_ROUTES: RouteConfig[] = [
 
   // Event 路由
   { type: 'http', method: 'ANY', path: '/v1/accounts/{accountId}/automatas/{automataId}/events', function: 'automata-api' },
+  { type: 'http', method: 'GET', path: '/v1/accounts/{accountId}/automatas/{automataId}/events/{baseVersion}', function: 'automata-api' },
 
   // WebSocket Token 路由
   { type: 'http', method: 'POST', path: '/v1/ws/token', function: 'automata-api' },
