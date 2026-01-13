@@ -169,9 +169,9 @@ describe('Full Flow Integration', () => {
       const stateResponse = await client.getAutomataState(automataId);
       expect(stateResponse.status).toBe(200);
 
-      const data = stateResponse.data as { state: Record<string, unknown> };
-      expect(data.state.name).toBe('My Test App');
-      expect(data.state.status).toBe('draft');
+      const data = stateResponse.data as { currentState: Record<string, unknown> };
+      expect(data.currentState.name).toBe('My Test App');
+      expect(data.currentState.status).toBe('draft');
     });
 
     it('should send PUBLISH event and update status', async () => {
@@ -182,8 +182,8 @@ describe('Full Flow Integration', () => {
       await sleep(300);
 
       const stateResponse = await client.getAutomataState(automataId);
-      const data = stateResponse.data as { state: Record<string, unknown> };
-      expect(data.state.status).toBe('published');
+      const data = stateResponse.data as { currentState: Record<string, unknown> };
+      expect(data.currentState.status).toBe('published');
     });
 
     it('should send UNPUBLISH event and revert to draft', async () => {
@@ -194,8 +194,8 @@ describe('Full Flow Integration', () => {
       await sleep(300);
 
       const stateResponse = await client.getAutomataState(automataId);
-      const data = stateResponse.data as { state: Record<string, unknown> };
-      expect(data.state.status).toBe('draft');
+      const data = stateResponse.data as { currentState: Record<string, unknown> };
+      expect(data.currentState.status).toBe('draft');
     });
 
     it('should send ARCHIVE event and finalize', async () => {
@@ -206,8 +206,8 @@ describe('Full Flow Integration', () => {
       await sleep(300);
 
       const stateResponse = await client.getAutomataState(automataId);
-      const data = stateResponse.data as { state: Record<string, unknown> };
-      expect(data.state.status).toBe('archived');
+      const data = stateResponse.data as { currentState: Record<string, unknown> };
+      expect(data.currentState.status).toBe('archived');
     });
 
     it('should have received WebSocket notifications', async () => {
