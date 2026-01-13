@@ -12,7 +12,7 @@ AutomataApiFunction:
     Environment:
       Variables:
         NODE_ENV: !Ref Environment
-        AUTOMABASE_TABLE: !Ref AutomabaseTable
+        AUTOMABASE_TABLE: !Sub 'automabase-${Environment}'
         COGNITO_USER_POOL_ID: !Ref UserPool
         COGNITO_CLIENT_ID: !Ref UserPoolClient
         # WebSocket API endpoint for broadcasting state updates
