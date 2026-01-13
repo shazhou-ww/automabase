@@ -19,6 +19,12 @@ export async function handleConnect(
   queryParams: Record<string, string | undefined>
 ): Promise<APIGatewayProxyResult> {
   const token = queryParams.token;
+  console.log(
+    '[WS] $connect handler called, connectionId:',
+    connectionId,
+    'token:',
+    token ? 'present' : 'missing'
+  );
 
   if (!token) {
     console.log('[WS] Connection rejected: missing token');
@@ -30,6 +36,7 @@ export async function handleConnect(
 
   // 验证并消费一次性 token
   const accountId = await consumeWsToken(token);
+  console.log('[WS] Token validation result, accountId:', accountId);
 
   if (!accountId) {
     console.log('[WS] Connection rejected: invalid or expired token');
@@ -48,8 +55,7 @@ export async function handleConnect(
   };
 
   await saveConnection(connection);
-
-  console.log(`[WS] Connected: ${connectionId} for account ${accountId}`);
+  console.log(`[WS] Connection saved: ${connectionId} for account ${accountId}`);
 
   return {
     statusCode: 200,

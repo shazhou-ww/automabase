@@ -34,6 +34,7 @@
     "@biomejs/cli-linux-x64": "^2.3.11",
     "@biomejs/cli-win32-arm64": "^2.3.11",
     "@biomejs/cli-win32-x64": "^2.3.11",
+    "@noble/ed25519": "^3.0.0",
     "@rollup/rollup-darwin-arm64": "^4.55.1",
     "@rollup/rollup-darwin-x64": "^4.55.1",
     "@rollup/rollup-linux-arm64-gnu": "^4.55.1",

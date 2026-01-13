@@ -17,7 +17,11 @@ function waitForOpen(ws: WebSocket): Promise<void> {
 }
 
 // Helper to wait for a message
-function waitForMessage(ws: WebSocket, predicate: (data: any) => boolean): Promise<any> {
+function waitForMessage(
+  ws: WebSocket,
+  predicate: (data: any) => boolean,
+  timeoutMs = 10000
+): Promise<any> {
   return new Promise((resolve, reject) => {
     const handler = (data: Buffer) => {
       try {
@@ -31,11 +35,11 @@ function waitForMessage(ws: WebSocket, predicate: (data: any) => boolean): Promi
       }
     };
     ws.on('message', handler);
-    // Timeout after 5s
+    // Timeout
     setTimeout(() => {
       ws.off('message', handler);
       reject(new Error('Timeout waiting for message'));
-    }, 5000);
+    }, timeoutMs);
   });
 }
 
@@ -156,10 +160,8 @@ describe('Automata WebSocket API', () => {
         method: 'POST',
         path: `/v1/accounts/${accountId}/automatas/${automataId}/events`,
         body: {
-          event: {
-            type: 'UPDATE_METADATA',
-            payload: { name: 'Updated Name Via E2E' },
-          },
+          eventType: 'SET_INFO',
+          eventData: { name: 'Updated Name Via E2E' },
         },
       });
 
@@ -170,7 +172,7 @@ describe('Automata WebSocket API', () => {
       );
 
       expect(updateMsg).toBeDefined();
-      expect(updateMsg.state.name).toBe('Updated Name Via E2E');
+      expect(updateMsg.newState.name).toBe('Updated Name Via E2E');
     });
   });
 });

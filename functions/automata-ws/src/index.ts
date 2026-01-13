@@ -30,7 +30,10 @@ function getWebSocketEndpoint(event: APIGatewayProxyEvent): string {
   };
 
   if (domainName && stage) {
-    return `https://${domainName}/${stage}`;
+    // 本地开发时使用 http（检测 localhost 或 host.docker.internal）
+    const isLocal = domainName.includes('localhost') || domainName.includes('host.docker.internal');
+    const protocol = isLocal ? 'http' : 'https';
+    return `${protocol}://${domainName}/${stage}`;
   }
 
   // 本地开发时使用环境变量
@@ -77,6 +80,7 @@ export const handler = async (
       case '$default': {
         // 解析消息
         const body = event.body;
+        console.log(`[WS] $default body:`, body);
         if (!body) {
           return { statusCode: 400, body: 'Empty message' };
         }

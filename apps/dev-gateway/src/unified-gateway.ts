@@ -289,7 +289,7 @@ async function handleWebSocketConnection(
   ws: WebSocket,
   req: http.IncomingMessage,
   config: GatewayConfig,
-  jwtVerifier: JwtVerifier,
+  _jwtVerifier: JwtVerifier,
   lambdaInvoker: LambdaInvoker
 ): Promise<void> {
   const connectionId = crypto.randomUUID();
@@ -298,66 +298,32 @@ async function handleWebSocketConnection(
 
   console.log(`[WS] Connection attempt: ${connectionId} (token=${token ? 'yes' : 'no'})`);
 
-  // JWT 验证（如果提供了 token）
-  let claims: JwtClaims | null = null;
-  if (token) {
-    claims = await jwtVerifier.verify(token);
-    if (!claims) {
-      console.log(`[WS] Connection rejected: invalid token`);
-      ws.close(1008, 'Unauthorized');
-      return;
-    }
-  }
+  // 注意：WebSocket 使用一次性 WS Token（不是 JWT），验证交给 Lambda handler 处理
+  // JWT claims 在这里为空，Lambda 会通过 consumeWsToken 验证并获取 accountId
+  const claims: JwtClaims | null = null;
 
   // 存储连接
   connectionMap.set(connectionId, ws);
-  if (claims) {
-    connectionClaims.set(connectionId, claims);
-  }
 
   // 找到 WebSocket Lambda 函数
   const wsFunction =
     config.routes.find((r) => r.type === 'websocket')?.function || config.functions.websocket;
 
-  // 调用 $connect
-  try {
-    const connectEvent: LambdaWsEvent = {
-      requestContext: {
-        routeKey: '$connect',
-        connectionId,
-        eventType: 'CONNECT',
-        stage: 'local',
-        requestId: crypto.randomUUID(),
-        domainName: `localhost:${config.port}`,
-        authorizer: claims ? { claims } : undefined,
-      },
-      queryStringParameters: Object.fromEntries(url.searchParams),
-      isBase64Encoded: false,
-    };
+  // ========== 重要：先注册事件处理器，避免竞态条件 ==========
+  // 因为 $connect Lambda 可能需要时间完成，客户端可能在此期间发送消息
+  // 所以我们先缓冲消息，等 $connect 完成后再处理
+  let connectionReady = false;
+  const messageQueue: Buffer[] = [];
 
-    const result = await lambdaInvoker.invokeWebSocket(connectEvent, wsFunction);
-
-    if (result.statusCode >= 400) {
-      console.log(`[WS] $connect rejected (${result.statusCode}): ${result.body}`);
-      connectionMap.delete(connectionId);
-      connectionClaims.delete(connectionId);
-      ws.close(1008, result.body || 'Connection rejected');
-      return;
-    }
-
-    console.log(`[WS] Connected: ${connectionId}`);
-  } catch (err) {
-    console.error(`[WS] $connect error:`, err);
-    connectionMap.delete(connectionId);
-    connectionClaims.delete(connectionId);
-    ws.close(1011, 'Internal error');
-    return;
-  }
-
-  // 处理消息
-  ws.on('message', async (data) => {
+  // 处理消息（先缓冲，等 $connect 完成后处理）
+  const processMessage = async (data: Buffer) => {
+    console.log(`[WS] Message received from client, raw data length: ${data.length}`);
     try {
-      const body = Buffer.isBuffer(data) ? data.toString('utf-8') : String(data);
+      const body = data.toString('utf-8');
+      const savedClaims = connectionClaims.get(connectionId);
+      console.log(
+        `[WS] $default message: ${body}, connectionId: ${connectionId}, hasClaims: ${!!savedClaims}`
+      );
 
       const messageEvent: LambdaWsEvent = {
         requestContext: {
@@ -366,15 +332,27 @@ async function handleWebSocketConnection(
           eventType: 'MESSAGE',
           stage: 'local',
           requestId: crypto.randomUUID(),
-          domainName: `localhost:${config.port}`,
+          domainName: `host.docker.internal:${config.port}`,
+          authorizer: savedClaims ? { claims: savedClaims } : undefined,
         },
         body,
         isBase64Encoded: false,
       };
 
-      await lambdaInvoker.invokeWebSocket(messageEvent, wsFunction);
+      const result = await lambdaInvoker.invokeWebSocket(messageEvent, wsFunction);
+      console.log(`[WS] $default result: ${result.statusCode} ${result.body}`);
     } catch (err) {
       console.error(`[WS] $default error:`, err);
+    }
+  };
+
+  ws.on('message', async (data) => {
+    const buffer = Buffer.isBuffer(data) ? data : Buffer.from(String(data));
+    if (connectionReady) {
+      await processMessage(buffer);
+    } else {
+      console.log(`[WS] Message received before $connect completed, queuing...`);
+      messageQueue.push(buffer);
     }
   });
 
@@ -392,7 +370,7 @@ async function handleWebSocketConnection(
           eventType: 'DISCONNECT',
           stage: 'local',
           requestId: crypto.randomUUID(),
-          domainName: `localhost:${config.port}`,
+          domainName: `host.docker.internal:${config.port}`,
         },
         isBase64Encoded: false,
       };
@@ -403,10 +381,51 @@ async function handleWebSocketConnection(
     }
   });
 
-  // 错误处理
-  ws.on('error', (err) => {
-    console.error(`[WS] Error on ${connectionId}:`, err);
-  });
+  // ========== 调用 $connect ==========
+  try {
+    const connectEvent: LambdaWsEvent = {
+      requestContext: {
+        routeKey: '$connect',
+        connectionId,
+        eventType: 'CONNECT',
+        stage: 'local',
+        requestId: crypto.randomUUID(),
+        domainName: `host.docker.internal:${config.port}`,
+        authorizer: claims ? { claims } : undefined,
+      },
+      queryStringParameters: Object.fromEntries(url.searchParams),
+      isBase64Encoded: false,
+    };
+
+    const result = await lambdaInvoker.invokeWebSocket(connectEvent, wsFunction);
+    console.log(`[WS] $connect result: statusCode=${result.statusCode}, body=${result.body}`);
+
+    if (result.statusCode >= 400) {
+      console.log(`[WS] $connect rejected (${result.statusCode}): ${result.body}`);
+      connectionMap.delete(connectionId);
+      connectionClaims.delete(connectionId);
+      ws.close(1008, result.body || 'Connection rejected');
+      return;
+    }
+
+    console.log(`[WS] Connected: ${connectionId}`);
+
+    // 标记连接已就绪，处理缓冲的消息
+    connectionReady = true;
+    if (messageQueue.length > 0) {
+      console.log(`[WS] Processing ${messageQueue.length} queued message(s)...`);
+      for (const msg of messageQueue) {
+        await processMessage(msg);
+      }
+      messageQueue.length = 0;
+    }
+  } catch (err) {
+    console.error(`[WS] $connect error:`, err);
+    connectionMap.delete(connectionId);
+    connectionClaims.delete(connectionId);
+    ws.close(1011, 'Internal error');
+    return;
+  }
 }
 
 /**
@@ -431,8 +450,8 @@ export function createUnifiedGateway(
 
     console.log(`[HTTP] ${method} ${url.pathname}`);
 
-    // Management API: /@connections/{connectionId}
-    const connectionsMatch = url.pathname.match(/^\/@connections\/(.+)$/);
+    // Management API: /@connections/{connectionId} or /{stage}/@connections/{connectionId}
+    const connectionsMatch = url.pathname.match(/^(?:\/[^/]+)?\/@connections\/(.+)$/);
     if (connectionsMatch) {
       const connectionId = decodeURIComponent(connectionsMatch[1]);
       handleManagementApi(req, res, connectionId, method);

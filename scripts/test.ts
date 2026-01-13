@@ -207,11 +207,7 @@ function getCognitoToken(username: string, password: string): string | null {
   }
 }
 
-async function runE2ETests(
-  endpoint: string,
-  username: string,
-  password: string
-): Promise<boolean> {
+async function runE2ETests(endpoint: string, username: string, password: string): Promise<boolean> {
   const isLocal = isLocalUrl(endpoint);
   const description = isLocal ? 'E2E tests (local)' : `E2E tests (${new URL(endpoint).host})`;
 

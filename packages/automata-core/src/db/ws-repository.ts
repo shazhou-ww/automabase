@@ -11,8 +11,8 @@ import { docClient, getTableName, Keys } from './client';
 
 const TABLE_NAME = getTableName();
 
-// Token 有效期：30 秒
-const WS_TOKEN_TTL_SECONDS = 30;
+// Token 有效期：5 分钟（本地开发环境需要更多时间）
+const WS_TOKEN_TTL_SECONDS = 5 * 60;
 
 // 连接有效期：2 小时
 const WS_CONNECTION_TTL_SECONDS = 2 * 60 * 60;

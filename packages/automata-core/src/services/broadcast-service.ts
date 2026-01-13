@@ -91,7 +91,7 @@ export async function broadcastStateUpdate(
   console.log(`[WS] Broadcasting to ${subscribers.length} subscribers for ${automataId}`);
 
   const message: StateUpdateMessage = {
-    type: 'state',
+    type: 'state_update',
     automataId,
     eventType,
     baseVersion,

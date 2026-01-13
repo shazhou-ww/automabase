@@ -146,7 +146,7 @@ export interface UnsubscribedMessage {
  * 状态更新
  */
 export interface StateUpdateMessage {
-  type: 'state';
+  type: 'state_update';
   automataId: string;
   eventType: string;
   baseVersion: string;

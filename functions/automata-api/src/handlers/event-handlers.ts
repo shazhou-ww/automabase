@@ -221,8 +221,10 @@ export async function sendEventHandler(
 
     // 广播状态更新到 WebSocket 订阅者 (异步，不阻塞响应)
     const wsEndpoint = getWsEndpoint();
+    console.log('[DEBUG] wsEndpoint:', wsEndpoint, 'shouldBroadcast:', shouldBroadcast(wsEndpoint));
     if (shouldBroadcast(wsEndpoint)) {
       // 使用 Promise 不等待，让广播异步执行
+      console.log('[DEBUG] Broadcasting state update to', automataId);
       broadcastStateUpdate(automataId, eventType, baseVersion, newVersion, newState, {
         wsEndpoint,
       }).catch((err) => {
