@@ -261,3 +261,9 @@ Outputs:
     Value: !Sub 'wss://${AutomataWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
     Export:
       Name: !Sub '${AWS::StackName}-WebSocketApiEndpoint'
+
+  HttpApiEndpoint:
+    Description: HTTP API Endpoint
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod'
+    Export:
+      Name: !Sub '${AWS::StackName}-HttpApiEndpoint'
