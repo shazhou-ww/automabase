@@ -28,34 +28,6 @@ function waitForOpen(ws: WebSocket): Promise<void> {
   });
 }
 
-// Helper to wait for a message matching predicate
-function _waitForMessage(
-  ws: WebSocket,
-  predicate: (data: any) => boolean,
-  timeoutMs = 5000
-): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      ws.off('message', handler);
-      reject(new Error('Timeout waiting for message'));
-    }, timeoutMs);
-
-    const handler = (data: Buffer) => {
-      try {
-        const parsed = JSON.parse(data.toString());
-        if (predicate(parsed)) {
-          clearTimeout(timeout);
-          ws.off('message', handler);
-          resolve(parsed);
-        }
-      } catch {
-        // Ignore parse errors
-      }
-    };
-    ws.on('message', handler);
-  });
-}
-
 // Sleep helper
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -169,9 +141,9 @@ describe('Full Flow Integration', () => {
       const stateResponse = await client.getAutomataState(automataId);
       expect(stateResponse.status).toBe(200);
 
-      const data = stateResponse.data as { currentState: Record<string, unknown> };
-      expect(data.currentState.name).toBe('My Test App');
-      expect(data.currentState.status).toBe('draft');
+      const state = stateResponse.data.currentState as Record<string, unknown>;
+      expect(state.name).toBe('My Test App');
+      expect(state.status).toBe('draft');
     });
 
     it('should send PUBLISH event and update status', async () => {
@@ -182,8 +154,8 @@ describe('Full Flow Integration', () => {
       await sleep(300);
 
       const stateResponse = await client.getAutomataState(automataId);
-      const data = stateResponse.data as { currentState: Record<string, unknown> };
-      expect(data.currentState.status).toBe('published');
+      const state = stateResponse.data.currentState as Record<string, unknown>;
+      expect(state.status).toBe('published');
     });
 
     it('should send UNPUBLISH event and revert to draft', async () => {
@@ -194,8 +166,8 @@ describe('Full Flow Integration', () => {
       await sleep(300);
 
       const stateResponse = await client.getAutomataState(automataId);
-      const data = stateResponse.data as { currentState: Record<string, unknown> };
-      expect(data.currentState.status).toBe('draft');
+      const state = stateResponse.data.currentState as Record<string, unknown>;
+      expect(state.status).toBe('draft');
     });
 
     it('should send ARCHIVE event and finalize', async () => {
@@ -206,8 +178,8 @@ describe('Full Flow Integration', () => {
       await sleep(300);
 
       const stateResponse = await client.getAutomataState(automataId);
-      const data = stateResponse.data as { currentState: Record<string, unknown> };
-      expect(data.currentState.status).toBe('archived');
+      const state = stateResponse.data.currentState as Record<string, unknown>;
+      expect(state.status).toBe('archived');
     });
 
     it('should have received WebSocket notifications', async () => {

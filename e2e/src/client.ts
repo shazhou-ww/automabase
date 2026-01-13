@@ -296,7 +296,7 @@ export class ApiClient {
   async getAutomataState(
     automataId: string,
     accountId?: string
-  ): Promise<ApiResponse<{ state: unknown }>> {
+  ): Promise<ApiResponse<{ currentState: unknown; version?: number; status?: string }>> {
     const targetAccountId = accountId || this.accountId;
     if (!targetAccountId) {
       throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');

@@ -48,7 +48,12 @@ async function generateToken(accountId: string): Promise<string> {
     .sign(privateKey);
 }
 
-async function httpRequest(method: string, path: string, token: string, body?: any) {
+async function httpRequest(
+  method: string,
+  path: string,
+  token: string,
+  body?: unknown
+): Promise<{ status: number; data: Record<string, unknown> }> {
   const res = await fetch(`${API_URL}${path}`, {
     method,
     headers: {
@@ -57,7 +62,8 @@ async function httpRequest(method: string, path: string, token: string, body?: a
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  return { status: res.status, data: await res.json().catch(() => res.text()) };
+  const data = await res.json().catch(() => ({}));
+  return { status: res.status, data: data as Record<string, unknown> };
 }
 
 async function main() {
@@ -78,7 +84,8 @@ async function main() {
     console.error('   ❌ Failed to create account');
     process.exit(1);
   }
-  const accountId = accountRes.data.account?.accountId || accountRes.data.accountId;
+  const accountData = accountRes.data as { account?: { accountId?: string }; accountId?: string };
+  const accountId = (accountData.account?.accountId || accountData.accountId) as string;
   const token = await generateToken(accountId);
 
   // 2. 创建 Automata (使用内置 AppRegistry blueprint)
@@ -91,21 +98,19 @@ async function main() {
     console.error('   ❌ Failed to create automata');
     process.exit(1);
   }
-  const automataId = automataRes.data.automataId;
+  const automataData = automataRes.data as { automataId?: string };
+  const automataId = automataData.automataId as string;
 
   // 3. 获取 WS Token
   console.log('\n3️⃣ 获取 WS Token...');
   const wsTokenRes = await httpRequest('POST', '/v1/ws/token', token);
-  console.log(
-    '   WS Token:',
-    wsTokenRes.status,
-    wsTokenRes.data?.token ? 'got token' : wsTokenRes.data
-  );
+  const wsTokenData = wsTokenRes.data as { token?: string };
+  console.log('   WS Token:', wsTokenRes.status, wsTokenData.token ? 'got token' : wsTokenRes.data);
   if (wsTokenRes.status !== 200) {
     console.error('   ❌ Failed to get ws token');
     process.exit(1);
   }
-  const wsToken = wsTokenRes.data.token;
+  const wsToken = wsTokenData.token as string;
 
   // 4. 连接 WebSocket
   console.log('\n4️⃣ 连接 WebSocket...');

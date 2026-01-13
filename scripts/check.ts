@@ -74,8 +74,13 @@ async function main(): Promise<void> {
     results.push(await runCommand(['markdownlint', '**/*.md', ...mdIgnores], 'Markdown lint'));
   }
 
-  // TypeScript type checking
+  // TypeScript type checking (packages via turbo)
   results.push(await runCommand(['turbo', 'run', 'typecheck'], 'TypeScript check'));
+
+  // TypeScript type checking for root-level scripts (not managed by turbo)
+  results.push(
+    await runCommand(['tsc', '--project', 'tsconfig.json', '--noEmit'], 'Scripts TypeScript check')
+  );
 
   // Summary
   const passed = results.filter((r) => r).length;
