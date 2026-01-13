@@ -422,6 +422,13 @@ export function createUnifiedGateway(
     const url = new URL(req.url || '/', `http://localhost:${config.port}`);
     const method = req.method || 'GET';
 
+    // Health check endpoint for dev server detection
+    if (url.pathname === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'ok', gateway: 'unified' }));
+      return;
+    }
+
     console.log(`[HTTP] ${method} ${url.pathname}`);
 
     // Management API: /@connections/{connectionId}
