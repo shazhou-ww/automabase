@@ -12,6 +12,7 @@ import {
   type BlueprintContent,
   BlueprintValidationError,
   createAutomata,
+  getAccountByOAuth,
   getAutomataById,
   getAutomatasByAccount,
   getBlueprintById,
@@ -99,8 +100,20 @@ async function verifyAccessToAccount(
   }
 
   // 检查用户是否有权访问该 accountId
-  // 目前简单实现：用户只能访问自己的 account
-  if (authContext.accountId !== accountId) {
+  // 方式1：如果 token 里有 accountId，直接比较
+  if (authContext.accountId) {
+    if (authContext.accountId !== accountId) {
+      return error('Access denied to this account', 403, 'ACCESS_DENIED');
+    }
+    return { verified: true };
+  }
+
+  // 方式2：通过 cognitoUserId 从数据库查询用户的账户
+  const oauthSubject = authContext.identityProvider?.userId || authContext.cognitoUserId;
+  const oauthProvider = authContext.identityProvider?.name || 'cognito';
+
+  const userAccount = await getAccountByOAuth(oauthProvider, oauthSubject);
+  if (!userAccount || userAccount.accountId !== accountId) {
     return error('Access denied to this account', 403, 'ACCESS_DENIED');
   }
 

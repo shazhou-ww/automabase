@@ -6,7 +6,7 @@
 
 import type { JwtVerifierConfig, LocalDevConfig } from '@automabase/automata-auth';
 import { verifyAndExtractContextWithDevMode } from '@automabase/automata-auth';
-import { createWsToken } from '@automabase/automata-core';
+import { createWsToken, getAccountByOAuth } from '@automabase/automata-core';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 /**
@@ -51,8 +51,17 @@ export async function getWsTokenHandler(
 
     const authContext = await verifyAndExtractContextWithDevMode(token, jwtConfig, localDevConfig);
 
-    // 2. 检查账户是否已注册
-    if (!authContext.accountId) {
+    // 2. 获取 accountId（优先从 token，否则从数据库查询）
+    let accountId = authContext.accountId;
+    if (!accountId) {
+      const oauthSubject = authContext.identityProvider?.userId || authContext.cognitoUserId;
+      const oauthProvider = authContext.identityProvider?.name || 'cognito';
+      const userAccount = await getAccountByOAuth(oauthProvider, oauthSubject);
+      accountId = userAccount?.accountId;
+    }
+
+    // 3. 检查账户是否已注册
+    if (!accountId) {
       return {
         statusCode: 403,
         headers: { 'Content-Type': 'application/json' },
@@ -63,8 +72,8 @@ export async function getWsTokenHandler(
       };
     }
 
-    // 3. 生成一次性 WS Token
-    const wsToken = await createWsToken(authContext.accountId);
+    // 4. 生成一次性 WS Token
+    const wsToken = await createWsToken(accountId);
 
     return {
       statusCode: 200,

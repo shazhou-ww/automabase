@@ -8,10 +8,22 @@
  *   bun run test unit                         # Run unit tests only
  *   bun run test e2e                          # Run E2E tests against local (default)
  *   bun run test e2e --endpoint <url>         # Run E2E tests against specified endpoint
+ *   bun run test e2e --endpoint <url> --user <email> --password <pwd>
  *
- * Examples:
- *   bun run test e2e                          # Local dev server (localhost:3000)
- *   bun run test e2e --endpoint https://xxx.execute-api.ap-southeast-2.amazonaws.com
+ * Options:
+ *   --endpoint <url>    API endpoint URL (default: localhost:3000)
+ *   --user <email>      Cognito username for remote tests
+ *   --password <pwd>    Cognito password for remote tests
+ *
+ * Configuration (priority: CLI args > .env > defaults):
+ *   Create a .env file in the project root:
+ *     E2E_USERNAME=your-email@example.com
+ *     E2E_PASSWORD=YourPassword123!
+ *
+ *   Or set Cognito settings:
+ *     COGNITO_USER_POOL_ID=ap-southeast-2_xxxxx
+ *     COGNITO_CLIENT_ID=xxxxxxx
+ *     AWS_REGION=ap-southeast-2
  */
 
 import * as path from 'node:path';
@@ -21,15 +33,17 @@ const ROOT_DIR = path.resolve(import.meta.dirname, '..');
 const LOCAL_GATEWAY_URL = 'http://localhost:3000';
 
 // Cognito defaults (from deployed stack)
-const COGNITO_USER_POOL_ID = process.env.COGNITO_USER_POOL_ID || 'ap-southeast-2_2cTIVAhYG';
-const COGNITO_CLIENT_ID = process.env.COGNITO_CLIENT_ID || '6rjt3vskji08mdscm6pqloppmn';
-const COGNITO_REGION = process.env.AWS_REGION || 'ap-southeast-2';
-const COGNITO_USERNAME = process.env.E2E_USERNAME || 'test@example.com';
-const COGNITO_PASSWORD = process.env.E2E_PASSWORD || 'TestUser123!';
+const DEFAULT_USER_POOL_ID = 'ap-southeast-2_2cTIVAhYG';
+const DEFAULT_CLIENT_ID = '6rjt3vskji08mdscm6pqloppmn';
+const DEFAULT_REGION = 'ap-southeast-2';
+const DEFAULT_USERNAME = 'test@example.com';
+const DEFAULT_PASSWORD = 'TestUser123!';
 
 interface ParsedArgs {
   command?: string;
   endpoint?: string;
+  user?: string;
+  password?: string;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -40,7 +54,13 @@ function parseArgs(argv: string[]): ParsedArgs {
 
     if (arg === '--endpoint' && argv[i + 1]) {
       result.endpoint = argv[i + 1];
-      i++; // Skip next arg
+      i++;
+    } else if (arg === '--user' && argv[i + 1]) {
+      result.user = argv[i + 1];
+      i++;
+    } else if (arg === '--password' && argv[i + 1]) {
+      result.password = argv[i + 1];
+      i++;
     } else if (!arg.startsWith('-') && !result.command) {
       result.command = arg;
     }
@@ -51,6 +71,36 @@ function parseArgs(argv: string[]): ParsedArgs {
 
 function isLocalUrl(url: string): boolean {
   return url.includes('localhost') || url.includes('127.0.0.1');
+}
+
+/**
+ * Get a CloudFormation stack output value
+ */
+function getStackOutput(outputKey: string): string | null {
+  try {
+    const proc = spawnSync([
+      'aws',
+      'cloudformation',
+      'describe-stacks',
+      '--stack-name',
+      'automabase-dev',
+      '--query',
+      `Stacks[0].Outputs[?OutputKey=='${outputKey}'].OutputValue`,
+      '--output',
+      'text',
+      '--region',
+      DEFAULT_REGION,
+    ]);
+
+    if (proc.exitCode !== 0) {
+      return null;
+    }
+
+    const value = proc.stdout.toString().trim();
+    return value && value !== 'None' ? value : null;
+  } catch {
+    return null;
+  }
 }
 
 async function runCommand(
@@ -99,10 +149,14 @@ async function isLocalDevServerRunning(): Promise<boolean> {
 /**
  * Login to Cognito and get ID token
  */
-function getCognitoToken(): string | null {
+function getCognitoToken(username: string, password: string): string | null {
+  const userPoolId = process.env.COGNITO_USER_POOL_ID || DEFAULT_USER_POOL_ID;
+  const clientId = process.env.COGNITO_CLIENT_ID || DEFAULT_CLIENT_ID;
+  const region = process.env.AWS_REGION || DEFAULT_REGION;
+
   console.log('\n🔐 Logging in to Cognito...');
-  console.log(`   User Pool: ${COGNITO_USER_POOL_ID}`);
-  console.log(`   Username: ${COGNITO_USERNAME}`);
+  console.log(`   User Pool: ${userPoolId}`);
+  console.log(`   Username: ${username}`);
 
   try {
     const proc = spawnSync([
@@ -110,13 +164,13 @@ function getCognitoToken(): string | null {
       'cognito-idp',
       'initiate-auth',
       '--client-id',
-      COGNITO_CLIENT_ID,
+      clientId,
       '--auth-flow',
       'USER_PASSWORD_AUTH',
       '--auth-parameters',
-      `USERNAME=${COGNITO_USERNAME},PASSWORD=${COGNITO_PASSWORD}`,
+      `USERNAME=${username},PASSWORD=${password}`,
       '--region',
-      COGNITO_REGION,
+      region,
     ]);
 
     if (proc.exitCode !== 0) {
@@ -128,9 +182,8 @@ function getCognitoToken(): string | null {
       if (errorText.includes('NotAuthorizedException')) {
         console.log('   Invalid username or password.');
         console.log('');
-        console.log('   Set credentials via environment variables:');
-        console.log('     $env:E2E_USERNAME = "your-email@example.com"');
-        console.log('     $env:E2E_PASSWORD = "YourPassword123!"');
+        console.log('   Use --user and --password options:');
+        console.log('     bun run test e2e --endpoint <url> --user <email> --password <pwd>');
       } else if (errorText.includes('UserNotFoundException')) {
         console.log('   User not found. Create a test user first:');
         console.log('     bun scripts/manage-test-user.ts <email> <password>');
@@ -154,7 +207,11 @@ function getCognitoToken(): string | null {
   }
 }
 
-async function runE2ETests(endpoint: string): Promise<boolean> {
+async function runE2ETests(
+  endpoint: string,
+  username: string,
+  password: string
+): Promise<boolean> {
   const isLocal = isLocalUrl(endpoint);
   const description = isLocal ? 'E2E tests (local)' : `E2E tests (${new URL(endpoint).host})`;
 
@@ -185,7 +242,7 @@ async function runE2ETests(endpoint: string): Promise<boolean> {
     API_BASE_URL: endpoint,
   };
 
-  // For remote: need Cognito authentication
+  // For remote: need Cognito authentication and WebSocket URL
   if (!isLocal) {
     console.log('\n☁️  Remote endpoint detected, Cognito authentication required...');
 
@@ -195,13 +252,24 @@ async function runE2ETests(endpoint: string): Promise<boolean> {
       env.COGNITO_TOKEN = process.env.COGNITO_TOKEN;
     } else {
       // Try to login automatically
-      const token = getCognitoToken();
+      const token = getCognitoToken(username, password);
       if (!token) {
         console.log('');
         console.log('⏭️  Skipping E2E tests (authentication failed).');
         return true;
       }
       env.COGNITO_TOKEN = token;
+    }
+
+    // Get WebSocket URL from CloudFormation output
+    if (process.env.WS_API_URL) {
+      env.WS_API_URL = process.env.WS_API_URL;
+    } else {
+      const wsUrl = getStackOutput('WebSocketApiEndpoint');
+      if (wsUrl) {
+        console.log(`✅ WebSocket URL: ${wsUrl}`);
+        env.WS_API_URL = wsUrl;
+      }
     }
   }
 
@@ -211,8 +279,10 @@ async function runE2ETests(endpoint: string): Promise<boolean> {
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
 
-  // Determine endpoint
+  // Determine endpoint and credentials
   const endpoint = args.endpoint || LOCAL_GATEWAY_URL;
+  const username = args.user || process.env.E2E_USERNAME || DEFAULT_USERNAME;
+  const password = args.password || process.env.E2E_PASSWORD || DEFAULT_PASSWORD;
 
   let success = true;
 
@@ -222,14 +292,14 @@ async function main(): Promise<void> {
       break;
 
     case 'e2e':
-      success = await runE2ETests(endpoint);
+      success = await runE2ETests(endpoint, username, password);
       break;
 
     default: {
       // Run all tests (unit + e2e)
       console.log('🚀 Running all tests...');
       const unitResult = await runUnitTests();
-      const e2eResult = await runE2ETests(endpoint);
+      const e2eResult = await runE2ETests(endpoint, username, password);
       success = unitResult && e2eResult;
     }
   }
