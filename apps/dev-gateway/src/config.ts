@@ -311,7 +311,6 @@ export async function loadConfig(rootDir: string, argv: string[]): Promise<Gatew
       'host.docker.internal',
       'localhost'
     );
-    process.env.DYNAMODB_TABLE_NAME = 'automabase-dev';
     process.env.AUTOMABASE_TABLE = 'automabase-dev';
   }
 

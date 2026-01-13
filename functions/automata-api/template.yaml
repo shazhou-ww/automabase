@@ -12,7 +12,7 @@ AutomataApiFunction:
     Environment:
       Variables:
         NODE_ENV: !Ref Environment
-        DYNAMODB_TABLE_NAME: !Ref AutomabaseTable
+        AUTOMABASE_TABLE: !Ref AutomabaseTable
         COGNITO_USER_POOL_ID: !Ref UserPool
         COGNITO_CLIENT_ID: !Ref UserPoolClient
         # WebSocket API endpoint for broadcasting state updates

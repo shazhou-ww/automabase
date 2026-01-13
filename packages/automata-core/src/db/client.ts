@@ -14,8 +14,7 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
  * 在调用时读取环境变量，而不是模块加载时
  */
 function createClientConfig(): DynamoDBClientConfig {
-  const tableName =
-    process.env.DYNAMODB_TABLE_NAME || process.env.AUTOMABASE_TABLE || 'automabase-dev';
+  const tableName = process.env.AUTOMABASE_TABLE || 'automabase-dev';
   const region = process.env.AWS_REGION || 'ap-northeast-1';
   const dynamodbEndpoint = process.env.DYNAMODB_ENDPOINT;
 
@@ -94,7 +93,7 @@ export const docClient = new Proxy({} as DynamoDBDocumentClient, {
  * 获取表名（懒加载）
  */
 export function getTableName(): string {
-  return process.env.DYNAMODB_TABLE_NAME || process.env.AUTOMABASE_TABLE || 'automabase-dev';
+  return process.env.AUTOMABASE_TABLE || 'automabase-dev';
 }
 
 /**
