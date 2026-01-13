@@ -293,7 +293,7 @@ async function main() {
     if (!skipBuild) {
       log(prefixes.sam, 'Building functions (this may take a moment)...');
       const build = spawn({
-        cmd: ['bun', 'run', 'sam:build'],
+        cmd: ['sam', 'build', '--use-container', '--cached'],
         cwd: ROOT_DIR,
         stdout: 'inherit',
         stderr: 'inherit',
