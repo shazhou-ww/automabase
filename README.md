@@ -236,9 +236,15 @@ Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "status": "active"
+  "status": "archived"
 }
 ```
+
+**支持的字段：**
+
+| 字段 | 类型 | 可选值 | 说明 |
+|------|------|--------|------|
+| `status` | string | `"active"`, `"archived"` | Automata 状态 |
 
 ### Event API
 
