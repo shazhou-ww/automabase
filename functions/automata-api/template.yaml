@@ -17,6 +17,9 @@ AutomataApiFunction:
         COGNITO_CLIENT_ID: !Ref UserPoolClient
         # WebSocket API endpoint for broadcasting state updates
         WEBSOCKET_API_ENDPOINT: !Sub 'https://${AutomataWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+        # Local dev variables - empty in production, overridden by env.json in local
+        LOCAL_JWT_PUBLIC_KEY: ''
+        LOCAL_JWT_ISSUER: ''
     Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref AutomabaseTable

@@ -45,6 +45,11 @@ describe('Automata WebSocket API', () => {
   let accountId: string;
   let wsUrl: string;
 
+  // Determine if WS tests should run at module load time
+  // Local: dev-gateway supports WebSocket on same port
+  // Remote: need WS_API_URL env var
+  const shouldRunWsTests = config.isLocal || !!process.env.WS_API_URL;
+
   beforeAll(async () => {
     client = createClient();
     const token = await getTestTokenAsync();
@@ -60,25 +65,16 @@ describe('Automata WebSocket API', () => {
 
     // Determine WS URL
     if (config.isLocal) {
-      // Local sam doesn't support WS, so we might skip or fail.
-      // Assuming a hypothetical local WS server on port 3001 for testing purposes
-      // or derived from apiBaseUrl
-      wsUrl = process.env.WS_API_URL || 'ws://localhost:3001';
+      // Local dev-gateway supports WebSocket on the same port
+      // Convert http://localhost:3000 to ws://localhost:3000
+      wsUrl = process.env.WS_API_URL || config.apiBaseUrl.replace('http://', 'ws://');
     } else {
-      // For deployed env, derive from stack output or env var.
-      // Here we assume it's passed via env var or we need to query CloudFormation (too complex for now).
-      // Let's rely on WS_API_URL env var.
-      if (!process.env.WS_API_URL) {
-        console.warn('WS_API_URL not set, tests may fail against deployed env');
-      }
+      // For deployed env, use WS_API_URL env var
       wsUrl = process.env.WS_API_URL || '';
     }
   });
 
-  // Skip if no WS URL provided (or local where it doesn't work)
-  const runWsTests = process.env.WS_API_URL || !config.isLocal;
-
-  (runWsTests ? describe : describe.skip)('Connection', () => {
+  (shouldRunWsTests ? describe : describe.skip)('Connection', () => {
     it('should fail to connect without token', async () => {
       const ws = new WebSocket(wsUrl);
       try {
@@ -120,7 +116,7 @@ describe('Automata WebSocket API', () => {
     });
   });
 
-  (runWsTests ? describe : describe.skip)('Subscriptions', () => {
+  (shouldRunWsTests ? describe : describe.skip)('Subscriptions', () => {
     let ws: WebSocket;
     let automataId: string;
 
