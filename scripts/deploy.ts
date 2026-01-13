@@ -38,6 +38,8 @@ async function runCommand(cmd: string[], description: string): Promise<boolean> 
     cwd: ROOT_DIR,
     stdout: 'inherit',
     stderr: 'inherit',
+    // Set PYTHONUTF8=1 to fix encoding issues with SAM CLI on Windows
+    env: { ...process.env, PYTHONUTF8: '1' },
   });
 
   const exitCode = await proc.exited;
