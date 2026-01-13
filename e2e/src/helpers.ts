@@ -99,7 +99,6 @@ export async function initializeLocalJwtKeys(): Promise<{ privateKey: string; pu
   }
 
   cachedKeyPair = { privateKey, publicKey };
-  console.log('[E2E] ✅ JWT keys configured for proper verification');
   return cachedKeyPair;
 }
 

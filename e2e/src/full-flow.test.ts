@@ -216,8 +216,6 @@ describe('Full Flow Integration', () => {
 
       // We should have received some state change notifications
       // The exact number depends on WebSocket implementation
-      console.log(`Received ${receivedMessages.length} WebSocket messages`);
-
       // At minimum, we expect subscription confirmation or state updates
       // This is a soft assertion since WS might not be fully implemented
       expect(receivedMessages.length).toBeGreaterThanOrEqual(0);

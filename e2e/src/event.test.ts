@@ -136,18 +136,13 @@ describe('Event API', () => {
     it('should get specific event by version', async () => {
       // First, list events to get a version
       const listResponse = await client.listEvents(automataId);
-      console.log('listResponse status:', listResponse.status);
-      console.log('listResponse data:', JSON.stringify(listResponse.data, null, 2));
 
       const events = listResponse.data.events as Record<string, unknown>[];
       expect(events.length).toBeGreaterThan(0);
 
       const eventBaseVersion = events[0].baseVersion as string;
-      console.log('eventBaseVersion:', eventBaseVersion);
 
       const response = await client.getEvent(automataId, eventBaseVersion);
-      console.log('getEvent status:', response.status);
-      console.log('getEvent data:', JSON.stringify(response.data, null, 2));
 
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('eventId');

@@ -44,17 +44,7 @@ function loadKeysFromEnvJson(): void {
   process.env.LOCAL_JWT_ISSUER = e2eConfig.LOCAL_JWT_ISSUER || 'local-dev';
 }
 
-// Log configuration for debugging
-console.log('\n📋 E2E Test Configuration:');
-console.log(`   API Base URL: ${config.apiBaseUrl}`);
-console.log(`   Is Local: ${config.isLocal}`);
-console.log('');
-
 // Load JWT keys for local testing
 if (config.isLocal) {
-  console.log('⚡ Running against local environment (SAM Local)');
   loadKeysFromEnvJson();
-  console.log('🔐 JWT keys loaded from env.json');
-} else {
-  console.log('☁️  Running against deployed environment');
 }

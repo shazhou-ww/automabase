@@ -115,7 +115,6 @@ describe('Account API', () => {
       // This test only works if we have a way to get a truly fresh token
       // Skip if we're reusing the same token
       if (!config.isLocal) {
-        console.log('Skipping unregistered user test in non-local mode');
         return;
       }
     });
