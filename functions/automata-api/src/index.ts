@@ -6,11 +6,12 @@ import {
   updateCurrentAccount,
 } from './handlers/account-handlers';
 import {
+  archiveAutomataHandler,
   createAutomataHandler,
   getAutomataHandler,
   getAutomataStateHandler,
   listAutomatasHandler,
-  updateAutomataHandler,
+  unarchiveAutomataHandler,
 } from './handlers/automata-handlers';
 import { getEventHandler, listEventsHandler, sendEventHandler } from './handlers/event-handlers';
 import { getWsTokenHandler } from './handlers/ws-token-handler';
@@ -58,9 +59,15 @@ const routes: Route[] = [
     handler: getAutomataHandler,
   },
   {
-    method: 'PATCH',
-    pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)\/automatas\/(?<automataId>[^/]+)$/,
-    handler: updateAutomataHandler,
+    method: 'POST',
+    pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)\/automatas\/(?<automataId>[^/]+)\/archive$/,
+    handler: archiveAutomataHandler,
+  },
+  {
+    method: 'POST',
+    pathPattern:
+      /^\/v1\/accounts\/(?<accountId>[^/]+)\/automatas\/(?<automataId>[^/]+)\/unarchive$/,
+    handler: unarchiveAutomataHandler,
   },
 
   // Event API - nested under /accounts/{accountId}/automatas/{automataId}

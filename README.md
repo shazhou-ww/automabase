@@ -228,23 +228,19 @@ GET /v1/accounts/{accountId}/automatas/{automataId}/state
 Authorization: Bearer {token}
 ```
 
-#### 更新 Automata
+#### 归档 Automata
 
 ```http
-PATCH /v1/accounts/{accountId}/automatas/{automataId}
+POST /v1/accounts/{accountId}/automatas/{automataId}/archive
 Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "status": "archived"
-}
 ```
 
-**支持的字段：**
+#### 取消归档 Automata
 
-| 字段 | 类型 | 可选值 | 说明 |
-|------|------|--------|------|
-| `status` | string | `"active"`, `"archived"` | Automata 状态 |
+```http
+POST /v1/accounts/{accountId}/automatas/{automataId}/unarchive
+Authorization: Bearer {token}
+```
 
 ### Event API
 

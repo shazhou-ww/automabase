@@ -307,19 +307,31 @@ export class ApiClient {
     });
   }
 
-  async updateAutomata(
+  async archiveAutomata(
     automataId: string,
-    updates: { status?: string },
     accountId?: string
-  ): Promise<ApiResponse<unknown>> {
+  ): Promise<ApiResponse<{ automataId: string; status: string; updatedAt: string }>> {
     const targetAccountId = accountId || this.accountId;
     if (!targetAccountId) {
       throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
     }
     return this.request({
-      method: 'PATCH',
-      path: `/v1/accounts/${targetAccountId}/automatas/${automataId}`,
-      body: updates,
+      method: 'POST',
+      path: `/v1/accounts/${targetAccountId}/automatas/${automataId}/archive`,
+    });
+  }
+
+  async unarchiveAutomata(
+    automataId: string,
+    accountId?: string
+  ): Promise<ApiResponse<{ automataId: string; status: string; updatedAt: string }>> {
+    const targetAccountId = accountId || this.accountId;
+    if (!targetAccountId) {
+      throw new Error('accountId is required. Call setAccountId() or pass accountId parameter.');
+    }
+    return this.request({
+      method: 'POST',
+      path: `/v1/accounts/${targetAccountId}/automatas/${automataId}/unarchive`,
     });
   }
 

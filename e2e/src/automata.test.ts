@@ -135,38 +135,52 @@ describe('Automata API', () => {
     });
   });
 
-  describe('PATCH /v1/accounts/:accountId/automatas/:id', () => {
+  describe('POST /v1/accounts/:accountId/automatas/:id/archive', () => {
     it('should archive automata', async () => {
       // Create a new automata to archive
       const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
       const automataId = (createResponse.data as Record<string, unknown>).automataId as string;
 
-      const response = await client.updateAutomata(automataId, { status: 'archived' });
+      const response = await client.archiveAutomata(automataId);
 
       expect(response.status).toBe(200);
       expect((response.data as Record<string, unknown>).status).toBe('archived');
     });
 
-    it('should activate archived automata', async () => {
+    it('should return 400 when already archived', async () => {
       // Create and archive
       const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
       const automataId = (createResponse.data as Record<string, unknown>).automataId as string;
-      await client.updateAutomata(automataId, { status: 'archived' });
+      await client.archiveAutomata(automataId);
 
-      // Activate
-      const response = await client.updateAutomata(automataId, { status: 'active' });
+      // Try to archive again
+      const response = await client.archiveAutomata(automataId);
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('POST /v1/accounts/:accountId/automatas/:id/unarchive', () => {
+    it('should unarchive archived automata', async () => {
+      // Create and archive
+      const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
+      const automataId = (createResponse.data as Record<string, unknown>).automataId as string;
+      await client.archiveAutomata(automataId);
+
+      // Unarchive
+      const response = await client.unarchiveAutomata(automataId);
 
       expect(response.status).toBe(200);
       expect((response.data as Record<string, unknown>).status).toBe('active');
     });
 
-    it('should return 400 for invalid status', async () => {
-      if (!createdAutomataId) {
-        const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
-        createdAutomataId = (createResponse.data as Record<string, unknown>).automataId as string;
-      }
+    it('should return 400 when already active', async () => {
+      // Create (already active)
+      const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
+      const automataId = (createResponse.data as Record<string, unknown>).automataId as string;
 
-      const response = await client.updateAutomata(createdAutomataId, { status: 'invalid' });
+      // Try to unarchive
+      const response = await client.unarchiveAutomata(automataId);
 
       expect(response.status).toBe(400);
     });

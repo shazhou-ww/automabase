@@ -342,9 +342,9 @@ export async function getAutomataStateHandler(
 }
 
 /**
- * PATCH /accounts/{accountId}/automatas/{automataId} - 更新 Automata（归档等）
+ * POST /accounts/{accountId}/automatas/{automataId}/archive - 归档 Automata
  */
-export async function updateAutomataHandler(
+export async function archiveAutomataHandler(
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
   try {
@@ -371,15 +371,11 @@ export async function updateAutomataHandler(
       return error('Automata does not belong to this account', 404);
     }
 
-    // 解析请求体
-    const body = JSON.parse(event.body || '{}');
-    const { status } = body as { status?: 'active' | 'archived' };
-
-    if (status && !['active', 'archived'].includes(status)) {
-      return error('Invalid status. Must be "active" or "archived"', 400);
+    if (automata.status === 'archived') {
+      return error('Automata is already archived', 400);
     }
 
-    const updated = await updateAutomata(automataId, { status });
+    const updated = await updateAutomata(automataId, { status: 'archived' });
 
     return success({
       automataId: updated?.automataId,
@@ -390,7 +386,57 @@ export async function updateAutomataHandler(
     if (err instanceof JwtVerificationError) {
       return error(err.message, 401, err.code);
     }
-    console.error('Error updating automata:', err);
+    console.error('Error archiving automata:', err);
+    return error('Internal server error', 500);
+  }
+}
+
+/**
+ * POST /accounts/{accountId}/automatas/{automataId}/unarchive - 取消归档 Automata
+ */
+export async function unarchiveAutomataHandler(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const accountId = getAccountIdFromPath(event);
+    if (!accountId) {
+      return error('accountId is required in path', 400);
+    }
+
+    const authResult = await verifyAccessToAccount(event, accountId);
+    if ('statusCode' in authResult) return authResult;
+
+    const automataId = event.pathParameters?.automataId;
+    if (!automataId) {
+      return error('automataId is required', 400);
+    }
+
+    const automata = await getAutomataById(automataId);
+    if (!automata) {
+      return error('Automata not found', 404);
+    }
+
+    // 检查 automata 是否属于该 account
+    if (automata.ownerAccountId !== accountId) {
+      return error('Automata does not belong to this account', 404);
+    }
+
+    if (automata.status === 'active') {
+      return error('Automata is already active', 400);
+    }
+
+    const updated = await updateAutomata(automataId, { status: 'active' });
+
+    return success({
+      automataId: updated?.automataId,
+      status: updated?.status,
+      updatedAt: updated?.updatedAt,
+    });
+  } catch (err) {
+    if (err instanceof JwtVerificationError) {
+      return error(err.message, 401, err.code);
+    }
+    console.error('Error unarchiving automata:', err);
     return error('Internal server error', 500);
   }
 }
