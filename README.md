@@ -17,7 +17,7 @@ Automabase 是一个基于 **App Platform** 架构的状态机托管平台，核
 - 🔐 **统一 OAuth 认证** - 通过 AWS Cognito 集成 Google/GitHub 登录
 - 🤖 **有限状态机托管** - 使用 JSONata 定义状态转换逻辑
 - 📝 **完整事件审计** - 每次状态变更都记录为不可变的 Event
-- 🚀 **实时状态订阅** - WebSocket 实时推送状态变更（即将支持）
+- 🚀 **实时状态订阅** - WebSocket 实时推送状态变更
 - 📦 **App 发布机制** - 开发者可以发布 Blueprint 供其他用户使用
 
 ## 架构
@@ -149,6 +149,13 @@ GET /v1/accounts/me
 Authorization: Bearer {token}
 ```
 
+#### 获取指定账户
+
+```http
+GET /v1/accounts/{accountId}
+Authorization: Bearer {token}
+```
+
 #### 创建账户
 
 ```http
@@ -158,6 +165,18 @@ Content-Type: application/json
 
 {
   "publicKey": "base64url-encoded-ed25519-public-key"
+}
+```
+
+#### 更新当前账户
+
+```http
+PATCH /v1/accounts/me
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "name": "New Display Name"
 }
 ```
 
@@ -209,6 +228,18 @@ GET /v1/accounts/{accountId}/automatas/{automataId}/state
 Authorization: Bearer {token}
 ```
 
+#### 更新 Automata
+
+```http
+PATCH /v1/accounts/{accountId}/automatas/{automataId}
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "status": "active"
+}
+```
+
 ### Event API
 
 #### 发送 Event
@@ -248,6 +279,106 @@ Content-Type: application/json
 ```http
 GET /v1/accounts/{accountId}/automatas/{automataId}/events?direction=forward&limit=100
 Authorization: Bearer {token}
+```
+
+#### 获取单个 Event
+
+```http
+GET /v1/accounts/{accountId}/automatas/{automataId}/events/{baseVersion}
+Authorization: Bearer {token}
+```
+
+### WebSocket API
+
+#### 获取 WebSocket Token
+
+在连接 WebSocket 之前，需要先获取一次性 Token：
+
+```http
+POST /v1/ws/token
+Authorization: Bearer {token}
+```
+
+**响应**:
+
+```json
+{
+  "token": "ws_xxxxxxxx",
+  "expiresIn": 300
+}
+```
+
+#### 连接 WebSocket
+
+使用获取的 Token 建立 WebSocket 连接：
+
+```
+ws://localhost:3000?token={wsToken}
+```
+
+#### WebSocket 消息格式
+
+**订阅 Automata 状态变更：**
+
+```json
+{
+  "action": "subscribe",
+  "automataId": "automata:01AN4Z07BY79KA1307SR9X4MV3"
+}
+```
+
+**取消订阅：**
+
+```json
+{
+  "action": "unsubscribe",
+  "automataId": "automata:01AN4Z07BY79KA1307SR9X4MV3"
+}
+```
+
+**心跳检测：**
+
+```json
+{
+  "action": "ping"
+}
+```
+
+#### 服务端推送消息
+
+**订阅确认：**
+
+```json
+{
+  "type": "subscribed",
+  "automataId": "automata:01AN4Z07BY79KA1307SR9X4MV3",
+  "timestamp": "2026-01-10T10:00:00Z"
+}
+```
+
+**状态更新：**
+
+```json
+{
+  "type": "state_update",
+  "automataId": "automata:01AN4Z07BY79KA1307SR9X4MV3",
+  "eventType": "SET_INFO",
+  "baseVersion": "000001",
+  "newVersion": "000002",
+  "state": { "name": "Updated", "status": "draft" },
+  "timestamp": "2026-01-10T10:01:00Z"
+}
+```
+
+**错误消息：**
+
+```json
+{
+  "type": "error",
+  "code": "ACCESS_DENIED",
+  "message": "Access denied to this automata",
+  "timestamp": "2026-01-10T10:00:00Z"
+}
 ```
 
 ---
@@ -444,9 +575,11 @@ $merge([$.state, { "items": $filter($.state.items, function($v) { $v.id != $.eve
 
 ```
 automabase/
+├── apps/                   # 应用
+│   └── dev-gateway/        # 本地开发网关（HTTP + WebSocket）
 ├── functions/              # Lambda 函数
 │   ├── automata-api/       # Automata/Event/Account API
-│   └── automata-ws/        # WebSocket API（即将支持）
+│   └── automata-ws/        # WebSocket API
 ├── packages/               # 共享包
 │   ├── automata-auth/      # JWT 认证
 │   ├── automata-core/      # 核心类型、数据库、状态转换引擎
@@ -455,7 +588,8 @@ automabase/
 ├── e2e/                    # E2E 测试
 ├── docs/                   # 文档
 │   ├── BUSINESS_MODEL_SPEC_v3.md  # 业务模型规范 v3
-│   └── JWT_AUTH.md         # JWT 认证文档
+│   ├── JWT_AUTH.md         # JWT 认证文档
+│   └── WS_LOCAL_DEBUG.md   # WebSocket 本地调试文档
 ├── scripts/                # 构建脚本
 ├── template.yaml           # SAM 模板
 └── merged-template.yaml    # 合并后的 SAM 模板（生成）
