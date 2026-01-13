@@ -34,7 +34,10 @@ function parseArgs(argv: string[]): { command?: string; guided?: boolean } {
 async function runCommand(cmd: string[], description: string): Promise<boolean> {
   console.log(`\n📦 ${description}...`);
 
-  const proc = spawn(cmd, {
+  // On Windows, use shell to properly resolve .cmd files like sam.cmd
+  const isWindows = process.platform === 'win32';
+
+  const proc = spawn(isWindows ? ['cmd', '/c', ...cmd] : cmd, {
     cwd: ROOT_DIR,
     stdout: 'inherit',
     stderr: 'inherit',
