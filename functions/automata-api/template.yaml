@@ -66,6 +66,16 @@ AutomataApiFunction:
         Properties:
           Path: /v1/accounts/{accountId}/automatas/{automataId}/state
           Method: ANY
+      AccountAutomataArchive:
+        Type: Api
+        Properties:
+          Path: /v1/accounts/{accountId}/automatas/{automataId}/archive
+          Method: ANY
+      AccountAutomataUnarchive:
+        Type: Api
+        Properties:
+          Path: /v1/accounts/{accountId}/automatas/{automataId}/unarchive
+          Method: ANY
 
       # Event API - nested under /accounts/{accountId}/automatas/{automataId}
       AccountAutomataEvents:

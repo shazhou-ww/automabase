@@ -17,6 +17,7 @@
   },
   "scripts": {
     "setup": "bun scripts/setup.ts",
+    "setup:db": "bun scripts/setup-db.ts",
     "dev": "bun scripts/dev.ts",
     "create": "bun scripts/create.ts",
     "check": "bun scripts/check.ts",

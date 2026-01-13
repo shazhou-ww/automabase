@@ -4,15 +4,10 @@ services:
     container_name: automabase-dynamodb
     ports:
       - "8000:8000"
-    volumes:
-      - dynamodb-data:/home/dynamodblocal/data
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data"
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
     healthcheck:
       test: [ "CMD-SHELL", "curl -s http://localhost:8000 || exit 1" ]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 5s
-
-volumes:
-  dynamodb-data:

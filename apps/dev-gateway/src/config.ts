@@ -28,20 +28,13 @@ const DEFAULT_ROUTES: RouteConfig[] = [
     path: '/v1/accounts/{accountId}/automatas',
     function: 'automata-api',
   },
+  // 更具体的路由放在前面，确保优先匹配
   {
     type: 'http',
     method: 'ANY',
-    path: '/v1/accounts/{accountId}/automatas/{automataId}',
+    path: '/v1/accounts/{accountId}/automatas/{automataId}/events/{baseVersion}',
     function: 'automata-api',
   },
-  {
-    type: 'http',
-    method: 'ANY',
-    path: '/v1/accounts/{accountId}/automatas/{automataId}/state',
-    function: 'automata-api',
-  },
-
-  // Event 路由
   {
     type: 'http',
     method: 'ANY',
@@ -50,8 +43,26 @@ const DEFAULT_ROUTES: RouteConfig[] = [
   },
   {
     type: 'http',
-    method: 'GET',
-    path: '/v1/accounts/{accountId}/automatas/{automataId}/events/{baseVersion}',
+    method: 'ANY',
+    path: '/v1/accounts/{accountId}/automatas/{automataId}/state',
+    function: 'automata-api',
+  },
+  {
+    type: 'http',
+    method: 'ANY',
+    path: '/v1/accounts/{accountId}/automatas/{automataId}/archive',
+    function: 'automata-api',
+  },
+  {
+    type: 'http',
+    method: 'ANY',
+    path: '/v1/accounts/{accountId}/automatas/{automataId}/unarchive',
+    function: 'automata-api',
+  },
+  {
+    type: 'http',
+    method: 'ANY',
+    path: '/v1/accounts/{accountId}/automatas/{automataId}',
     function: 'automata-api',
   },
 

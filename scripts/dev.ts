@@ -279,10 +279,15 @@ async function main() {
   const setupDb = spawn({
     cmd: ['bun', 'run', 'setup:db'],
     cwd: ROOT_DIR,
-    stdout: 'pipe',
-    stderr: 'pipe',
+    stdout: 'inherit',
+    stderr: 'inherit',
   });
   await setupDb.exited;
+  if (setupDb.exitCode !== 0) {
+    log(prefixes.runner, `${colors.red}Failed to setup DynamoDB tables. Exiting.${colors.reset}`);
+    cleanup();
+    process.exit(1);
+  }
 
   // Step 3: Build and start SAM
   log(prefixes.runner, 'Step 3/4: Starting SAM Lambda Service...');
@@ -291,7 +296,24 @@ async function main() {
     log(prefixes.sam, 'Already running on port 3002');
   } else {
     if (!skipBuild) {
-      log(prefixes.sam, 'Building functions (this may take a moment)...');
+      // First, build Lambda functions
+      log(prefixes.sam, 'Building Lambda functions...');
+      const functionsBuild = spawn({
+        cmd: ['turbo', 'run', 'build', '--filter=./functions/*'],
+        cwd: ROOT_DIR,
+        stdout: 'inherit',
+        stderr: 'inherit',
+      });
+      await functionsBuild.exited;
+
+      if (functionsBuild.exitCode !== 0) {
+        log(prefixes.runner, `${colors.red}Functions build failed. Exiting.${colors.reset}`);
+        cleanup();
+        process.exit(1);
+      }
+
+      // Then, build SAM template
+      log(prefixes.sam, 'Building SAM template (this may take a moment)...');
       const build = spawn({
         cmd: ['sam', 'build', '--use-container', '--cached'],
         cwd: ROOT_DIR,
@@ -301,7 +323,7 @@ async function main() {
       await build.exited;
 
       if (build.exitCode !== 0) {
-        log(prefixes.runner, `${colors.red}Build failed. Exiting.${colors.reset}`);
+        log(prefixes.runner, `${colors.red}SAM build failed. Exiting.${colors.reset}`);
         cleanup();
         process.exit(1);
       }

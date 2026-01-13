@@ -150,7 +150,7 @@ export const handler = async (
   const method = event.httpMethod;
   const path = event.path;
 
-  console.log(`${method} ${path}`);
+  console.log(`[Lambda] ${method} ${path}`);
 
   // CORS 预检
   if (method === 'OPTIONS') {
