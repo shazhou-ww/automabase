@@ -192,9 +192,10 @@ async function isSamRunning(): Promise<boolean> {
 /**
  * Cleanup on exit
  */
-function cleanup() {
+async function cleanup() {
   log(prefixes.runner, 'Shutting down...');
 
+  // Kill all spawned processes
   for (const proc of processes) {
     try {
       proc.kill();
@@ -203,25 +204,67 @@ function cleanup() {
     }
   }
 
-  // Stop Docker containers
-  spawn({
+  // Wait a moment for processes to terminate
+  await Bun.sleep(500);
+
+  // Stop SAM Lambda containers (they have names starting with "sam-")
+  log(prefixes.runner, 'Stopping SAM Lambda containers...');
+  const samContainers = spawn({
+    cmd: ['docker', 'ps', '-q', '--filter', 'name=sam-'],
+    cwd: ROOT_DIR,
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
+  const containerIds = await new Response(samContainers.stdout).text();
+  if (containerIds.trim()) {
+    const stopSam = spawn({
+      cmd: ['docker', 'stop', ...containerIds.trim().split('\n')],
+      cwd: ROOT_DIR,
+      stdout: 'inherit',
+      stderr: 'inherit',
+    });
+    await stopSam.exited;
+  }
+
+  // Stop Docker Compose containers and wait for completion
+  log(prefixes.runner, 'Stopping Docker Compose containers...');
+  const dockerDown = spawn({
     cmd: ['docker', 'compose', 'down'],
     cwd: ROOT_DIR,
     stdout: 'inherit',
     stderr: 'inherit',
   });
+  await dockerDown.exited;
+  log(prefixes.runner, 'All containers stopped.');
 }
 
+// Track if cleanup is in progress to prevent multiple cleanups
+let isCleaningUp = false;
+
 // Handle signals
-process.on('SIGINT', () => {
-  cleanup();
+process.on('SIGINT', async () => {
+  if (isCleaningUp) return;
+  isCleaningUp = true;
+  await cleanup();
   process.exit(0);
 });
 
-process.on('SIGTERM', () => {
-  cleanup();
+process.on('SIGTERM', async () => {
+  if (isCleaningUp) return;
+  isCleaningUp = true;
+  await cleanup();
   process.exit(0);
 });
+
+// Handle Windows-specific close events
+if (process.platform === 'win32') {
+  process.on('SIGHUP', async () => {
+    if (isCleaningUp) return;
+    isCleaningUp = true;
+    await cleanup();
+    process.exit(0);
+  });
+}
 
 async function main() {
   console.log('\n');
@@ -269,7 +312,7 @@ async function main() {
     );
     if (!dynamoReady) {
       log(prefixes.runner, `${colors.red}Failed to start DynamoDB. Exiting.${colors.reset}`);
-      cleanup();
+      await cleanup();
       process.exit(1);
     }
   }
@@ -285,7 +328,7 @@ async function main() {
   await setupDb.exited;
   if (setupDb.exitCode !== 0) {
     log(prefixes.runner, `${colors.red}Failed to setup DynamoDB tables. Exiting.${colors.reset}`);
-    cleanup();
+    await cleanup();
     process.exit(1);
   }
 
@@ -308,7 +351,7 @@ async function main() {
 
       if (functionsBuild.exitCode !== 0) {
         log(prefixes.runner, `${colors.red}Functions build failed. Exiting.${colors.reset}`);
-        cleanup();
+        await cleanup();
         process.exit(1);
       }
 
@@ -324,7 +367,7 @@ async function main() {
 
       if (build.exitCode !== 0) {
         log(prefixes.runner, `${colors.red}SAM build failed. Exiting.${colors.reset}`);
-        cleanup();
+        await cleanup();
         process.exit(1);
       }
     }
@@ -389,8 +432,8 @@ async function main() {
   console.log('\n');
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error('Fatal error:', err);
-  cleanup();
+  await cleanup();
   process.exit(1);
 });
