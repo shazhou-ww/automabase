@@ -25,11 +25,8 @@ export type AutomataStatus = 'active' | 'archived';
  * Account entity
  */
 export interface Account {
-  /** Account ID (derived from public key) */
+  /** Account ID (ULID) */
   accountId: string;
-
-  /** Ed25519 public key, Base64URL encoded */
-  publicKey: string;
 
   /** OAuth Provider's subject claim */
   oauthSubject: string;
@@ -48,6 +45,48 @@ export interface Account {
 
   /** Account status */
   status: AccountStatus;
+
+  /** Creation timestamp (ISO8601) */
+  createdAt: string;
+
+  /** Last update timestamp (ISO8601) */
+  updatedAt: string;
+}
+
+// ============================================================================
+// Device Types
+// ============================================================================
+
+/** Device status */
+export type DeviceStatus = 'active' | 'revoked';
+
+/** Device type */
+export type DeviceType = 'browser' | 'mobile' | 'desktop' | 'server' | 'other';
+
+/**
+ * Device entity (represents a client with Ed25519 keypair)
+ */
+export interface Device {
+  /** Device ID (ULID) */
+  deviceId: string;
+
+  /** Owner Account ID */
+  accountId: string;
+
+  /** Ed25519 public key, Base64URL encoded */
+  publicKey: string;
+
+  /** Device name (user-defined) */
+  deviceName: string;
+
+  /** Device type */
+  deviceType?: DeviceType;
+
+  /** Device status */
+  status: DeviceStatus;
+
+  /** Last active timestamp (ISO8601) */
+  lastActiveAt: string;
 
   /** Creation timestamp (ISO8601) */
   createdAt: string;
@@ -181,6 +220,7 @@ export interface GetMeResponse {
 /** POST /v1/accounts response */
 export interface CreateAccountResponse {
   account: Account;
+  device: Device | null;
   isNew: boolean;
 }
 
@@ -192,6 +232,21 @@ export interface UpdateAccountResponse {
 /** GET /v1/accounts/:accountId response */
 export interface GetAccountResponse {
   account: Account;
+}
+
+/** GET /v1/accounts/me/devices response */
+export interface ListDevicesResponse {
+  devices: Device[];
+}
+
+/** POST /v1/accounts/me/devices response */
+export interface RegisterDeviceResponse {
+  device: Device;
+}
+
+/** DELETE /v1/accounts/me/devices/:deviceId response */
+export interface RevokeDeviceResponse {
+  device: Device;
 }
 
 /** POST /v1/accounts/:accountId/automatas response */

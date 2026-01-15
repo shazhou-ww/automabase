@@ -4,6 +4,8 @@
 
 // Account
 export * from './account';
+// Device
+export * from './device';
 // Automata
 export * from './automata';
 // Blueprint

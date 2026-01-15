@@ -62,7 +62,10 @@ describe('Automata WebSocket API', () => {
     client.setToken(token).setPrivateKey(keyPair.privateKey);
 
     // Ensure account exists
-    const accountResponse = await client.createAccount(keyPair.publicKey);
+    const accountResponse = await client.createAccount({
+      publicKey: keyPair.publicKey,
+      deviceName: 'Test Device',
+    });
     accountId = accountResponse.data.account.accountId;
     client.setAccountId(accountId);
 

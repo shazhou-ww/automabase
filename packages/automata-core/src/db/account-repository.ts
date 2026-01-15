@@ -12,7 +12,7 @@ import type {
   CreateAccountInput,
   UpdateAccountInput,
 } from '../types/account';
-import { generateAccountIdFromBase64 } from '../utils/hash';
+import { generateAccountId } from '../types/account';
 import { docClient, getTableName, Keys } from './client';
 
 /**
@@ -52,11 +52,10 @@ function itemToAccount(item: AccountItem): Account {
  */
 export async function createAccount(input: CreateAccountInput): Promise<Account> {
   const now = new Date().toISOString();
-  const accountId = generateAccountIdFromBase64(input.publicKey);
+  const accountId = generateAccountId();
 
   const account: Account = {
     accountId,
-    publicKey: input.publicKey,
     oauthSubject: input.oauthSubject,
     oauthProvider: input.oauthProvider,
     displayName: input.displayName,

@@ -17,6 +17,11 @@ import {
   type UpdateAccountInput,
   updateAccount,
   validateBase64PublicKey,
+  registerDevice,
+  listActiveDevicesByAccountId,
+  getDeviceByPublicKey,
+  revokeDevice,
+  type RegisterDeviceInput,
 } from '@automabase/automata-core';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
@@ -136,7 +141,9 @@ export async function getCurrentAccount(
 /**
  * POST /accounts - 创建或获取账户（首次注册）
  *
- * Body: { publicKey: string }
+ * Body: { publicKey?: string, deviceName?: string }
+ * 
+ * 如果提供 publicKey 和 deviceName，会同时注册设备
  */
 export async function createOrGetAccount(
   event: APIGatewayProxyEvent
@@ -151,16 +158,7 @@ export async function createOrGetAccount(
 
     // 解析请求体
     const body = JSON.parse(event.body || '{}');
-    const { publicKey } = body;
-
-    if (!publicKey) {
-      return error('publicKey is required', 400);
-    }
-
-    // 验证公钥格式
-    if (!validateBase64PublicKey(publicKey)) {
-      return error('Invalid publicKey format (expected 32-byte Ed25519 key in Base64URL)', 400);
-    }
+    const { publicKey, deviceName } = body;
 
     // 确定 OAuth 信息（如果没有外部 IdP，使用 'cognito'）
     const oauthProvider: OAuthProvider =
@@ -169,7 +167,6 @@ export async function createOrGetAccount(
 
     // 创建或获取账户
     const input: CreateAccountInput = {
-      publicKey,
       oauthProvider,
       oauthSubject,
       displayName: authContext.displayName || 'Anonymous',
@@ -179,7 +176,30 @@ export async function createOrGetAccount(
 
     const { account, isNew } = await getOrCreateAccountByOAuth(input);
 
-    return success({ account, isNew }, isNew ? 201 : 200);
+    // 如果提供了 publicKey，同时注册设备
+    let device = null;
+    if (publicKey) {
+      // 验证公钥格式
+      if (!validateBase64PublicKey(publicKey)) {
+        return error('Invalid publicKey format (expected 32-byte Ed25519 key in Base64URL)', 400);
+      }
+
+      // 检查设备是否已注册
+      const existingDevice = await getDeviceByPublicKey(publicKey);
+      if (existingDevice) {
+        device = existingDevice;
+      } else {
+        // 注册新设备
+        const deviceInput: RegisterDeviceInput = {
+          accountId: account.accountId,
+          publicKey,
+          deviceName: deviceName || 'Default Device',
+        };
+        device = await registerDevice(deviceInput);
+      }
+    }
+
+    return success({ account, device, isNew }, isNew ? 201 : 200);
   } catch (err) {
     if (err instanceof JwtVerificationError) {
       return error(err.message, 401, err.code);
@@ -273,7 +293,6 @@ export async function getAccount(event: APIGatewayProxyEvent): Promise<APIGatewa
         accountId: account.accountId,
         displayName: account.displayName,
         avatarUrl: account.avatarUrl,
-        publicKey: account.publicKey,
         createdAt: account.createdAt,
       },
     });
@@ -282,6 +301,159 @@ export async function getAccount(event: APIGatewayProxyEvent): Promise<APIGatewa
       return error(err.message, 401, err.code);
     }
     console.error('Error getting account:', err);
+    return error('Internal server error', 500);
+  }
+}
+
+/**
+ * GET /accounts/me/devices - 列出当前用户的设备
+ */
+export async function listMyDevices(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const token = event.headers.Authorization || event.headers.authorization;
+    const authContext = await verifyAndExtractContextWithDevMode(
+      token,
+      getJwtConfig(),
+      getLocalDevConfig()
+    );
+
+    // 获取当前用户的 accountId
+    let accountId = authContext.accountId;
+    if (!accountId) {
+      const oauthProvider: OAuthProvider =
+        (authContext.identityProvider?.name?.toLowerCase() as OAuthProvider) || 'cognito';
+      const oauthSubject = authContext.identityProvider?.userId || authContext.cognitoUserId;
+      const account = await getAccountByOAuth(oauthProvider, oauthSubject);
+      if (!account) {
+        return error('Account not found', 404);
+      }
+      accountId = account.accountId;
+    }
+
+    const devices = await listActiveDevicesByAccountId(accountId);
+
+    return success({ devices });
+  } catch (err) {
+    if (err instanceof JwtVerificationError) {
+      return error(err.message, 401, err.code);
+    }
+    console.error('Error listing devices:', err);
+    return error('Internal server error', 500);
+  }
+}
+
+/**
+ * POST /accounts/me/devices - 注册新设备
+ *
+ * Body: { publicKey: string, deviceName: string, deviceType?: string }
+ */
+export async function registerMyDevice(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const token = event.headers.Authorization || event.headers.authorization;
+    const authContext = await verifyAndExtractContextWithDevMode(
+      token,
+      getJwtConfig(),
+      getLocalDevConfig()
+    );
+
+    // 解析请求体
+    const body = JSON.parse(event.body || '{}');
+    const { publicKey, deviceName, deviceType } = body;
+
+    if (!publicKey) {
+      return error('publicKey is required', 400);
+    }
+    if (!deviceName) {
+      return error('deviceName is required', 400);
+    }
+
+    // 验证公钥格式
+    if (!validateBase64PublicKey(publicKey)) {
+      return error('Invalid publicKey format (expected 32-byte Ed25519 key in Base64URL)', 400);
+    }
+
+    // 获取当前用户的 accountId
+    let accountId = authContext.accountId;
+    if (!accountId) {
+      const oauthProvider: OAuthProvider =
+        (authContext.identityProvider?.name?.toLowerCase() as OAuthProvider) || 'cognito';
+      const oauthSubject = authContext.identityProvider?.userId || authContext.cognitoUserId;
+      const account = await getAccountByOAuth(oauthProvider, oauthSubject);
+      if (!account) {
+        return error('Account not found. Please create an account first.', 404);
+      }
+      accountId = account.accountId;
+    }
+
+    // 检查公钥是否已被使用
+    const existingDevice = await getDeviceByPublicKey(publicKey);
+    if (existingDevice) {
+      return error('This public key is already registered to a device', 409);
+    }
+
+    // 注册设备
+    const input: RegisterDeviceInput = {
+      accountId,
+      publicKey,
+      deviceName,
+      deviceType,
+    };
+    const device = await registerDevice(input);
+
+    return success({ device }, 201);
+  } catch (err) {
+    if (err instanceof JwtVerificationError) {
+      return error(err.message, 401, err.code);
+    }
+    console.error('Error registering device:', err);
+    return error('Internal server error', 500);
+  }
+}
+
+/**
+ * DELETE /accounts/me/devices/{deviceId} - 撤销设备
+ */
+export async function revokeMyDevice(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const token = event.headers.Authorization || event.headers.authorization;
+    const authContext = await verifyAndExtractContextWithDevMode(
+      token,
+      getJwtConfig(),
+      getLocalDevConfig()
+    );
+
+    const deviceId = event.pathParameters?.deviceId;
+    if (!deviceId) {
+      return error('deviceId is required', 400);
+    }
+
+    // 获取当前用户的 accountId
+    let accountId = authContext.accountId;
+    if (!accountId) {
+      const oauthProvider: OAuthProvider =
+        (authContext.identityProvider?.name?.toLowerCase() as OAuthProvider) || 'cognito';
+      const oauthSubject = authContext.identityProvider?.userId || authContext.cognitoUserId;
+      const account = await getAccountByOAuth(oauthProvider, oauthSubject);
+      if (!account) {
+        return error('Account not found', 404);
+      }
+      accountId = account.accountId;
+    }
+
+    const device = await revokeDevice(accountId, deviceId);
+
+    return success({ device });
+  } catch (err) {
+    if (err instanceof JwtVerificationError) {
+      return error(err.message, 401, err.code);
+    }
+    console.error('Error revoking device:', err);
     return error('Internal server error', 500);
   }
 }

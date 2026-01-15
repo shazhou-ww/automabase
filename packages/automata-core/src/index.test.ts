@@ -4,7 +4,7 @@ import {
   decodeBase62,
   encodeBase62,
   encodeBase62Padded,
-  generateAccountId,
+  generateAccountIdFromPublicKey,
   generateAccountIdFromBase64,
   INITIAL_VERSION,
   incrementVersion,
@@ -51,14 +51,14 @@ describe('Hash', () => {
   it('should generate account ID from public key', () => {
     // 32-byte test public key
     const publicKey = new Uint8Array(32).fill(0x42);
-    const accountId = generateAccountId(publicKey);
+    const accountId = generateAccountIdFromPublicKey(publicKey);
 
     // Account ID should be ~22 characters
     expect(accountId.length).toBeGreaterThan(15);
     expect(accountId.length).toBeLessThan(25);
 
     // Same input should produce same output
-    expect(generateAccountId(publicKey)).toBe(accountId);
+    expect(generateAccountIdFromPublicKey(publicKey)).toBe(accountId);
   });
 
   it('should generate account ID from base64 public key', () => {

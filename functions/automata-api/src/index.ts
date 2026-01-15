@@ -4,6 +4,9 @@ import {
   getAccount,
   getCurrentAccount,
   updateCurrentAccount,
+  listMyDevices,
+  registerMyDevice,
+  revokeMyDevice,
 } from './handlers/account-handlers';
 import {
   archiveAutomataHandler,
@@ -33,6 +36,15 @@ const routes: Route[] = [
   { method: 'POST', pathPattern: /^\/v1\/accounts$/, handler: createOrGetAccount },
   { method: 'PATCH', pathPattern: /^\/v1\/accounts\/me$/, handler: updateCurrentAccount },
   { method: 'GET', pathPattern: /^\/v1\/accounts\/(?<accountId>[^/]+)$/, handler: getAccount },
+
+  // Device API
+  { method: 'GET', pathPattern: /^\/v1\/accounts\/me\/devices$/, handler: listMyDevices },
+  { method: 'POST', pathPattern: /^\/v1\/accounts\/me\/devices$/, handler: registerMyDevice },
+  {
+    method: 'DELETE',
+    pathPattern: /^\/v1\/accounts\/me\/devices\/(?<deviceId>[^/]+)$/,
+    handler: revokeMyDevice,
+  },
 
   // WebSocket Token API
   { method: 'POST', pathPattern: /^\/v1\/ws\/token$/, handler: getWsTokenHandler },

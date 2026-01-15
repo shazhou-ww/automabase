@@ -42,7 +42,10 @@ describe('Account API', () => {
 
   describe('POST /v1/accounts', () => {
     it('should create a new account with public key', async () => {
-      const response = await client.createAccount(keyPair.publicKey);
+      const response = await client.createAccount({
+        publicKey: keyPair.publicKey,
+        deviceName: 'Test Device',
+      });
 
       // May be 201 (new) or 200 (existing)
       expect([200, 201]).toContain(response.status);
@@ -52,28 +55,40 @@ describe('Account API', () => {
 
     it('should return existing account on duplicate creation', async () => {
       // Create twice with same token
-      await client.createAccount(keyPair.publicKey);
-      const response = await client.createAccount(keyPair.publicKey);
+      await client.createAccount({
+        publicKey: keyPair.publicKey,
+        deviceName: 'Test Device',
+      });
+      const response = await client.createAccount({
+        publicKey: keyPair.publicKey,
+        deviceName: 'Test Device',
+      });
 
       expect(response.status).toBe(200);
       expect(response.data.isNew).toBe(false);
     });
 
     it('should return 400 without public key', async () => {
+      // With new API, publicKey is optional - this test is no longer relevant
+      // Account creation works without publicKey, device registration is separate
       const response = await client.request({
         method: 'POST',
         path: '/v1/accounts',
         body: {},
       });
 
-      expect(response.status).toBe(400);
+      // Should succeed now (200 or 201) since publicKey is optional
+      expect([200, 201]).toContain(response.status);
     });
   });
 
   describe('GET /v1/accounts/me (after registration)', () => {
     it('should return registered: true with account data', async () => {
       // Ensure account exists
-      await client.createAccount(keyPair.publicKey);
+      await client.createAccount({
+        publicKey: keyPair.publicKey,
+        deviceName: 'Test Device',
+      });
 
       const response = await client.getMe();
 
@@ -86,7 +101,10 @@ describe('Account API', () => {
   describe('PATCH /v1/accounts/me', () => {
     it('should update display name', async () => {
       // Ensure account exists
-      await client.createAccount(keyPair.publicKey);
+      await client.createAccount({
+        publicKey: keyPair.publicKey,
+        deviceName: 'Test Device',
+      });
 
       const newName = `Test User ${Date.now()}`;
       const response = await client.updateAccount({ displayName: newName });
@@ -121,7 +139,10 @@ describe('Account API', () => {
   describe('GET /v1/accounts/:id', () => {
     it('should get account by ID', async () => {
       // Create account first
-      const createResponse = await client.createAccount(keyPair.publicKey);
+      const createResponse = await client.createAccount({
+        publicKey: keyPair.publicKey,
+        deviceName: 'Test Device',
+      });
       const accountId = createResponse.data.account.accountId;
 
       const response = await client.getAccount(accountId);

@@ -20,12 +20,15 @@ async function getXxhash() {
 }
 
 /**
- * 使用 MurmurHash3-128 生成 Account ID
+ * 使用 MurmurHash3-128 从公钥生成 Account ID
+ * 
+ * @deprecated 此函数不再用于新账户创建。新账户使用 ULID 作为 accountId。
+ * 保留此函数是为了向后兼容和迁移目的。
  *
  * @param publicKey - Ed25519 公钥 (32 bytes)
  * @returns Base62 编码的 Account ID (约 22 字符)
  */
-export function generateAccountId(publicKey: Uint8Array | Buffer): string {
+export function generateAccountIdFromPublicKey(publicKey: Uint8Array | Buffer): string {
   // MurmurHash3 x64 128-bit
   const hashResult = murmurhash3.x64.hash128(Buffer.from(publicKey));
 
@@ -37,10 +40,12 @@ export function generateAccountId(publicKey: Uint8Array | Buffer): string {
 
 /**
  * 从 Base64URL 编码的公钥生成 Account ID
+ * 
+ * @deprecated 此函数不再用于新账户创建。新账户使用 ULID 作为 accountId。
  */
 export function generateAccountIdFromBase64(publicKeyBase64: string): string {
   const publicKey = Buffer.from(publicKeyBase64, 'base64url');
-  return generateAccountId(publicKey);
+  return generateAccountIdFromPublicKey(publicKey);
 }
 
 /**

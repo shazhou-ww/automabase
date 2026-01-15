@@ -2,8 +2,11 @@
  * Account Entity
  *
  * Account 是平台的核心实体，代表一个用户身份。
- * accountId = Base62(MurmurHash128(publicKey))
+ * Account 与 Cognito OAuth sub 一一对应。
+ * 每个 Account 可以有多个 Device（每个 Device 有独立的 Ed25519 密钥对）。
  */
+
+import { ulid } from 'ulid';
 
 /** Account 状态 */
 export type AccountStatus = 'active' | 'suspended' | 'deleted';
@@ -16,11 +19,8 @@ export type OAuthProvider = 'google' | 'github' | 'cognito';
  */
 export interface Account {
   // ========== 不可变属性 ==========
-  /** 主键，= Base62(MurmurHash128(publicKey))，约 22 字符 */
+  /** 主键 (ULID) */
   accountId: string;
-
-  /** Ed25519 公钥，Base64URL 编码，32 bytes */
-  publicKey: string;
 
   /** OAuth Provider 的 sub claim */
   oauthSubject: string;
@@ -49,12 +49,16 @@ export interface Account {
 }
 
 /**
+ * 生成新的 Account ID
+ */
+export function generateAccountId(): string {
+  return ulid();
+}
+
+/**
  * 创建 Account 的输入参数
  */
 export interface CreateAccountInput {
-  /** Ed25519 公钥，Base64URL 编码 */
-  publicKey: string;
-
   /** OAuth Provider 的 sub claim */
   oauthSubject: string;
 

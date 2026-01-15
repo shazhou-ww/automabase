@@ -108,6 +108,10 @@ export const Keys = {
   accountSk: () => '#META',
   oauthGsi1pk: (provider: string, subject: string) => `OAUTH#${provider}#${subject}`,
 
+  // Device
+  deviceSk: (deviceId: string) => `DEVICE#${deviceId}`,
+  deviceGsi1pk: (publicKey: string) => `DEVICE#PUBKEY#${publicKey}`,
+
   // Automata
   automataPk: (automataId: string) => `AUTOMATA#${automataId}`,
   automataSk: () => '#META',

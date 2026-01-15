@@ -18,8 +18,11 @@
  *   .setToken(jwtToken)
  *   .setPrivateKey(keyPair.privateKey);
  *
- * // Create account
- * const { data } = await client.createAccount(keyPair.publicKey);
+ * // Create account and register device
+ * const { data } = await client.createAccount({
+ *   publicKey: keyPair.publicKey,
+ *   deviceName: 'My Browser',
+ * });
  * client.setAccountId(data.account.accountId);
  *
  * // Create automata
@@ -47,10 +50,13 @@ export type {
   OAuthProvider,
   AccountStatus,
   AutomataStatus,
+  DeviceStatus,
+  DeviceType,
   HttpMethod,
 
   // Entities
   Account,
+  Device,
   Automata,
   AutomataEvent,
 
@@ -66,6 +72,9 @@ export type {
   CreateAccountResponse,
   UpdateAccountResponse,
   GetAccountResponse,
+  ListDevicesResponse,
+  RegisterDeviceResponse,
+  RevokeDeviceResponse,
   CreateAutomataResponse,
   ListAutomatasResponse,
   GetAutomataResponse,

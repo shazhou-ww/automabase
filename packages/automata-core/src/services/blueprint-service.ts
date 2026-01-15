@@ -7,6 +7,7 @@
 import { getAccountById } from '../db/account-repository';
 import { getAutomataById } from '../db/automata-repository';
 import { createBlueprintIfNotExists, getBlueprintById } from '../db/blueprint-repository';
+import { listActiveDevicesByAccountId } from '../db/device-repository';
 import type { Blueprint, BlueprintContent } from '../types/blueprint';
 import { computeBlueprintHash, computeBlueprintId } from '../utils/hash';
 import { verifyEd25519Signature } from '../utils/signature';
@@ -125,8 +126,24 @@ async function validateBlueprintSignature(
     );
   }
 
-  // 验证签名
-  const isValid = verifyEd25519Signature(content, signature, account.publicKey);
+  // 获取 Account 的所有活跃 Device
+  const devices = await listActiveDevicesByAccountId(account.accountId);
+  if (devices.length === 0) {
+    throw new BlueprintValidationError(
+      'Account has no registered devices',
+      'NO_DEVICES'
+    );
+  }
+
+  // 验证签名 - 尝试用任一设备的公钥验证
+  let isValid = false;
+  for (const device of devices) {
+    if (verifyEd25519Signature(content, signature, device.publicKey)) {
+      isValid = true;
+      break;
+    }
+  }
+
   if (!isValid) {
     throw new BlueprintValidationError('Invalid blueprint signature', 'INVALID_SIGNATURE');
   }

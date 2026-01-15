@@ -17,12 +17,14 @@ import type {
   GetEventResponse,
   GetMeResponse,
   GetWsTokenResponse,
-  HttpMethod,
   ListAutomatasOptions,
   ListAutomatasResponse,
+  ListDevicesResponse,
   ListEventsOptions,
   ListEventsResponse,
+  RegisterDeviceResponse,
   RequestOptions,
+  RevokeDeviceResponse,
   SendEventResponse,
   UnarchiveAutomataResponse,
   UpdateAccountResponse,
@@ -51,7 +53,11 @@ const DEFAULT_CONFIG: Partial<ClientConfig> = {
  *   .setToken(jwtToken)
  *   .setPrivateKey(keyPair.privateKey);
  *
- * const { data } = await client.createAccount(keyPair.publicKey);
+ * // Create account and register device at the same time
+ * const { data } = await client.createAccount({
+ *   publicKey: keyPair.publicKey,
+ *   deviceName: 'My Browser',
+ * });
  * client.setAccountId(data.account.accountId);
  *
  * const automata = await client.createAutomata(myBlueprint);
@@ -215,16 +221,23 @@ export class AutomataClient {
    * Create or retrieve an account
    *
    * If an account with the matching OAuth identity exists, it will be returned.
-   * Otherwise, a new account will be created with the provided public key.
+   * Otherwise, a new account will be created.
+   * 
+   * Optionally, you can provide a publicKey to register a device at the same time.
    *
-   * @param publicKey - Ed25519 public key (Base64URL encoded)
-   * @returns Account data and whether it was newly created
+   * @param options - Optional parameters
+   * @param options.publicKey - Ed25519 public key (Base64URL encoded) for device registration
+   * @param options.deviceName - Device name (required if publicKey is provided)
+   * @returns Account data, device data (if registered), and whether account was newly created
    */
-  async createAccount(publicKey: string): Promise<ApiResponse<CreateAccountResponse>> {
+  async createAccount(options?: {
+    publicKey?: string;
+    deviceName?: string;
+  }): Promise<ApiResponse<CreateAccountResponse>> {
     return this.request({
       method: 'POST',
       path: '/v1/accounts',
-      body: { publicKey },
+      body: options || {},
     });
   }
 
@@ -255,6 +268,55 @@ export class AutomataClient {
     return this.request({
       method: 'GET',
       path: `/v1/accounts/${accountId}`,
+    });
+  }
+
+  // ==========================================================================
+  // Device API
+  // ==========================================================================
+
+  /**
+   * List devices for the current user
+   *
+   * @returns List of active devices
+   */
+  async listDevices(): Promise<ApiResponse<ListDevicesResponse>> {
+    return this.request({
+      method: 'GET',
+      path: '/v1/accounts/me/devices',
+    });
+  }
+
+  /**
+   * Register a new device
+   *
+   * @param publicKey - Ed25519 public key (Base64URL encoded)
+   * @param deviceName - Human-readable device name
+   * @param deviceType - Optional device type
+   * @returns Registered device data
+   */
+  async registerDevice(
+    publicKey: string,
+    deviceName: string,
+    deviceType?: 'browser' | 'mobile' | 'desktop' | 'server' | 'other'
+  ): Promise<ApiResponse<RegisterDeviceResponse>> {
+    return this.request({
+      method: 'POST',
+      path: '/v1/accounts/me/devices',
+      body: { publicKey, deviceName, deviceType },
+    });
+  }
+
+  /**
+   * Revoke a device
+   *
+   * @param deviceId - Device ID to revoke
+   * @returns Revoked device data
+   */
+  async revokeDevice(deviceId: string): Promise<ApiResponse<RevokeDeviceResponse>> {
+    return this.request({
+      method: 'DELETE',
+      path: `/v1/accounts/me/devices/${deviceId}`,
     });
   }
 
