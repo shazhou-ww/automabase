@@ -158,4 +158,111 @@ describe('Account API', () => {
       expect(response.status).toBe(404);
     });
   });
+
+  describe('Device API', () => {
+    describe('GET /v1/accounts/me/devices', () => {
+      it('should list devices for the current user', async () => {
+        // Ensure account and device exist
+        await client.createAccount({
+          publicKey: keyPair.publicKey,
+          deviceName: 'Test Device',
+        });
+
+        const response = await client.listDevices();
+
+        expect(response.status).toBe(200);
+        expect(response.data).toHaveProperty('devices');
+        expect(Array.isArray(response.data.devices)).toBe(true);
+        expect(response.data.devices.length).toBeGreaterThan(0);
+
+        // Check device structure
+        const device = response.data.devices[0];
+        expect(device).toHaveProperty('deviceId');
+        expect(device).toHaveProperty('publicKey');
+        expect(device).toHaveProperty('deviceName');
+        expect(device).toHaveProperty('status');
+      });
+    });
+
+    describe('POST /v1/accounts/me/devices', () => {
+      it('should register a new device', async () => {
+        // Ensure account exists first
+        await client.createAccount();
+
+        // Generate new key pair for new device
+        const newKeyPair = await generateKeyPair();
+
+        const response = await client.registerDevice(
+          newKeyPair.publicKey,
+          'Second Device',
+          'browser'
+        );
+
+        expect(response.status).toBe(201);
+        expect(response.data).toHaveProperty('device');
+        expect(response.data.device.publicKey).toBe(newKeyPair.publicKey);
+        expect(response.data.device.deviceName).toBe('Second Device');
+        expect(response.data.device.deviceType).toBe('browser');
+        expect(response.data.device.status).toBe('active');
+      });
+
+      it('should return 400 without publicKey', async () => {
+        const response = await client.request({
+          method: 'POST',
+          path: '/v1/accounts/me/devices',
+          body: { deviceName: 'Test' },
+        });
+
+        expect(response.status).toBe(400);
+      });
+
+      it('should return 400 without deviceName', async () => {
+        const newKeyPair = await generateKeyPair();
+        const response = await client.request({
+          method: 'POST',
+          path: '/v1/accounts/me/devices',
+          body: { publicKey: newKeyPair.publicKey },
+        });
+
+        expect(response.status).toBe(400);
+      });
+
+      it('should return 409 for duplicate publicKey', async () => {
+        // Try to register same publicKey again
+        const response = await client.registerDevice(
+          keyPair.publicKey,
+          'Duplicate Device'
+        );
+
+        expect(response.status).toBe(409);
+      });
+    });
+
+    describe('DELETE /v1/accounts/me/devices/:deviceId', () => {
+      it('should revoke a device', async () => {
+        // First, register a new device to revoke
+        const newKeyPair = await generateKeyPair();
+        const registerResponse = await client.registerDevice(
+          newKeyPair.publicKey,
+          'Device to Revoke'
+        );
+
+        expect(registerResponse.status).toBe(201);
+        const deviceId = registerResponse.data.device.deviceId;
+
+        // Now revoke it
+        const revokeResponse = await client.revokeDevice(deviceId);
+
+        expect(revokeResponse.status).toBe(200);
+        expect(revokeResponse.data.device.status).toBe('revoked');
+
+        // Verify it's no longer in active devices list
+        const listResponse = await client.listDevices();
+        const revokedDevice = listResponse.data.devices.find(
+          (d: { deviceId: string }) => d.deviceId === deviceId
+        );
+        expect(revokedDevice).toBeUndefined();
+      });
+    });
+  });
 });
