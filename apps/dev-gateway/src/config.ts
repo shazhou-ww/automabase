@@ -19,6 +19,16 @@ const DEFAULT_ROUTES: RouteConfig[] = [
   // Account 路由
   { type: 'http', method: 'ANY', path: '/v1/accounts/me', function: 'automata-api' },
   { type: 'http', method: 'ANY', path: '/v1/accounts', function: 'automata-api' },
+
+  // Device 路由 - 放在 /accounts/{accountId} 之前，确保优先匹配
+  {
+    type: 'http',
+    method: 'ANY',
+    path: '/v1/accounts/me/devices/{deviceId}',
+    function: 'automata-api',
+  },
+  { type: 'http', method: 'ANY', path: '/v1/accounts/me/devices', function: 'automata-api' },
+
   { type: 'http', method: 'ANY', path: '/v1/accounts/{accountId}', function: 'automata-api' },
 
   // Automata 路由

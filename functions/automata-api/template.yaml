@@ -50,6 +50,18 @@ AutomataApiFunction:
           Path: /v1/accounts/{accountId}
           Method: ANY
 
+      # Device API - nested under /accounts/me
+      AccountMeDevices:
+        Type: Api
+        Properties:
+          Path: /v1/accounts/me/devices
+          Method: ANY
+      AccountMeDeviceById:
+        Type: Api
+        Properties:
+          Path: /v1/accounts/me/devices/{deviceId}
+          Method: ANY
+
       # Automata API - nested under /accounts/{accountId}
       AccountAutomatas:
         Type: Api

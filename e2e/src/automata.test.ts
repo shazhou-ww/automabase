@@ -24,6 +24,12 @@ describe('Automata API', () => {
       publicKey: keyPair.publicKey,
       deviceName: 'Test Device',
     });
+    
+    // Debug: log response if account is missing
+    if (!accountResponse.data?.account) {
+      console.error('createAccount response:', accountResponse.status, accountResponse.data);
+    }
+    
     accountId = accountResponse.data.account.accountId;
     client.setAccountId(accountId);
   });
