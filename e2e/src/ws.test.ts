@@ -63,8 +63,7 @@ describe('Automata WebSocket API', () => {
 
     // Ensure account exists
     const accountResponse = await client.createAccount(keyPair.publicKey);
-    const accountData = accountResponse.data.account as Record<string, unknown>;
-    accountId = accountData.accountId as string;
+    accountId = accountResponse.data.account.accountId;
     client.setAccountId(accountId);
 
     // Determine WS URL

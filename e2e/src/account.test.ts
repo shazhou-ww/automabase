@@ -93,8 +93,7 @@ describe('Account API', () => {
 
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('account');
-      const account = response.data.account as Record<string, unknown>;
-      expect(account.displayName).toBe(newName);
+      expect(response.data.account.displayName).toBe(newName);
     });
 
     it('should update avatar URL', async () => {
@@ -102,8 +101,7 @@ describe('Account API', () => {
       const response = await client.updateAccount({ avatarUrl: newAvatar });
 
       expect(response.status).toBe(200);
-      const account = response.data.account as Record<string, unknown>;
-      expect(account.avatarUrl).toBe(newAvatar);
+      expect(response.data.account.avatarUrl).toBe(newAvatar);
     });
 
     it('should return 404 for unregistered user', async () => {
@@ -124,15 +122,13 @@ describe('Account API', () => {
     it('should get account by ID', async () => {
       // Create account first
       const createResponse = await client.createAccount(keyPair.publicKey);
-      const createdAccount = createResponse.data.account as Record<string, unknown>;
-      const accountId = createdAccount.accountId as string;
+      const accountId = createResponse.data.account.accountId;
 
       const response = await client.getAccount(accountId);
 
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('account');
-      const fetchedAccount = response.data.account as Record<string, unknown>;
-      expect(fetchedAccount.accountId).toBe(accountId);
+      expect(response.data.account.accountId).toBe(accountId);
     });
 
     it('should return 404 for non-existent account', async () => {

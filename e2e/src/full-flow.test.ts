@@ -51,8 +51,7 @@ describe('Full Flow Integration', () => {
 
     // Ensure account exists
     const accountResponse = await client.createAccount(keyPair.publicKey);
-    const accountData = accountResponse.data.account as Record<string, unknown>;
-    accountId = accountData.accountId as string;
+    accountId = accountResponse.data.account.accountId;
     client.setAccountId(accountId);
 
     // Regenerate token with accountId for WS token requests
@@ -78,11 +77,10 @@ describe('Full Flow Integration', () => {
       expect(response.status).toBe(201);
       expect(response.data).toHaveProperty('automataId');
 
-      const data = response.data as Record<string, unknown>;
-      automataId = data.automataId as string;
+      automataId = response.data.automataId;
 
       // Verify initial state
-      expect(data.currentState).toEqual({
+      expect(response.data.currentState).toEqual({
         name: 'Untitled App',
         status: 'draft',
       });
