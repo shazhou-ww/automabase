@@ -83,26 +83,6 @@
         "vitest": "^1.2.0",
       },
     },
-    "functions/automata-api": {
-      "name": "@automabase/function-automata-api",
-      "version": "1.0.0",
-      "dependencies": {
-        "@automabase/automata-auth": "workspace:*",
-        "@automabase/automata-core": "workspace:*",
-      },
-    },
-    "functions/automata-ws": {
-      "name": "@automabase/function-automata-ws",
-      "version": "1.0.0",
-      "dependencies": {
-        "@automabase/automata-core": "workspace:*",
-        "@aws-sdk/client-apigatewaymanagementapi": "^3.695.0",
-      },
-      "devDependencies": {
-        "@types/aws-lambda": "^8.10.130",
-        "@types/node": "^20.11.0",
-      },
-    },
     "packages/automata-auth": {
       "name": "@automabase/automata-auth",
       "version": "1.0.0",
@@ -167,6 +147,19 @@
         "vitest": "^1.2.0",
       },
     },
+    "stacks/automabase": {
+      "name": "@automabase/stack-automabase",
+      "version": "1.0.0",
+      "dependencies": {
+        "@automabase/automata-auth": "workspace:*",
+        "@automabase/automata-core": "workspace:*",
+        "@aws-sdk/client-apigatewaymanagementapi": "^3.695.0",
+      },
+      "devDependencies": {
+        "@types/aws-lambda": "^8.10.130",
+        "@types/node": "^20.11.0",
+      },
+    },
   },
   "packages": {
     "@ampproject/remapping": ["@ampproject/remapping@2.3.0", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw=="],
@@ -183,9 +176,7 @@
 
     "@automabase/e2e": ["@automabase/e2e@workspace:e2e"],
 
-    "@automabase/function-automata-api": ["@automabase/function-automata-api@workspace:functions/automata-api"],
-
-    "@automabase/function-automata-ws": ["@automabase/function-automata-ws@workspace:functions/automata-ws"],
+    "@automabase/stack-automabase": ["@automabase/stack-automabase@workspace:stacks/automabase"],
 
     "@aws-crypto/sha256-browser": ["@aws-crypto/sha256-browser@5.2.0", "", { "dependencies": { "@aws-crypto/sha256-js": "^5.2.0", "@aws-crypto/supports-web-crypto": "^5.2.0", "@aws-crypto/util": "^5.2.0", "@aws-sdk/types": "^3.222.0", "@aws-sdk/util-locate-window": "^3.0.0", "@smithy/util-utf8": "^2.0.0", "tslib": "^2.6.2" } }, "sha512-AXfN/lGotSQwu6HNcEsIASo7kWXZ5HYWvfOmSNKDsEqC4OashTp8alTmaz+F7TC2L083SFv5RdB+qU3Vs1kZqw=="],
 

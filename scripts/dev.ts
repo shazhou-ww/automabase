@@ -16,6 +16,7 @@
 
 import * as path from 'node:path';
 import { type Subprocess, spawn } from 'bun';
+import { setupDynamoDB } from './setup-db';
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '..');
 
@@ -319,15 +320,11 @@ async function main() {
 
   // Step 2: Setup DynamoDB tables
   log(prefixes.runner, 'Step 2/4: Setting up DynamoDB tables...');
-  const setupDb = spawn({
-    cmd: ['bun', 'run', 'setup:db'],
-    cwd: ROOT_DIR,
-    stdout: 'inherit',
-    stderr: 'inherit',
-  });
-  await setupDb.exited;
-  if (setupDb.exitCode !== 0) {
-    log(prefixes.runner, `${colors.red}Failed to setup DynamoDB tables. Exiting.${colors.reset}`);
+  try {
+    await setupDynamoDB({ silent: true });
+    log(prefixes.runner, 'DynamoDB tables ready');
+  } catch (error) {
+    log(prefixes.runner, `${colors.red}Failed to setup DynamoDB tables: ${(error as Error).message}${colors.reset}`);
     await cleanup();
     process.exit(1);
   }
@@ -339,18 +336,18 @@ async function main() {
     log(prefixes.sam, 'Already running on port 3002');
   } else {
     if (!skipBuild) {
-      // First, build Lambda functions
-      log(prefixes.sam, 'Building Lambda functions...');
-      const functionsBuild = spawn({
-        cmd: ['turbo', 'run', 'build', '--filter=./functions/*'],
+      // First, build Lambda stacks
+      log(prefixes.sam, 'Building Lambda stacks...');
+      const stacksBuild = spawn({
+        cmd: ['turbo', 'run', 'build', '--filter=./stacks/*'],
         cwd: ROOT_DIR,
         stdout: 'inherit',
         stderr: 'inherit',
       });
-      await functionsBuild.exited;
+      await stacksBuild.exited;
 
-      if (functionsBuild.exitCode !== 0) {
-        log(prefixes.runner, `${colors.red}Functions build failed. Exiting.${colors.reset}`);
+      if (stacksBuild.exitCode !== 0) {
+        log(prefixes.runner, `${colors.red}Stacks build failed. Exiting.${colors.reset}`);
         await cleanup();
         process.exit(1);
       }
@@ -378,7 +375,7 @@ async function main() {
       'local',
       'start-lambda',
       '--template-file',
-      'merged-template.yaml',
+      'template.yaml',
       '--env-vars',
       'env.json',
       '--skip-pull-image',

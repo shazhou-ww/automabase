@@ -1,17 +1,19 @@
 {
-  "name": "@automabase/function-automata-ws",
+  "name": "@automabase/stack-automabase",
   "version": "1.0.0",
-  "description": "Lambda function: automata-ws",
-  "main": "src/index.ts",
+  "description": "Automabase Lambda Stack - HTTP API and WebSocket functions",
+  "type": "module",
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src",
     "lint:fix": "biome check --write src",
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --format=cjs --outfile=dist/index.js --external:\"@aws-sdk/*\" --minify --sourcemap",
+    "build": "bun run build:functions",
+    "build:functions": "bun scripts/build-functions.ts",
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@automabase/automata-auth": "workspace:*",
     "@automabase/automata-core": "workspace:*",
     "@aws-sdk/client-apigatewaymanagementapi": "^3.695.0"
   },
@@ -20,4 +22,3 @@
     "@types/node": "^20.11.0"
   }
 }
-

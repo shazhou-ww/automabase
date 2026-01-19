@@ -59,32 +59,21 @@ async function runCommand(cmd: string[], description: string): Promise<boolean> 
 async function buildFunctions(): Promise<boolean> {
   console.log('\n🔨 Building Lambda functions...');
 
-  // Build functions with turbo
-  if (!(await runCommand(['turbo', 'run', 'build', '--filter=./functions/*'], 'Build functions'))) {
-    return false;
-  }
-
-  // Copy manifests
-  if (!(await runCommand(['bun', 'scripts/copy-function-manifests.ts'], 'Copy manifests'))) {
+  // Build stacks with turbo
+  if (!(await runCommand(['turbo', 'run', 'build', '--filter=./stacks/*'], 'Build stacks'))) {
     return false;
   }
 
   return true;
 }
 
-async function mergeTemplates(): Promise<boolean> {
-  return runCommand(['bun', 'scripts/merge-templates.ts'], 'Merge SAM templates');
-}
-
 async function samBuild(): Promise<boolean> {
   if (!(await buildFunctions())) return false;
-  if (!(await mergeTemplates())) return false;
-  return runCommand(['sam', 'build', '--template-file', 'merged-template.yaml'], 'SAM build');
+  return runCommand(['sam', 'build', '--template-file', 'template.yaml'], 'SAM build');
 }
 
 async function samValidate(): Promise<boolean> {
-  if (!(await mergeTemplates())) return false;
-  return runCommand(['sam', 'validate', '--template-file', 'merged-template.yaml'], 'SAM validate');
+  return runCommand(['sam', 'validate', '--template-file', 'template.yaml'], 'SAM validate');
 }
 
 async function samPackage(): Promise<boolean> {
@@ -94,7 +83,7 @@ async function samPackage(): Promise<boolean> {
       'sam',
       'package',
       '--template-file',
-      'merged-template.yaml',
+      'template.yaml',
       '--output-template-file',
       'packaged.yaml',
     ],
@@ -105,7 +94,7 @@ async function samPackage(): Promise<boolean> {
 async function samDeploy(guided: boolean): Promise<boolean> {
   if (!(await samBuild())) return false;
 
-  const cmd = ['sam', 'deploy', '--template-file', 'merged-template.yaml'];
+  const cmd = ['sam', 'deploy', '--template-file', 'template.yaml'];
   if (guided) {
     cmd.push('--guided');
   }

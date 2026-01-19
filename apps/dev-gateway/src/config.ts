@@ -95,11 +95,11 @@ const DEFAULT_CONFIG: GatewayConfig = {
     issuer: 'local-dev',
   },
   functions: {
-    httpApi: 'functions/automata-api/src/index.ts',
-    websocket: 'functions/automata-ws/src/index.ts',
+    httpApi: 'stacks/automabase/src/functions/automata-api/index.ts',
+    websocket: 'stacks/automabase/src/functions/automata-ws/index.ts',
   },
   sam: {
-    templatePath: 'merged-template.yaml',
+    templatePath: 'template.yaml',
     envVarsPath: 'env.json',
     httpApiFunctionName: 'AutomataApiFunction',
     websocketFunctionName: 'AutomataWsFunction',

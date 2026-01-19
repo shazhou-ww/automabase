@@ -11,6 +11,7 @@ import * as crypto from 'node:crypto';
 import { generateKeyPairSync } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { setupDynamoDB } from './setup-db';
 
 const ENV_JSON_PATH = resolve(import.meta.dirname, '..', 'env.json');
 const ENV_JSON_EXAMPLE_PATH = resolve(import.meta.dirname, '..', 'env.json.example');
@@ -98,6 +99,16 @@ async function setupEnvironment(): Promise<void> {
     await generateKeys();
   } else {
     console.log('✅ JWT keys already configured');
+  }
+
+  // Step 3: Setup DynamoDB tables
+  console.log('\n🗄️  Setting up DynamoDB tables...');
+  try {
+    await setupDynamoDB({ silent: true });
+    console.log('✅ DynamoDB tables ready');
+  } catch (error) {
+    console.log(`⚠️  DynamoDB setup skipped: ${(error as Error).message}`);
+    console.log('   You can run "bun run setup:db" later when DynamoDB is running.');
   }
 
   console.log('\n✅ Setup complete!');
