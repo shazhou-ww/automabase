@@ -87,9 +87,9 @@ const DEFAULT_ROUTES: RouteConfig[] = [
  * 默认配置
  */
 const DEFAULT_CONFIG: GatewayConfig = {
-  port: 3000,
+  port: 3201,
   lambdaMode: 'direct',
-  remoteEndpoint: 'http://127.0.0.1:3001', // sam local start-lambda 端口
+  remoteEndpoint: 'http://127.0.0.1:3202', // sam local start-lambda 端口
   jwt: {
     mode: 'local',
     issuer: 'local-dev',
@@ -379,7 +379,7 @@ Usage:
   bun run apps/dev-gateway/src/index.ts [options]
 
 Options:
-  -p, --port <port>      Gateway port (default: 3001)
+  -p, --port <port>      Gateway port (default: 3201)
   -m, --mode <mode>      Lambda invoke mode: direct | sam | remote (default: direct)
   --remote-endpoint <url> Remote Lambda endpoint (for mode=remote)
 

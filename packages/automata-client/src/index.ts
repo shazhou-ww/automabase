@@ -39,51 +39,59 @@
 export { AutomataClient, createClient } from './client';
 
 // Cryptographic utilities
-export { generateKeyPair, signData, verifySignature, base64UrlEncode, base64UrlDecode } from './crypto';
+export {
+  base64UrlDecode,
+  base64UrlEncode,
+  generateKeyPair,
+  signData,
+  verifySignature,
+} from './crypto';
 
 // Request signing
-export { signRequest, buildCanonicalRequest, generateRequestId, generateRequestTimestamp } from './signing';
+export {
+  buildCanonicalRequest,
+  generateRequestId,
+  generateRequestTimestamp,
+  signRequest,
+} from './signing';
 
 // Types
 export type {
-  // Common types
-  OAuthProvider,
-  AccountStatus,
-  AutomataStatus,
-  DeviceStatus,
-  DeviceType,
-  HttpMethod,
-
   // Entities
   Account,
-  Device,
+  AccountStatus,
+  ApiErrorResponse,
+  ApiResponse,
+  ArchiveAutomataResponse,
   Automata,
   AutomataEvent,
-
-  // Request/Response types
-  RequestOptions,
-  ApiResponse,
+  AutomataStatus,
   ClientConfig,
-  ListAutomatasOptions,
-  ListEventsOptions,
-
-  // API Response types
-  GetMeResponse,
   CreateAccountResponse,
-  UpdateAccountResponse,
-  GetAccountResponse,
-  ListDevicesResponse,
-  RegisterDeviceResponse,
-  RevokeDeviceResponse,
   CreateAutomataResponse,
-  ListAutomatasResponse,
+  Device,
+  DeviceStatus,
+  DeviceType,
+  GetAccountResponse,
   GetAutomataResponse,
   GetAutomataStateResponse,
-  ArchiveAutomataResponse,
-  UnarchiveAutomataResponse,
-  SendEventResponse,
-  ListEventsResponse,
   GetEventResponse,
+  // API Response types
+  GetMeResponse,
   GetWsTokenResponse,
-  ApiErrorResponse,
+  HttpMethod,
+  ListAutomatasOptions,
+  ListAutomatasResponse,
+  ListDevicesResponse,
+  ListEventsOptions,
+  ListEventsResponse,
+  // Common types
+  OAuthProvider,
+  RegisterDeviceResponse,
+  // Request/Response types
+  RequestOptions,
+  RevokeDeviceResponse,
+  SendEventResponse,
+  UnarchiveAutomataResponse,
+  UpdateAccountResponse,
 } from './types';

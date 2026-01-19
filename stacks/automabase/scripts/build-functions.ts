@@ -5,12 +5,13 @@
  * Each function is built as a separate entry point to dist/<function-name>/index.js
  */
 
-import { build } from 'esbuild';
 import { readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { build } from 'esbuild';
 
-const __dirname = (import.meta as { dir?: string }).dir || fileURLToPath(new URL('.', import.meta.url));
+const __dirname =
+  (import.meta as { dir?: string }).dir || fileURLToPath(new URL('.', import.meta.url));
 const stackDir = join(__dirname, '..');
 const rootDir = join(stackDir, '../..');
 const functionsDir = join(stackDir, 'src', 'functions');

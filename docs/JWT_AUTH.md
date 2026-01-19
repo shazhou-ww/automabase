@@ -367,7 +367,7 @@ bun run test:jwt:keys
 bun run test:jwks:server
 ```
 
-服务器会在 `http://localhost:3002/.well-known/jwks.json` 提供 JWKS。
+服务器会在 `http://localhost:3203/.well-known/jwks.json` 提供 JWKS。
 
 ### 步骤 3: 生成测试 JWT Token
 
@@ -383,7 +383,7 @@ bun run test:jwt:token <userId> <tenantId> <issuer> <audience>
 
 ```bash
 # tenantId 使用 ULID 格式
-bun run test:jwt:token user123 01ARZ3NDEKTSV4RRFFQ69G5FAV http://localhost:3002 https://api.automabase.com
+bun run test:jwt:token user123 01ARZ3NDEKTSV4RRFFQ69G5FAV http://localhost:3203 https://api.automabase.com
 ```
 
 输出：
@@ -406,14 +406,14 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LT
     "NODE_ENV": "development"
   },
   "AutomataFunction": {
-    "JWKS_URI": "http://localhost:3002/.well-known/jwks.json",
-    "JWT_ISSUER": "http://localhost:3002",
+    "JWKS_URI": "http://localhost:3203/.well-known/jwks.json",
+    "JWT_ISSUER": "http://localhost:3203",
     "JWT_AUDIENCE": "https://api.automabase.com",
     "TENANT_ID_CLAIM": "tenant_id"
   },
   "AutomataTrackerFunction": {
-    "JWKS_URI": "http://localhost:3002/.well-known/jwks.json",
-    "JWT_ISSUER": "http://localhost:3002",
+    "JWKS_URI": "http://localhost:3203/.well-known/jwks.json",
+    "JWT_ISSUER": "http://localhost:3203",
     "JWT_AUDIENCE": "https://api.automabase.com",
     "TENANT_ID_CLAIM": "tenant_id"
   }
@@ -437,7 +437,7 @@ bun run sam:local
 TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LTEifQ..."
 
 # 创建 automata
-curl -X POST http://localhost:3000/automata \
+curl -X POST http://localhost:3201/automata \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -449,7 +449,7 @@ curl -X POST http://localhost:3000/automata \
   }'
 
 # 列出 automata
-curl http://localhost:3000/automata \
+curl http://localhost:3201/automata \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -484,7 +484,7 @@ echo "✓ Test token generated:"
 echo "$TOKEN"
 echo ""
 echo "Use it in requests:"
-echo "curl -H 'Authorization: Bearer $TOKEN' http://localhost:3000/automata"
+echo "curl -H 'Authorization: Bearer $TOKEN' http://localhost:3201/automata"
 echo ""
 echo "Press Ctrl+C to stop JWKS server"
 
@@ -515,14 +515,14 @@ wait $JWKS_PID
     "NODE_ENV": "development"
   },
   "AutomataFunction": {
-    "JWKS_URI": "http://localhost:3002/.well-known/jwks.json",
-    "JWT_ISSUER": "http://localhost:3002",
+    "JWKS_URI": "http://localhost:3203/.well-known/jwks.json",
+    "JWT_ISSUER": "http://localhost:3203",
     "JWT_AUDIENCE": "https://api.automabase.com",
     "TENANT_ID_CLAIM": "tenant_id"
   },
   "AutomataTrackerFunction": {
-    "JWKS_URI": "http://localhost:3002/.well-known/jwks.json",
-    "JWT_ISSUER": "http://localhost:3002",
+    "JWKS_URI": "http://localhost:3203/.well-known/jwks.json",
+    "JWT_ISSUER": "http://localhost:3203",
     "JWT_AUDIENCE": "https://api.automabase.com",
     "TENANT_ID_CLAIM": "tenant_id"
   }
@@ -569,9 +569,9 @@ A: JWT 是无状态的，无法直接撤销。如果需要撤销功能，可以�
 A: 确保：
 
 1. JWKS 服务器正在运行（`bun run test:jwks:server`）
-2. 端口 3002 未被占用
+2. 端口 3203 未被占用
 3. `env.json` 中的 `JWKS_URI` 指向正确的地址
-4. Lambda 容器可以访问 `localhost:3002`（可能需要使用 `host.docker.internal:3002`）
+4. Lambda 容器可以访问 `localhost:3203`（可能需要使用 `host.docker.internal:3203`）
 
 ### Q: 如何测试不同租户？
 
@@ -579,10 +579,10 @@ A: 生成不同租户的 token（使用 ULID 作为 tenantId）：
 
 ```bash
 # 租户 1 (ULID: 01ARZ3NDEKTSV4RRFFQ69G5FAV)
-bun run test:jwt:token user1 01ARZ3NDEKTSV4RRFFQ69G5FAV http://localhost:3002 https://api.automabase.com
+bun run test:jwt:token user1 01ARZ3NDEKTSV4RRFFQ69G5FAV http://localhost:3203 https://api.automabase.com
 
 # 租户 2 (ULID: 01ARZ3NDEKTSV4RRFFQ69G5FAW)
-bun run test:jwt:token user2 01ARZ3NDEKTSV4RRFFQ69G5FAW http://localhost:3002 https://api.automabase.com
+bun run test:jwt:token user2 01ARZ3NDEKTSV4RRFFQ69G5FAW http://localhost:3203 https://api.automabase.com
 ```
 
 ### Q: 生产环境如何配置？

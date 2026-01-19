@@ -64,7 +64,7 @@ describe('Full Flow Integration', () => {
     }
 
     // Set WS URL
-    wsUrl = process.env.WS_API_URL || 'ws://localhost:3000';
+    wsUrl = process.env.WS_API_URL || 'ws://localhost:3201';
   });
 
   afterAll(async () => {

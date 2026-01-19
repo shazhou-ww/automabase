@@ -72,10 +72,10 @@ Resources:
       SupportedIdentityProviders:
         - COGNITO
       CallbackURLs:
-        - 'http://localhost:3000/callback'
+        - 'http://localhost:3201/callback'
         # 生产环境: 添加你的域名，如 'https://your-domain.com/callback'
       LogoutURLs:
-        - 'http://localhost:3000/logout'
+        - 'http://localhost:3201/logout'
         # 生产环境: 添加你的域名，如 'https://your-domain.com/logout'
       AllowedOAuthFlows:
         - code

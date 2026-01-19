@@ -28,7 +28,7 @@ export interface E2EConfig {
  * Get E2E configuration from environment variables
  */
 export function getConfig(): E2EConfig {
-  const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
+  const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:3201';
   const isLocal = apiBaseUrl.includes('localhost') || apiBaseUrl.includes('127.0.0.1');
 
   return {

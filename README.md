@@ -74,9 +74,9 @@ bun run dev
 
 这会自动启动：
 
-- DynamoDB Local (Docker, port 8000)
-- SAM Lambda Service (port 3002)
-- Dev Gateway (port 3001)
+- DynamoDB Local (Docker, port 3200)
+- SAM Lambda Service (port 3202)
+- Dev Gateway (port 3201)
 
 **或者分别启动：**
 
@@ -99,7 +99,7 @@ bun run dev:gateway:remote
 Dev Gateway 同时模拟 HTTP API 和 WebSocket API，支持 Management API：
 
 - 文档：[docs/WS_LOCAL_DEBUG.md](docs/WS_LOCAL_DEBUG.md)
-- WebSocket 端点：`ws://localhost:3000`
+- WebSocket 端点：`ws://localhost:3201`
 
 ### 3. 运行测试
 
@@ -315,7 +315,7 @@ Authorization: Bearer {token}
 使用获取的 Token 建立 WebSocket 连接：
 
 ```
-ws://localhost:3000?token={wsToken}
+ws://localhost:3201?token={wsToken}
 ```
 
 #### WebSocket 消息格式

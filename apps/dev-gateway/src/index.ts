@@ -17,7 +17,7 @@
  *   bun run dev:gateway (via package.json)
  *
  * Options:
- *   -p, --port <port>    Gateway port (default: 3001)
+ *   -p, --port <port>    Gateway port (default: 3201)
  *   -m, --mode <mode>    Lambda mode: direct | sam | remote
  *   --jwt-mode <mode>    JWT mode: jwks | local | none
  *   -h, --help           Show help

@@ -12,12 +12,7 @@ import {
   QueryCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
-import type {
-  Device,
-  DeviceItem,
-  RegisterDeviceInput,
-  UpdateDeviceInput,
-} from '../types/device';
+import type { Device, DeviceItem, RegisterDeviceInput, UpdateDeviceInput } from '../types/device';
 import { generateDeviceId } from '../types/device';
 import { docClient, getTableName, Keys } from './client';
 
@@ -102,10 +97,7 @@ export async function registerDevice(input: RegisterDeviceInput): Promise<Device
 /**
  * 根据 Account ID 和 Device ID 获取 Device
  */
-export async function getDeviceById(
-  accountId: string,
-  deviceId: string
-): Promise<Device | null> {
+export async function getDeviceById(accountId: string, deviceId: string): Promise<Device | null> {
   const result = await docClient.send(
     new GetCommand({
       TableName: getTableName(),

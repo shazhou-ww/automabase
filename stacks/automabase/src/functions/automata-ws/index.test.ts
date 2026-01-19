@@ -32,13 +32,13 @@ describe('handler', () => {
   });
 
   it('should reject $connect without token', async () => {
-    process.env.WEBSOCKET_API_ENDPOINT = 'http://localhost:3001';
+    process.env.WEBSOCKET_API_ENDPOINT = 'http://localhost:3202';
 
     const event = {
       requestContext: {
         connectionId: 'test-conn',
         routeKey: '$connect',
-        domainName: 'localhost:3001',
+        domainName: 'localhost:3202',
         stage: 'local',
       },
       queryStringParameters: {},

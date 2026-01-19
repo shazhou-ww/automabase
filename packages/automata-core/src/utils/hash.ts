@@ -21,7 +21,7 @@ async function getXxhash() {
 
 /**
  * 使用 MurmurHash3-128 从公钥生成 Account ID
- * 
+ *
  * @deprecated 此函数不再用于新账户创建。新账户使用 ULID 作为 accountId。
  * 保留此函数是为了向后兼容和迁移目的。
  *
@@ -40,7 +40,7 @@ export function generateAccountIdFromPublicKey(publicKey: Uint8Array | Buffer): 
 
 /**
  * 从 Base64URL 编码的公钥生成 Account ID
- * 
+ *
  * @deprecated 此函数不再用于新账户创建。新账户使用 ULID 作为 accountId。
  */
 export function generateAccountIdFromBase64(publicKeyBase64: string): string {

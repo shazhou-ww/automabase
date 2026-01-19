@@ -23,7 +23,7 @@ function createClientConfig(): DynamoDBClientConfig {
     process.env.AWS_SAM_LOCAL === 'true' || process.env.LOCALSTACK === 'true' || !!dynamodbEndpoint;
 
   if (isLocal) {
-    const endpoint = dynamodbEndpoint || 'http://host.docker.internal:8000';
+    const endpoint = dynamodbEndpoint || 'http://host.docker.internal:3200';
     console.log(`[DynamoDB] Using local endpoint: ${endpoint}, table: ${tableName}`);
     return {
       endpoint,

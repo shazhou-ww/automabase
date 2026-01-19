@@ -37,7 +37,7 @@ function getWebSocketEndpoint(event: APIGatewayProxyEvent): string {
   }
 
   // 本地开发时使用环境变量
-  return process.env.WEBSOCKET_API_ENDPOINT || 'http://localhost:3001';
+  return process.env.WEBSOCKET_API_ENDPOINT || 'http://localhost:3202';
 }
 
 /**

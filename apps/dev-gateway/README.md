@@ -29,8 +29,8 @@ bun run dev:gateway:sam
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
-| `--http-port <port>` | HTTP API 端口 | 3000 |
-| `--ws-port <port>` | WebSocket 端口 | 3001 |
+| `--http-port <port>` | HTTP API 端口 | 3201 |
+| `--ws-port <port>` | WebSocket 端口 | 3201 |
 | `--mode <mode>` | Lambda 调用模式: `direct` / `sam` / `remote` | direct |
 | `--remote-endpoint <url>` | 远程 Lambda 端点 (mode=remote) | - |
 | `--jwt-mode <mode>` | JWT 验证模式: `jwks` / `local` / `none` | local |

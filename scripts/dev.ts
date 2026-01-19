@@ -171,7 +171,7 @@ async function checkDocker(): Promise<boolean> {
  */
 async function isDynamoRunning(): Promise<boolean> {
   try {
-    const response = await fetch('http://localhost:8000');
+    const response = await fetch('http://localhost:3200');
     return response.status === 400; // DynamoDB returns 400 for root path
   } catch {
     return false;
@@ -183,7 +183,7 @@ async function isDynamoRunning(): Promise<boolean> {
  */
 async function isSamRunning(): Promise<boolean> {
   try {
-    await fetch('http://localhost:3001');
+    await fetch('http://localhost:3202');
     return true; // Any response means it's running
   } catch {
     return false;
@@ -300,7 +300,7 @@ async function main() {
   log(prefixes.runner, 'Step 1/4: Starting DynamoDB Local...');
 
   if (await isDynamoRunning()) {
-    log(prefixes.dynamo, 'Already running on port 8000');
+    log(prefixes.dynamo, 'Already running on port 3200');
   } else {
     spawnService('dynamodb', prefixes.dynamo, ['docker', 'compose', 'up', 'dynamodb-local']);
 
@@ -308,7 +308,7 @@ async function main() {
     const dynamoReady = await waitForService(
       'DynamoDB',
       prefixes.dynamo,
-      'http://localhost:8000',
+      'http://localhost:3200',
       30
     );
     if (!dynamoReady) {
@@ -324,7 +324,10 @@ async function main() {
     await setupDynamoDB({ silent: true });
     log(prefixes.runner, 'DynamoDB tables ready');
   } catch (error) {
-    log(prefixes.runner, `${colors.red}Failed to setup DynamoDB tables: ${(error as Error).message}${colors.reset}`);
+    log(
+      prefixes.runner,
+      `${colors.red}Failed to setup DynamoDB tables: ${(error as Error).message}${colors.reset}`
+    );
     await cleanup();
     process.exit(1);
   }
@@ -333,7 +336,7 @@ async function main() {
   log(prefixes.runner, 'Step 3/4: Starting SAM Lambda Service...');
 
   if (await isSamRunning()) {
-    log(prefixes.sam, 'Already running on port 3002');
+    log(prefixes.sam, 'Already running on port 3202');
   } else {
     if (!skipBuild) {
       // First, build Lambda stacks
@@ -384,12 +387,12 @@ async function main() {
       '--warm-containers',
       'EAGER',
       '--port',
-      '3001',
+      '3202',
     ]);
 
     // Wait for SAM
     await Bun.sleep(3000); // SAM takes a moment to start
-    const samReady = await waitForService('SAM Lambda', prefixes.sam, 'http://localhost:3001', 60);
+    const samReady = await waitForService('SAM Lambda', prefixes.sam, 'http://localhost:3202', 60);
     if (!samReady) {
       log(
         prefixes.runner,
@@ -409,7 +412,7 @@ async function main() {
   ]);
 
   // Wait for Gateway
-  await waitForService('Dev Gateway', prefixes.gateway, 'http://localhost:3000/health', 30);
+  await waitForService('Dev Gateway', prefixes.gateway, 'http://localhost:3201/health', 30);
 
   // Print summary
   console.log('\n');
@@ -417,10 +420,10 @@ async function main() {
   console.log(`${colors.green}  ✅ Local Development Environment Ready${colors.reset}`);
   console.log('━'.repeat(60));
   console.log('\n');
-  console.log(`  ${colors.cyan}DynamoDB Local${colors.reset}:    http://localhost:8000`);
-  console.log(`  ${colors.yellow}SAM Lambda${colors.reset}:        http://localhost:3001`);
-  console.log(`  ${colors.green}Dev Gateway${colors.reset}:       http://localhost:3000`);
-  console.log(`  ${colors.green}WebSocket${colors.reset}:         ws://localhost:3000`);
+  console.log(`  ${colors.cyan}DynamoDB Local${colors.reset}:    http://localhost:3200`);
+  console.log(`  ${colors.yellow}SAM Lambda${colors.reset}:        http://localhost:3202`);
+  console.log(`  ${colors.green}Dev Gateway${colors.reset}:       http://localhost:3201`);
+  console.log(`  ${colors.green}WebSocket${colors.reset}:         ws://localhost:3201`);
   console.log('\n');
   console.log(`  ${colors.gray}Generate JWT:${colors.reset}       bun run jwt:local`);
   console.log(`  ${colors.gray}Run E2E tests:${colors.reset}      bun run test:e2e`);

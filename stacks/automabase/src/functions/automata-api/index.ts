@@ -3,10 +3,10 @@ import {
   createOrGetAccount,
   getAccount,
   getCurrentAccount,
-  updateCurrentAccount,
   listMyDevices,
   registerMyDevice,
   revokeMyDevice,
+  updateCurrentAccount,
 } from './handlers/account-handlers';
 import {
   archiveAutomataHandler,

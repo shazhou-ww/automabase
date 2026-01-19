@@ -6,7 +6,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:local": "API_BASE_URL=http://localhost:3000 vitest run",
+    "test:local": "API_BASE_URL=http://localhost:3201 vitest run",
     "test:prod": "vitest run"
   },
   "devDependencies": {

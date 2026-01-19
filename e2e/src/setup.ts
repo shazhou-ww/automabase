@@ -71,10 +71,7 @@ async function checkServiceHealth(): Promise<ServiceStatus> {
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
         serviceStatus.error = `Service health check timed out (${healthUrl})`;
-      } else if (
-        error.message.includes('ECONNREFUSED') ||
-        error.message.includes('fetch failed')
-      ) {
+      } else if (error.message.includes('ECONNREFUSED') || error.message.includes('fetch failed')) {
         serviceStatus.error = `Service is not running at ${config.apiBaseUrl}`;
       } else {
         serviceStatus.error = error.message;

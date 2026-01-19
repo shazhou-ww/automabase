@@ -11,7 +11,7 @@
  *   bun run test e2e --endpoint <url> --user <email> --password <pwd>
  *
  * Options:
- *   --endpoint <url>    API endpoint URL (default: localhost:3000)
+ *   --endpoint <url>    API endpoint URL (default: localhost:3201)
  *   --user <email>      Cognito username for remote tests
  *   --password <pwd>    Cognito password for remote tests
  *
@@ -30,7 +30,7 @@ import * as path from 'node:path';
 import { spawn, spawnSync } from 'bun';
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '..');
-const LOCAL_GATEWAY_URL = 'http://localhost:3000';
+const LOCAL_GATEWAY_URL = 'http://localhost:3201';
 
 // Cognito defaults (from deployed stack)
 const DEFAULT_USER_POOL_ID = 'ap-southeast-2_2cTIVAhYG';

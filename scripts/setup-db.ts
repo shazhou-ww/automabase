@@ -17,7 +17,7 @@ const rootDir = join(__dirname, '..');
 
 // Configuration
 const DYNAMODB_CONTAINER_NAME = 'automabase-dynamodb';
-const DYNAMODB_PORT = 8000;
+const DYNAMODB_PORT = 3200;
 const DYNAMODB_ENDPOINT = `http://localhost:${DYNAMODB_PORT}`;
 
 // Required tables
@@ -102,7 +102,7 @@ async function startDynamoDBContainer(options: { silent?: boolean } = {}): Promi
     if (!options.silent) {
       logSuccess('DynamoDB Local container started');
     }
-    
+
     // Wait for container to be ready
     if (!options.silent) {
       log('Waiting for DynamoDB Local to be ready...', 'dim');
@@ -125,7 +125,7 @@ async function startDynamoDBContainer(options: { silent?: boolean } = {}): Promi
       await Bun.sleep(1000);
       retries--;
     }
-    
+
     if (retries === 0) {
       throw new Error('DynamoDB Local container failed to start');
     }
@@ -220,7 +220,7 @@ export async function setupDynamoDB(options: { silent?: boolean } = {}): Promise
     logStep('Checking DynamoDB Local...');
   }
   let status = await getContainerStatus();
-  
+
   if (status === 'not-exists') {
     if (!options.silent) {
       logWarning('DynamoDB Local container not found. Creating it...');
@@ -234,11 +234,11 @@ export async function setupDynamoDB(options: { silent?: boolean } = {}): Promise
     await startDynamoDBContainer(options);
     status = await getContainerStatus();
   }
-  
+
   if (status !== 'running') {
     throw new Error('DynamoDB Local container failed to start');
   }
-  
+
   if (!options.silent) {
     logSuccess(`DynamoDB Local is running on port ${DYNAMODB_PORT}`);
   }

@@ -22,7 +22,7 @@ SAM CLI 目前无法本地模拟 API Gateway WebSocket 的 `$connect / $disconne
 
 这会启动 `sam local start-api`（HTTP API），你可以调用：
 
-- `POST http://localhost:3000/v1/ws/token`
+- `POST http://localhost:3201/v1/ws/token`
 
 注意：这个接口需要 JWT；本仓库支持本地验证（`LOCAL_JWT_PUBLIC_KEY`）。
 
@@ -38,12 +38,12 @@ SAM CLI 目前无法本地模拟 API Gateway WebSocket 的 `$connect / $disconne
 
 默认监听：
 
-- WebSocket：`ws://localhost:3000`
-- Management API：`http://localhost:3000/@connections/{connectionId}`
+- WebSocket：`ws://localhost:3201`
+- Management API：`http://localhost:3201/@connections/{connectionId}`
 
 本地调试建议确保：
 
-- `WEBSOCKET_API_ENDPOINT=http://localhost:3000`
+- `WEBSOCKET_API_ENDPOINT=http://localhost:3201`
 
 建议在 `env.json` 里同时给以下函数配置该变量：
 
@@ -57,11 +57,11 @@ SAM CLI 目前无法本地模拟 API Gateway WebSocket 的 `$connect / $disconne
 1) 先拿一次性 ws token：
 
 - `JWT=$(bun run jwt:local)`
-- `curl -X POST http://localhost:3000/v1/ws/token -H "Authorization: $JWT"`
+- `curl -X POST http://localhost:3201/v1/ws/token -H "Authorization: $JWT"`
 
 1) 用 token 连接 ws：
 
-- `wscat -c "ws://localhost:3000?token=<wsToken>"`
+- `wscat -c "ws://localhost:3201?token=<wsToken>"`
 
 1) 发消息（示例）：
 

@@ -138,15 +138,6 @@
         "vitest": "^1.2.0",
       },
     },
-    "packages/automata-server": {
-      "name": "@automabase/automata-server",
-      "version": "1.0.0",
-      "devDependencies": {
-        "@types/node": "^20.11.0",
-        "typescript": "^5.3.3",
-        "vitest": "^1.2.0",
-      },
-    },
     "stacks/automabase": {
       "name": "@automabase/stack-automabase",
       "version": "1.0.0",
@@ -169,8 +160,6 @@
     "@automabase/automata-client": ["@automabase/automata-client@workspace:packages/automata-client"],
 
     "@automabase/automata-core": ["@automabase/automata-core@workspace:packages/automata-core"],
-
-    "@automabase/automata-server": ["@automabase/automata-server@workspace:packages/automata-server"],
 
     "@automabase/dev-gateway": ["@automabase/dev-gateway@workspace:apps/dev-gateway"],
 

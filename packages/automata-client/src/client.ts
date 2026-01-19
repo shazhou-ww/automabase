@@ -77,7 +77,7 @@ export class AutomataClient {
    */
   constructor(config: ClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '');
-    this.timeout = config.timeout ?? DEFAULT_CONFIG.timeout!;
+    this.timeout = config.timeout ?? DEFAULT_CONFIG.timeout ?? 30000;
   }
 
   // ===========================================================================
@@ -222,7 +222,7 @@ export class AutomataClient {
    *
    * If an account with the matching OAuth identity exists, it will be returned.
    * Otherwise, a new account will be created.
-   * 
+   *
    * Optionally, you can provide a publicKey to register a device at the same time.
    *
    * @param options - Optional parameters

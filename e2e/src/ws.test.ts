@@ -72,7 +72,7 @@ describe('Automata WebSocket API', () => {
     // Determine WS URL
     if (config.isLocal) {
       // Local dev-gateway supports WebSocket on the same port
-      // Convert http://localhost:3000 to ws://localhost:3000
+      // Convert http://localhost:3201 to ws://localhost:3201
       wsUrl = process.env.WS_API_URL || config.apiBaseUrl.replace('http://', 'ws://');
     } else {
       // For deployed env, use WS_API_URL env var

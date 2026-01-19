@@ -129,10 +129,7 @@ async function validateBlueprintSignature(
   // 获取 Account 的所有活跃 Device
   const devices = await listActiveDevicesByAccountId(account.accountId);
   if (devices.length === 0) {
-    throw new BlueprintValidationError(
-      'Account has no registered devices',
-      'NO_DEVICES'
-    );
+    throw new BlueprintValidationError('Account has no registered devices', 'NO_DEVICES');
   }
 
   // 验证签名 - 尝试用任一设备的公钥验证

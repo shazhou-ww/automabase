@@ -4,12 +4,12 @@
 
 // Account
 export * from './account';
-// Device
-export * from './device';
 // Automata
 export * from './automata';
 // Blueprint
 export * from './blueprint';
+// Device
+export * from './device';
 
 // Event
 export * from './event';

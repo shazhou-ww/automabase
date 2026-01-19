@@ -229,10 +229,7 @@ describe('Account API', () => {
 
       it('should return 409 for duplicate publicKey', async () => {
         // Try to register same publicKey again
-        const response = await client.registerDevice(
-          keyPair.publicKey,
-          'Duplicate Device'
-        );
+        const response = await client.registerDevice(keyPair.publicKey, 'Duplicate Device');
 
         expect(response.status).toBe(409);
       });

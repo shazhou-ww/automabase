@@ -182,7 +182,7 @@ export async function getTestTokenAsync(): Promise<string> {
         config.cognitoUrl +
         '/login?client_id=' +
         config.clientId +
-        '&response_type=token&scope=openid+email+profile&redirect_uri=http://localhost:3000/callback'
+        '&response_type=token&scope=openid+email+profile&redirect_uri=http://localhost:3201/callback'
     );
   }
   return token;
@@ -209,7 +209,7 @@ export function getTestToken(): string {
         config.cognitoUrl +
         '/login?client_id=' +
         config.clientId +
-        '&response_type=token&scope=openid+email+profile&redirect_uri=http://localhost:3000/callback'
+        '&response_type=token&scope=openid+email+profile&redirect_uri=http://localhost:3201/callback'
     );
   }
   return token;

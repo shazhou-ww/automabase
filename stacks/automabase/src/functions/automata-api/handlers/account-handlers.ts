@@ -12,16 +12,16 @@ import {
   type CreateAccountInput,
   getAccountById,
   getAccountByOAuth,
+  getDeviceByPublicKey,
   getOrCreateAccountByOAuth,
+  listActiveDevicesByAccountId,
   type OAuthProvider,
+  type RegisterDeviceInput,
+  registerDevice,
+  revokeDevice,
   type UpdateAccountInput,
   updateAccount,
   validateBase64PublicKey,
-  registerDevice,
-  listActiveDevicesByAccountId,
-  getDeviceByPublicKey,
-  revokeDevice,
-  type RegisterDeviceInput,
 } from '@automabase/automata-core';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
@@ -142,7 +142,7 @@ export async function getCurrentAccount(
  * POST /accounts - 创建或获取账户（首次注册）
  *
  * Body: { publicKey?: string, deviceName?: string }
- * 
+ *
  * 如果提供 publicKey 和 deviceName，会同时注册设备
  */
 export async function createOrGetAccount(
@@ -308,9 +308,7 @@ export async function getAccount(event: APIGatewayProxyEvent): Promise<APIGatewa
 /**
  * GET /accounts/me/devices - 列出当前用户的设备
  */
-export async function listMyDevices(
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> {
+export async function listMyDevices(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const token = event.headers.Authorization || event.headers.authorization;
     const authContext = await verifyAndExtractContextWithDevMode(
@@ -417,9 +415,7 @@ export async function registerMyDevice(
 /**
  * DELETE /accounts/me/devices/{deviceId} - 撤销设备
  */
-export async function revokeMyDevice(
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> {
+export async function revokeMyDevice(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const token = event.headers.Authorization || event.headers.authorization;
     const authContext = await verifyAndExtractContextWithDevMode(

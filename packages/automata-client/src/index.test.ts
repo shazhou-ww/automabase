@@ -19,31 +19,31 @@ import {
 describe('automata-client', () => {
   describe('createClient', () => {
     it('should create a client instance', () => {
-      const client = createClient('http://localhost:3000');
+      const client = createClient('http://localhost:3201');
       expect(client).toBeInstanceOf(AutomataClient);
     });
 
     it('should strip trailing slash from baseUrl', () => {
-      const client = new AutomataClient({ baseUrl: 'http://localhost:3000/' });
+      const client = new AutomataClient({ baseUrl: 'http://localhost:3201/' });
       expect(client.getAccountId()).toBeUndefined();
     });
   });
 
   describe('client configuration', () => {
     it('should set and get token', () => {
-      const client = createClient('http://localhost:3000');
+      const client = createClient('http://localhost:3201');
       client.setToken('test-token');
       expect(client.getToken()).toBe('test-token');
     });
 
     it('should set and get accountId', () => {
-      const client = createClient('http://localhost:3000');
+      const client = createClient('http://localhost:3201');
       client.setAccountId('acc_123');
       expect(client.getAccountId()).toBe('acc_123');
     });
 
     it('should support method chaining', () => {
-      const client = createClient('http://localhost:3000');
+      const client = createClient('http://localhost:3201');
       const result = client.setToken('token').setPrivateKey('key').setAccountId('acc');
       expect(result).toBe(client);
     });

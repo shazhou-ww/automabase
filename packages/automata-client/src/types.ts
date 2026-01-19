@@ -335,7 +335,7 @@ export interface ApiErrorResponse {
  * Client configuration options
  */
 export interface ClientConfig {
-  /** API base URL (e.g., 'http://localhost:3000' or 'https://api.automabase.io') */
+  /** API base URL (e.g., 'http://localhost:3201' or 'https://api.automabase.io') */
   baseUrl: string;
 
   /** Default timeout in milliseconds (default: 30000) */
