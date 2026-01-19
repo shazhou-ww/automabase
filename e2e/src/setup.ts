@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as ed from '@noble/ed25519';
+import { beforeAll } from 'vitest';
 import { config } from './config';
 
 // Configure @noble/ed25519 to use Node.js crypto for SHA-512
@@ -18,6 +19,73 @@ const sha512 = (message: Uint8Array): Uint8Array => {
 
 ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
 ed.etc.sha512Async = async (...m) => sha512(ed.etc.concatBytes(...m));
+
+// Global service availability state
+interface ServiceStatus {
+  available: boolean;
+  error?: string;
+  checked: boolean;
+}
+
+const serviceStatus: ServiceStatus = {
+  available: false,
+  error: undefined,
+  checked: false,
+};
+
+/**
+ * Check if the API service is available
+ */
+async function checkServiceHealth(): Promise<ServiceStatus> {
+  if (serviceStatus.checked) {
+    return serviceStatus;
+  }
+
+  const healthUrl = `${config.apiBaseUrl}/health`;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(healthUrl, {
+      method: 'GET',
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (response.ok) {
+      serviceStatus.available = true;
+      serviceStatus.checked = true;
+      return serviceStatus;
+    }
+
+    serviceStatus.available = false;
+    serviceStatus.error = `Service returned status ${response.status}`;
+    serviceStatus.checked = true;
+    return serviceStatus;
+  } catch (error) {
+    serviceStatus.available = false;
+    serviceStatus.checked = true;
+
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        serviceStatus.error = `Service health check timed out (${healthUrl})`;
+      } else if (
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('fetch failed')
+      ) {
+        serviceStatus.error = `Service is not running at ${config.apiBaseUrl}`;
+      } else {
+        serviceStatus.error = error.message;
+      }
+    } else {
+      serviceStatus.error = 'Unknown error during health check';
+    }
+
+    return serviceStatus;
+  }
+}
 
 // Load JWT keys from env.json for local testing
 function loadKeysFromEnvJson(): void {
@@ -48,3 +116,39 @@ function loadKeysFromEnvJson(): void {
 if (config.isLocal) {
   loadKeysFromEnvJson();
 }
+
+// Global beforeAll hook to check service availability
+beforeAll(async () => {
+  const status = await checkServiceHealth();
+
+  if (!status.available) {
+    const errorMessage = [
+      '',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '',
+      '  ❌ E2E 测试已跳过：服务未启动',
+      '',
+      `  错误: ${status.error}`,
+      '',
+      '  请先启动开发服务器:',
+      '',
+      '    bun run dev',
+      '',
+      '  或者使用 SAM Local:',
+      '',
+      '    sam local start-api',
+      '',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '',
+    ].join('\n');
+
+    console.error(errorMessage);
+
+    throw new Error(
+      `E2E tests skipped: Service is not available. ${status.error}\n` +
+        'Please start the dev server with "bun run dev" before running E2E tests.'
+    );
+  }
+
+  console.log(`\n✅ Service health check passed (${config.apiBaseUrl})\n`);
+});
