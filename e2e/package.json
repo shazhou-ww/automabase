@@ -17,6 +17,7 @@
   "dependencies": {
     "@automabase/automata-auth": "workspace:*",
     "@automabase/automata-client": "workspace:*",
+    "@automabase/crypto-provider-nodejs": "workspace:*",
     "@types/ws": "^8.18.1",
     "ws": "^8.19.0"
   }

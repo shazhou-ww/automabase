@@ -35,7 +35,7 @@ Account (账户)
 
 | 概念 | 说明 |
 |------|------|
-| **Account** | 账户，平台统一认证的用户身份，拥有 Ed25519 公钥用于签名 |
+| **Account** | 账户，平台统一认证的用户身份，拥有 ECDSA P-256 公钥用于请求签名 |
 | **App** | 应用，由开发者发布，实际上是一个使用 AppRegistry Blueprint 的 Automata |
 | **Blueprint** | 状态机模板，包含状态 Schema、事件 Schema、转换逻辑（隐式实体，自动去重存储） |
 | **Automata** | 状态机实例，归属于创建它的 Account |
@@ -164,7 +164,7 @@ Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "publicKey": "base64url-encoded-ed25519-public-key"
+  "publicKey": "base64url-encoded-ecdsa-p256-public-key"
 }
 ```
 

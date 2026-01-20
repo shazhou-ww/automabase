@@ -1,48 +1,75 @@
 /**
- * Cryptographic utilities for request signing
+ * Cryptographic utilities for request signing using WebCrypto API
+ *
+ * Uses ECDSA P-256 algorithm for better browser compatibility.
+ * Private keys are stored as CryptoKey objects and never exposed as strings.
  */
 
-import * as ed from '@noble/ed25519';
-import { sha512 } from '@noble/hashes/sha2.js';
-
-// Enable synchronous methods by providing sha512 hash function (v3 API)
-ed.hashes.sha512 = sha512;
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  // WebCrypto BufferSource typing can be picky around ArrayBufferLike/SharedArrayBuffer.
+  // Copy into a real ArrayBuffer to keep typecheck stable across lib settings.
+  const buf = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buf).set(bytes);
+  return buf;
+}
 
 /**
- * Generate Ed25519 key pair
+ * Generate ECDSA P-256 key pair using WebCrypto API
  *
- * @returns Object containing Base64URL-encoded public and private keys
+ * Keys are generated as extractable for persistence in IndexedDB.
+ * This is an internal function - keys are managed automatically by the client.
+ *
+ * @returns Object containing CryptoKey private key and Base64URL-encoded public key
  */
-export async function generateKeyPair(): Promise<{ publicKey: string; privateKey: string }> {
-  // v3 API uses utils.randomSecretKey()
-  const privateKeyBytes = ed.utils.randomSecretKey();
-  const publicKeyBytes = await ed.getPublicKeyAsync(privateKeyBytes);
+export async function generateKeyPair(): Promise<{
+  privateKey: CryptoKey;
+  publicKey: string;
+}> {
+  const keyPair = await crypto.subtle.generateKey(
+    {
+      name: 'ECDSA',
+      namedCurve: 'P-256',
+    },
+    true, // extractable: true for IndexedDB persistence
+    ['sign', 'verify']
+  );
+
+  // Export public key as Base64URL for API usage
+  const publicKeyRaw = await crypto.subtle.exportKey('raw', keyPair.publicKey);
+  const publicKeyBase64Url = base64UrlEncode(new Uint8Array(publicKeyRaw));
 
   return {
-    publicKey: base64UrlEncode(publicKeyBytes),
-    privateKey: base64UrlEncode(privateKeyBytes),
+    privateKey: keyPair.privateKey,
+    publicKey: publicKeyBase64Url,
   };
 }
 
 /**
- * Sign data with Ed25519 private key
+ * Sign data with ECDSA P-256 private key
  *
  * @param data - Data to sign
- * @param privateKeyBase64Url - Base64URL-encoded private key
+ * @param privateKey - CryptoKey private key
  * @returns Base64URL-encoded signature
  */
-export async function signData(data: Uint8Array, privateKeyBase64Url: string): Promise<string> {
-  const privateKey = base64UrlDecode(privateKeyBase64Url);
-  const signature = await ed.signAsync(data, privateKey);
-  return base64UrlEncode(signature);
+export async function signData(data: Uint8Array, privateKey: CryptoKey): Promise<string> {
+  const signature = await crypto.subtle.sign(
+    {
+      name: 'ECDSA',
+      hash: 'SHA-256',
+    },
+    privateKey,
+    toArrayBuffer(data)
+  );
+
+  return base64UrlEncode(new Uint8Array(signature));
 }
 
 /**
- * Verify Ed25519 signature
+ * Verify ECDSA P-256 signature
  *
  * @param signature - Base64URL-encoded signature
  * @param data - Original data that was signed
- * @param publicKeyBase64Url - Base64URL-encoded public key
+ * @param publicKeyBase64Url - Base64URL-encoded public key (raw format)
  * @returns True if signature is valid
  */
 export async function verifySignature(
@@ -52,8 +79,29 @@ export async function verifySignature(
 ): Promise<boolean> {
   try {
     const signatureBytes = base64UrlDecode(signature);
-    const publicKey = base64UrlDecode(publicKeyBase64Url);
-    return await ed.verifyAsync(signatureBytes, data, publicKey);
+    const publicKeyBytes = base64UrlDecode(publicKeyBase64Url);
+
+    // Import public key
+    const publicKey = await crypto.subtle.importKey(
+      'raw',
+      toArrayBuffer(publicKeyBytes),
+      {
+        name: 'ECDSA',
+        namedCurve: 'P-256',
+      },
+      false, // not extractable
+      ['verify']
+    );
+
+    return await crypto.subtle.verify(
+      {
+        name: 'ECDSA',
+        hash: 'SHA-256',
+      },
+      publicKey,
+      toArrayBuffer(signatureBytes),
+      toArrayBuffer(data)
+    );
   } catch {
     return false;
   }

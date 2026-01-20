@@ -64,7 +64,7 @@ export type DeviceStatus = 'active' | 'revoked';
 export type DeviceType = 'browser' | 'mobile' | 'desktop' | 'server' | 'other';
 
 /**
- * Device entity (represents a client with Ed25519 keypair)
+ * Device entity (represents a client with ECDSA P-256 keypair)
  */
 export interface Device {
   /** Device ID (ULID) */
@@ -73,7 +73,7 @@ export interface Device {
   /** Owner Account ID */
   accountId: string;
 
-  /** Ed25519 public key, Base64URL encoded */
+  /** ECDSA P-256 public key, Base64URL encoded (raw format) */
   publicKey: string;
 
   /** Device name (user-defined) */
@@ -332,14 +332,116 @@ export interface ApiErrorResponse {
 // ============================================================================
 
 /**
+ * Token provider function for automatic token refresh
+ *
+ * @returns Promise resolving to a JWT token (with or without 'Bearer ' prefix)
+ */
+export type TokenProvider = () => Promise<string>;
+
+/**
+ * Callback function called when a new device key pair is created
+ *
+ * This is called after a new key pair is generated and stored.
+ * Use this to register the device with the server.
+ *
+ * @param publicKey - Base64URL-encoded public key
+ * @param deviceName - Suggested device name (can be customized)
+ * @returns Promise that resolves when device registration is complete
+ */
+export type OnDeviceReady = (publicKey: string, deviceName: string) => Promise<void>;
+
+/**
+ * CryptoProvider interface for cryptographic operations
+ *
+ * Provides methods for:
+ * - Getting public key for an account
+ * - Signing data for an account
+ * - Verifying signatures
+ */
+export interface CryptoProvider {
+  /**
+   * Get the public key for an account
+   *
+   * @param accountId - Account ID
+   * @returns Base64URL-encoded public key
+   * @throws Error if account has no key pair
+   */
+  getPublicKey(accountId: string): Promise<string>;
+
+  /**
+   * Sign JSON data for an account
+   *
+   * @param accountId - Account ID
+   * @param data - JSON data to sign (will be stringified and hashed)
+   * @returns Base64URL-encoded signature
+   * @throws Error if account has no key pair
+   */
+  sign(accountId: string, data: unknown): Promise<string>;
+
+  /**
+   * Verify a signature for JSON data
+   *
+   * @param accountId - Account ID
+   * @param data - JSON data that was signed
+   * @param signature - Base64URL-encoded signature to verify
+   * @returns True if signature is valid
+   */
+  verify(accountId: string, data: unknown, signature: string): Promise<boolean>;
+
+  /**
+   * Ensure a key pair exists for an account
+   *
+   * If no key pair exists, generates and stores a new one.
+   * Returns the public key.
+   *
+   * @param accountId - Account ID
+   * @returns Base64URL-encoded public key
+   */
+  ensureKeyPair(accountId: string): Promise<string>;
+}
+
+/**
  * Client configuration options
  */
 export interface ClientConfig {
   /** API base URL (e.g., 'http://localhost:3201' or 'https://api.automabase.io') */
   baseUrl: string;
 
+  /** Account ID (required) - used to identify and load/store keys */
+  accountId: string;
+
+  /**
+   * CryptoProvider for cryptographic operations
+   *
+   * Use @automabase/crypto-provider-browser for browser environments
+   * Use @automabase/crypto-provider-nodejs for Node.js environments
+   */
+  cryptoProvider: CryptoProvider;
+
   /** Default timeout in milliseconds (default: 30000) */
   timeout?: number;
+
+  /** JWT token (with or without 'Bearer ' prefix) */
+  token?: string;
+
+  /** Token provider function for automatic token refresh */
+  tokenProvider?: TokenProvider;
+
+  /**
+   * Callback called when a new device key pair is created
+   *
+   * This is called after a new key pair is generated and stored.
+   * Use this to register the device with the server using the public key.
+   */
+  onDeviceReady?: OnDeviceReady;
+
+  /**
+   * Device name for new device registration
+   *
+   * Used when calling onDeviceReady callback.
+   * Defaults to a browser-detected name or 'Unknown Device'.
+   */
+  deviceName?: string;
 }
 
 /**

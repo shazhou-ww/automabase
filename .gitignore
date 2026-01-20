@@ -18,6 +18,10 @@ logs/
 # Local dev cache
 .local-jwt-cache
 
+# Local crypto keys (generated during dev/E2E)
+.automata-keys/
+e2e/.automata-keys/
+
 # Environment variables
 .env
 .env.local

@@ -74,6 +74,7 @@
       "dependencies": {
         "@automabase/automata-auth": "workspace:*",
         "@automabase/automata-client": "workspace:*",
+        "@automabase/crypto-provider-nodejs": "workspace:*",
         "@types/ws": "^8.18.1",
         "ws": "^8.19.0",
       },
@@ -102,10 +103,6 @@
     "packages/automata-client": {
       "name": "@automabase/automata-client",
       "version": "1.0.0",
-      "dependencies": {
-        "@noble/ed25519": "^3.0.0",
-        "@noble/hashes": "^1.7.1",
-      },
       "devDependencies": {
         "@types/node": "^20.11.0",
         "typescript": "^5.3.3",
@@ -138,6 +135,36 @@
         "vitest": "^1.2.0",
       },
     },
+    "packages/crypto-provider-browser": {
+      "name": "@automabase/crypto-provider-browser",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@types/node": "^20.11.0",
+        "typescript": "^5.3.3",
+      },
+      "peerDependencies": {
+        "@automabase/automata-client": "workspace:*",
+        "typescript": "^5.0.0",
+      },
+      "optionalPeers": [
+        "typescript",
+      ],
+    },
+    "packages/crypto-provider-nodejs": {
+      "name": "@automabase/crypto-provider-nodejs",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@types/node": "^20.11.0",
+        "typescript": "^5.3.3",
+      },
+      "peerDependencies": {
+        "@automabase/automata-client": "workspace:*",
+        "typescript": "^5.0.0",
+      },
+      "optionalPeers": [
+        "typescript",
+      ],
+    },
     "stacks/automabase": {
       "name": "@automabase/stack-automabase",
       "version": "1.0.0",
@@ -160,6 +187,10 @@
     "@automabase/automata-client": ["@automabase/automata-client@workspace:packages/automata-client"],
 
     "@automabase/automata-core": ["@automabase/automata-core@workspace:packages/automata-core"],
+
+    "@automabase/crypto-provider-browser": ["@automabase/crypto-provider-browser@workspace:packages/crypto-provider-browser"],
+
+    "@automabase/crypto-provider-nodejs": ["@automabase/crypto-provider-nodejs@workspace:packages/crypto-provider-nodejs"],
 
     "@automabase/dev-gateway": ["@automabase/dev-gateway@workspace:apps/dev-gateway"],
 
@@ -1004,8 +1035,6 @@
     "yocto-queue": ["yocto-queue@1.2.2", "", {}, "sha512-4LCcse/U2MHZ63HAJVE+v71o7yOdIe4cZ70Wpf8D/IyjDKYQLV5GD46B+hSTjJsvV5PztjvHoU580EftxjDZFQ=="],
 
     "@automabase/automata-auth/@noble/ed25519": ["@noble/ed25519@2.3.0", "", {}, "sha512-M7dvXL2B92/M7dw9+gzuydL8qn/jiqNHaoR3Q+cb1q1GHV7uwE17WCyFMG+Y+TZb5izcaXk5TdJRrDUxHXL78A=="],
-
-    "@automabase/automata-client/@noble/hashes": ["@noble/hashes@1.8.0", "", {}, "sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A=="],
 
     "@automabase/dev-gateway/@types/node": ["@types/node@22.19.6", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-qm+G8HuG6hOHQigsi7VGuLjUVu6TtBo/F05zvX04Mw2uCg9Dv0Qxy3Qw7j41SidlTcl5D/5yg0SEZqOB+EqZnQ=="],
 

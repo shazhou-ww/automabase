@@ -2,10 +2,11 @@
  * Request signing utilities
  *
  * Implements the Automabase request signing protocol for write operations.
+ * Uses ECDSA P-256 algorithm.
  */
 
 import { createHash, randomUUID } from 'node:crypto';
-import { signData } from './crypto';
+import type { CryptoProvider } from './types';
 
 /**
  * Headers required for request signing
@@ -59,13 +60,14 @@ export function buildCanonicalRequest(
 }
 
 /**
- * Sign a request using Ed25519
+ * Sign a request using ECDSA P-256
  *
  * @param method - HTTP method
  * @param path - Request path
  * @param headers - Request headers
  * @param body - Request body (JSON string)
- * @param privateKey - Base64URL-encoded Ed25519 private key
+ * @param accountId - Account ID for signing
+ * @param cryptoProvider - CryptoProvider instance
  * @returns Signature header value
  */
 export async function signRequest(
@@ -73,12 +75,15 @@ export async function signRequest(
   path: string,
   headers: Record<string, string>,
   body: string | undefined,
-  privateKey: string
+  accountId: string,
+  cryptoProvider: CryptoProvider
 ): Promise<string> {
   const canonicalRequest = buildCanonicalRequest(method, path, headers, body);
   const hashedRequest = createHash('sha256').update(canonicalRequest).digest('hex');
-  const signature = await signData(new TextEncoder().encode(hashedRequest), privateKey);
-  return `Algorithm=Ed25519, Signature=${signature}`;
+
+  // Sign the hashed request using CryptoProvider
+  const signature = await cryptoProvider.sign(accountId, { hash: hashedRequest });
+  return `Algorithm=ECDSA-P256, Signature=${signature}`;
 }
 
 /**

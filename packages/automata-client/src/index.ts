@@ -1,35 +1,49 @@
 /**
  * @automabase/automata-client
  *
- * Type-safe client library for interacting with the Automabase API.
+ * Type-safe, immutable client library for interacting with the Automabase API.
+ * Uses WebCrypto API with ECDSA P-256 for request signing.
+ * Automatically manages device keys in IndexedDB.
  *
  * @example
  * ```typescript
- * import { AutomataClient, generateKeyPair } from '@automabase/automata-client';
+ * import { createClient } from '@automabase/automata-client';
+ * import { createCryptoProvider } from '@automabase/crypto-provider-browser';
  *
- * // Create client
- * const client = new AutomataClient({ baseUrl: 'https://api.automabase.io' });
- *
- * // Generate key pair for signing
- * const keyPair = await generateKeyPair();
- *
- * // Configure client
- * client
- *   .setToken(jwtToken)
- *   .setPrivateKey(keyPair.privateKey);
- *
- * // Create account and register device
- * const { data } = await client.createAccount({
- *   publicKey: keyPair.publicKey,
- *   deviceName: 'My Browser',
+ * // Create client with automatic key management
+ * const client = await createClient({
+ *   baseUrl: 'https://api.automabase.io',
+ *   accountId: 'acc_123', // Required
+ *   cryptoProvider: createCryptoProvider(), // Browser provider
+ *   token: jwtToken,
+ *   onDeviceReady: async (publicKey, deviceName) => {
+ *     // Called when a new device key is created
+ *     // Register the device with your server
+ *     await fetch('/api/devices', {
+ *       method: 'POST',
+ *       headers: { 'Content-Type': 'application/json' },
+ *       body: JSON.stringify({ publicKey, deviceName }),
+ *     });
+ *   },
  * });
- * client.setAccountId(data.account.accountId);
  *
- * // Create automata
+ * // Client is ready to use - keys are automatically loaded/created
  * const automata = await client.createAutomata(myBlueprint);
- *
- * // Send events
  * await client.sendEvent(automata.data.automataId, 'myEvent', { payload: 'data' });
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Node.js environment
+ * import { createClient } from '@automabase/automata-client';
+ * import { createCryptoProvider } from '@automabase/crypto-provider-nodejs';
+ *
+ * const client = await createClient({
+ *   baseUrl: 'https://api.automabase.io',
+ *   accountId: 'acc_123',
+ *   cryptoProvider: createCryptoProvider(), // Node.js provider
+ *   token: jwtToken,
+ * });
  * ```
  *
  * @packageDocumentation
@@ -38,11 +52,10 @@
 // Client
 export { AutomataClient, createClient } from './client';
 
-// Cryptographic utilities
+// Cryptographic utilities (internal use - keys are managed automatically)
 export {
   base64UrlDecode,
   base64UrlEncode,
-  generateKeyPair,
   signData,
   verifySignature,
 } from './crypto';
@@ -69,6 +82,7 @@ export type {
   ClientConfig,
   CreateAccountResponse,
   CreateAutomataResponse,
+  CryptoProvider,
   Device,
   DeviceStatus,
   DeviceType,
@@ -92,6 +106,7 @@ export type {
   RequestOptions,
   RevokeDeviceResponse,
   SendEventResponse,
+  TokenProvider,
   UnarchiveAutomataResponse,
   UpdateAccountResponse,
 } from './types';

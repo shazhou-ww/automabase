@@ -1,23 +1,21 @@
 {
-  "name": "@automabase/automata-client",
+  "name": "@automabase/crypto-provider-browser",
   "version": "1.0.0",
-  "description": "Type-safe client library for interacting with the Automabase API",
+  "description": "Browser CryptoProvider implementation using IndexedDB",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src",
-    "lint:fix": "biome check --write src",
-    "clean": "echo 'No dist to clean'"
+    "lint:fix": "biome check --write src"
   },
   "dependencies": {},
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "typescript": "^5.3.3",
-    "vitest": "^1.2.0"
+    "typescript": "^5.3.3"
   },
   "peerDependencies": {
+    "@automabase/automata-client": "workspace:*",
     "typescript": "^5.0.0"
   },
   "peerDependenciesMeta": {

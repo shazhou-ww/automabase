@@ -2,28 +2,29 @@
  * Account API E2E Tests
  */
 
+import { createCryptoProvider } from '@automabase/crypto-provider-nodejs';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { type ApiClient, createClient, generateKeyPair } from './client';
+import { type ApiClient, createClient } from './client';
 import { config } from './config';
 import { getTestTokenAsync } from './helpers';
 
 describe('Account API', () => {
   let client: ApiClient;
-  let token: string;
-  let keyPair: { publicKey: string; privateKey: string };
+  let accountId: string;
+  let cryptoProvider: ReturnType<typeof createCryptoProvider>;
 
   beforeAll(async () => {
-    client = createClient();
-    token = await getTestTokenAsync();
-    keyPair = await generateKeyPair();
-    client.setToken(token);
-    client.setPrivateKey(keyPair.privateKey);
+    await getTestTokenAsync(); // Ensure token is available
+    cryptoProvider = createCryptoProvider();
+    // Create client - it will automatically create account and manage keys
+    client = await createClient();
+    accountId = client.getAccountId();
   });
 
   describe('GET /v1/accounts/me', () => {
     it('should return registered: false for new user', async () => {
       // Use a fresh token that hasn't been registered
-      const freshClient = createClient().setToken(token);
+      const freshClient = await createClient();
       const response = await freshClient.getMe();
 
       expect(response.status).toBe(200);
@@ -32,8 +33,11 @@ describe('Account API', () => {
     });
 
     it('should return 401 without token', async () => {
-      const noAuthClient = createClient();
-      const response = await noAuthClient.getMe();
+      // Create client without token (will fail auth)
+      const noAuthClient = await createClient(accountId);
+      // Remove token by creating new client without token
+      const clientWithoutToken = noAuthClient.withToken('');
+      const response = await clientWithoutToken.getMe();
 
       // With JWT verification enabled, requests without token must return 401
       expect(response.status).toBe(401);
@@ -42,8 +46,10 @@ describe('Account API', () => {
 
   describe('POST /v1/accounts', () => {
     it('should create a new account with public key', async () => {
+      // Get public key from crypto provider
+      const publicKey = await cryptoProvider.getPublicKey(accountId);
       const response = await client.createAccount({
-        publicKey: keyPair.publicKey,
+        publicKey,
         deviceName: 'Test Device',
       });
 
@@ -54,13 +60,15 @@ describe('Account API', () => {
     });
 
     it('should return existing account on duplicate creation', async () => {
+      // Get public key from crypto provider
+      const publicKey = await cryptoProvider.getPublicKey(accountId);
       // Create twice with same token
       await client.createAccount({
-        publicKey: keyPair.publicKey,
+        publicKey,
         deviceName: 'Test Device',
       });
       const response = await client.createAccount({
-        publicKey: keyPair.publicKey,
+        publicKey,
         deviceName: 'Test Device',
       });
 
@@ -84,9 +92,11 @@ describe('Account API', () => {
 
   describe('GET /v1/accounts/me (after registration)', () => {
     it('should return registered: true with account data', async () => {
-      // Ensure account exists
+      // Account should already exist from beforeAll
+      // Get public key and ensure account is registered
+      const publicKey = await cryptoProvider.getPublicKey(accountId);
       await client.createAccount({
-        publicKey: keyPair.publicKey,
+        publicKey,
         deviceName: 'Test Device',
       });
 
@@ -100,11 +110,7 @@ describe('Account API', () => {
 
   describe('PATCH /v1/accounts/me', () => {
     it('should update display name', async () => {
-      // Ensure account exists
-      await client.createAccount({
-        publicKey: keyPair.publicKey,
-        deviceName: 'Test Device',
-      });
+      // Account should already exist from beforeAll
 
       const newName = `Test User ${Date.now()}`;
       const response = await client.updateAccount({ displayName: newName });
@@ -123,27 +129,19 @@ describe('Account API', () => {
     });
 
     it('should return 404 for unregistered user', async () => {
-      // Create a new client with fresh token but don't register
-      const freshKeyPair = await generateKeyPair();
-      // freshClient would be used to test unregistered user, but we need a fresh token
-      createClient().setToken(token).setPrivateKey(freshKeyPair.privateKey);
-
       // This test only works if we have a way to get a truly fresh token
       // Skip if we're reusing the same token
       if (!config.isLocal) {
         return;
       }
+      // For now, skip this test as it requires a fresh token
+      // which is complex to generate in E2E tests
     });
   });
 
   describe('GET /v1/accounts/:id', () => {
     it('should get account by ID', async () => {
-      // Create account first
-      const createResponse = await client.createAccount({
-        publicKey: keyPair.publicKey,
-        deviceName: 'Test Device',
-      });
-      const accountId = createResponse.data.account.accountId;
+      // Account should already exist from beforeAll
 
       const response = await client.getAccount(accountId);
 
@@ -162,11 +160,7 @@ describe('Account API', () => {
   describe('Device API', () => {
     describe('GET /v1/accounts/me/devices', () => {
       it('should list devices for the current user', async () => {
-        // Ensure account and device exist
-        await client.createAccount({
-          publicKey: keyPair.publicKey,
-          deviceName: 'Test Device',
-        });
+        // Account and device should already exist from beforeAll
 
         const response = await client.listDevices();
 
@@ -186,21 +180,16 @@ describe('Account API', () => {
 
     describe('POST /v1/accounts/me/devices', () => {
       it('should register a new device', async () => {
-        // Ensure account exists first
-        await client.createAccount();
+        // Account should already exist from beforeAll
+        // Create a new client with a different accountId to get a new key pair
+        const newAccountClient = await createClient();
+        const newPublicKey = await cryptoProvider.getPublicKey(newAccountClient.getAccountId());
 
-        // Generate new key pair for new device
-        const newKeyPair = await generateKeyPair();
-
-        const response = await client.registerDevice(
-          newKeyPair.publicKey,
-          'Second Device',
-          'browser'
-        );
+        const response = await client.registerDevice(newPublicKey, 'Second Device', 'browser');
 
         expect(response.status).toBe(201);
         expect(response.data).toHaveProperty('device');
-        expect(response.data.device.publicKey).toBe(newKeyPair.publicKey);
+        expect(response.data.device.publicKey).toBe(newPublicKey);
         expect(response.data.device.deviceName).toBe('Second Device');
         expect(response.data.device.deviceType).toBe('browser');
         expect(response.data.device.status).toBe('active');
@@ -217,11 +206,12 @@ describe('Account API', () => {
       });
 
       it('should return 400 without deviceName', async () => {
-        const newKeyPair = await generateKeyPair();
+        const newAccountClient = await createClient();
+        const newPublicKey = await cryptoProvider.getPublicKey(newAccountClient.getAccountId());
         const response = await client.request({
           method: 'POST',
           path: '/v1/accounts/me/devices',
-          body: { publicKey: newKeyPair.publicKey },
+          body: { publicKey: newPublicKey },
         });
 
         expect(response.status).toBe(400);
@@ -229,7 +219,8 @@ describe('Account API', () => {
 
       it('should return 409 for duplicate publicKey', async () => {
         // Try to register same publicKey again
-        const response = await client.registerDevice(keyPair.publicKey, 'Duplicate Device');
+        const publicKey = await cryptoProvider.getPublicKey(accountId);
+        const response = await client.registerDevice(publicKey, 'Duplicate Device');
 
         expect(response.status).toBe(409);
       });
@@ -238,11 +229,9 @@ describe('Account API', () => {
     describe('DELETE /v1/accounts/me/devices/:deviceId', () => {
       it('should revoke a device', async () => {
         // First, register a new device to revoke
-        const newKeyPair = await generateKeyPair();
-        const registerResponse = await client.registerDevice(
-          newKeyPair.publicKey,
-          'Device to Revoke'
-        );
+        const newAccountClient = await createClient();
+        const newPublicKey = await cryptoProvider.getPublicKey(newAccountClient.getAccountId());
+        const registerResponse = await client.registerDevice(newPublicKey, 'Device to Revoke');
 
         expect(registerResponse.status).toBe(201);
         const deviceId = registerResponse.data.device.deviceId;

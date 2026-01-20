@@ -4,9 +4,9 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
-import { type ApiClient, createClient, generateKeyPair } from './client';
+import { type ApiClient, createClient } from './client';
 import { config } from './config';
-import { APP_REGISTRY_BLUEPRINT, getTestTokenAsync } from './helpers';
+import { APP_REGISTRY_BLUEPRINT } from './helpers';
 
 // Helper to wait for WS open
 function waitForOpen(ws: WebSocket): Promise<void> {
@@ -45,7 +45,6 @@ function waitForMessage(
 
 describe('Automata WebSocket API', () => {
   let client: ApiClient;
-  let keyPair: { publicKey: string; privateKey: string };
   let accountId: string;
   let wsUrl: string;
 
@@ -55,19 +54,9 @@ describe('Automata WebSocket API', () => {
   const shouldRunWsTests = config.isLocal || !!process.env.WS_API_URL;
 
   beforeAll(async () => {
-    client = createClient();
-    const token = await getTestTokenAsync();
-    keyPair = await generateKeyPair();
-
-    client.setToken(token).setPrivateKey(keyPair.privateKey);
-
-    // Ensure account exists
-    const accountResponse = await client.createAccount({
-      publicKey: keyPair.publicKey,
-      deviceName: 'Test Device',
-    });
-    accountId = accountResponse.data.account.accountId;
-    client.setAccountId(accountId);
+    // Create client - it will automatically create account and manage keys
+    client = await createClient();
+    accountId = client.getAccountId();
 
     // Determine WS URL
     if (config.isLocal) {

@@ -3,35 +3,18 @@
  */
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { type ApiClient, createClient, generateKeyPair } from './client';
-import { APP_REGISTRY_BLUEPRINT, getTestTokenAsync } from './helpers';
+import { type ApiClient, createClient } from './client';
+import { APP_REGISTRY_BLUEPRINT } from './helpers';
 
 describe('Automata API', () => {
   let client: ApiClient;
-  let keyPair: { publicKey: string; privateKey: string };
   let createdAutomataId: string;
   let accountId: string;
 
   beforeAll(async () => {
-    client = createClient();
-    const token = await getTestTokenAsync();
-    keyPair = await generateKeyPair();
-
-    client.setToken(token).setPrivateKey(keyPair.privateKey);
-
-    // Ensure account exists and get accountId
-    const accountResponse = await client.createAccount({
-      publicKey: keyPair.publicKey,
-      deviceName: 'Test Device',
-    });
-
-    // Debug: log response if account is missing
-    if (!accountResponse.data?.account) {
-      console.error('createAccount response:', accountResponse.status, accountResponse.data);
-    }
-
-    accountId = accountResponse.data.account.accountId;
-    client.setAccountId(accountId);
+    // Create client - it will automatically create account and manage keys
+    client = await createClient();
+    accountId = client.getAccountId();
   });
 
   describe('POST /v1/accounts/:accountId/automatas', () => {
@@ -64,9 +47,10 @@ describe('Automata API', () => {
 
     it('should return 401 without auth', async () => {
       // Requests without auth should return 401
-      const noAuthClient = createClient();
-      noAuthClient.setAccountId(accountId);
-      const response = await noAuthClient.createAutomata(APP_REGISTRY_BLUEPRINT);
+      // Create client without token (will fail auth)
+      const noAuthClient = await createClient(accountId);
+      const clientWithoutToken = noAuthClient.withToken('');
+      const response = await clientWithoutToken.createAutomata(APP_REGISTRY_BLUEPRINT);
 
       // Should be 401 Unauthorized
       expect(response.status).toBe(401);
@@ -90,9 +74,9 @@ describe('Automata API', () => {
     });
 
     it('should return 401 without auth (in non-local mode)', async () => {
-      const noAuthClient = createClient();
-      noAuthClient.setAccountId(accountId);
-      const response = await noAuthClient.listAutomatas();
+      const noAuthClient = await createClient(accountId);
+      const clientWithoutToken = noAuthClient.withToken('');
+      const response = await clientWithoutToken.listAutomatas();
 
       // In local dev mode, this will succeed
       expect([200, 401]).toContain(response.status);

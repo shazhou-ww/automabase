@@ -3,29 +3,18 @@
  */
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { type ApiClient, createClient, generateKeyPair } from './client';
-import { APP_REGISTRY_BLUEPRINT, getTestTokenAsync } from './helpers';
+import { type ApiClient, createClient } from './client';
+import { APP_REGISTRY_BLUEPRINT } from './helpers';
 
 describe('Event API', () => {
   let client: ApiClient;
-  let keyPair: { publicKey: string; privateKey: string };
   let automataId: string;
   let accountId: string;
 
   beforeAll(async () => {
-    client = createClient();
-    const token = await getTestTokenAsync();
-    keyPair = await generateKeyPair();
-
-    client.setToken(token).setPrivateKey(keyPair.privateKey);
-
-    // Ensure account exists and get accountId
-    const accountResponse = await client.createAccount({
-      publicKey: keyPair.publicKey,
-      deviceName: 'Test Device',
-    });
-    accountId = accountResponse.data.account.accountId;
-    client.setAccountId(accountId);
+    // Create client - it will automatically create account and manage keys
+    client = await createClient();
+    accountId = client.getAccountId();
 
     // Create an automata for event tests
     const createResponse = await client.createAutomata(APP_REGISTRY_BLUEPRINT);
@@ -84,9 +73,9 @@ describe('Event API', () => {
     });
 
     it('should return 401 without auth (in non-local mode)', async () => {
-      const noAuthClient = createClient();
-      noAuthClient.setAccountId(accountId);
-      const response = await noAuthClient.sendEvent(automataId, 'SET_INFO', {});
+      const noAuthClient = await createClient(accountId);
+      const clientWithoutToken = noAuthClient.withToken('');
+      const response = await clientWithoutToken.sendEvent(automataId, 'SET_INFO', {});
 
       // In local dev mode, this will succeed
       expect([200, 401]).toContain(response.status);
